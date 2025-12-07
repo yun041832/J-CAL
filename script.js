@@ -444,9 +444,9 @@ class TimerWidget {
         
         // Create accessible notification
         const notification = document.createElement('div');
+        notification.className = 'countdown-notification';
         notification.setAttribute('role', 'alert');
         notification.setAttribute('aria-live', 'assertive');
-        notification.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #667eea; color: white; padding: 20px 40px; border-radius: 10px; font-size: 1.2rem; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);';
         notification.textContent = '⏰ Countdown Finished!';
         document.body.appendChild(notification);
 
