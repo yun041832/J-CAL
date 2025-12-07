@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-CAL - Calendar, TODO, Memo & Timer Widget</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>J-CAL Widget Dashboard</h1>
+            <p>Calendar, TODO List, Memo & Timer All-in-One</p>
+        </header>
+
+        <div class="widgets-grid">
+            <!-- Calendar Widget -->
+            <div class="widget calendar-widget">
+                <div class="widget-header">
+                    <h2>📅 Calendar</h2>
+                </div>
+                <div class="widget-content">
+                    <div class="calendar-controls">
+                        <button id="prev-month" class="btn-nav">◀</button>
+                        <span id="current-month"></span>
+                        <button id="next-month" class="btn-nav">▶</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="day-header">Sun</div>
+                        <div class="day-header">Mon</div>
+                        <div class="day-header">Tue</div>
+                        <div class="day-header">Wed</div>
+                        <div class="day-header">Thu</div>
+                        <div class="day-header">Fri</div>
+                        <div class="day-header">Sat</div>
+                        <div id="calendar-days"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TODO List Widget -->
+            <div class="widget todo-widget">
+                <div class="widget-header">
+                    <h2>✓ TODO List</h2>
+                </div>
+                <div class="widget-content">
+                    <div class="todo-input-container">
+                        <input type="text" id="todo-input" placeholder="Add new task..." />
+                        <button id="add-todo" class="btn-primary">Add</button>
+                    </div>
+                    <div class="todo-stats">
+                        <span id="todo-count">0 tasks</span>
+                        <button id="clear-completed" class="btn-secondary">Clear Completed</button>
+                    </div>
+                    <ul id="todo-list" class="todo-list"></ul>
+                </div>
+            </div>
+
+            <!-- Memo Widget -->
+            <div class="widget memo-widget">
+                <div class="widget-header">
+                    <h2>📝 Memo</h2>
+                </div>
+                <div class="widget-content">
+                    <div class="memo-input-container">
+                        <input type="text" id="memo-title" placeholder="Memo title..." />
+                        <textarea id="memo-content" placeholder="Write your memo here..." rows="4"></textarea>
+                        <button id="add-memo" class="btn-primary">Save Memo</button>
+                    </div>
+                    <div id="memo-list" class="memo-list"></div>
+                </div>
+            </div>
+
+            <!-- Timer Widget -->
+            <div class="widget timer-widget">
+                <div class="widget-header">
+                    <h2>⏱️ Timer</h2>
+                </div>
+                <div class="widget-content">
+                    <div class="timer-tabs">
+                        <button class="timer-tab active" data-tab="stopwatch">Stopwatch</button>
+                        <button class="timer-tab" data-tab="countdown">Countdown</button>
+                    </div>
+                    
+                    <!-- Stopwatch -->
+                    <div class="timer-panel active" id="stopwatch-panel">
+                        <div class="timer-display" id="stopwatch-display">00:00:00</div>
+                        <div class="timer-controls">
+                            <button id="stopwatch-start" class="btn-primary">Start</button>
+                            <button id="stopwatch-stop" class="btn-secondary" disabled>Stop</button>
+                            <button id="stopwatch-reset" class="btn-secondary">Reset</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Countdown -->
+                    <div class="timer-panel" id="countdown-panel">
+                        <div class="countdown-input">
+                            <input type="number" id="countdown-minutes" placeholder="Min" min="0" max="999" />
+                            <span>:</span>
+                            <input type="number" id="countdown-seconds" placeholder="Sec" min="0" max="59" />
+                        </div>
+                        <div class="timer-display" id="countdown-display">00:00</div>
+                        <div class="timer-controls">
+                            <button id="countdown-start" class="btn-primary">Start</button>
+                            <button id="countdown-stop" class="btn-secondary" disabled>Stop</button>
+                            <button id="countdown-reset" class="btn-secondary">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
