@@ -1,6 +1,9 @@
 // ============================================
 // CALENDAR WIDGET
 // ============================================
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+
 class Calendar {
     constructor() {
         this.currentDate = new Date();
@@ -29,9 +32,7 @@ class Calendar {
         const month = this.currentDate.getMonth();
         
         // Update month display
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                          'July', 'August', 'September', 'October', 'November', 'December'];
-        document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
+        document.getElementById('current-month').textContent = `${MONTH_NAMES[month]} ${year}`;
 
         // Get first day of month and number of days
         const firstDay = new Date(year, month, 1).getDay();
@@ -85,7 +86,8 @@ class Calendar {
         // Highlight selected date
         const days = document.querySelectorAll('.calendar-day:not(.other-month)');
         days.forEach(d => {
-            if (parseInt(d.textContent) === day) {
+            const dayNum = parseInt(d.textContent, 10);
+            if (!isNaN(dayNum) && dayNum === day) {
                 d.classList.add('selected');
             } else {
                 d.classList.remove('selected');
@@ -439,14 +441,19 @@ class TimerWidget {
         // Visual notification
         const display = document.getElementById('countdown-display');
         display.style.color = '#ff4757';
+        
+        // Create accessible notification
+        const notification = document.createElement('div');
+        notification.setAttribute('role', 'alert');
+        notification.setAttribute('aria-live', 'assertive');
+        notification.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #667eea; color: white; padding: 20px 40px; border-radius: 10px; font-size: 1.2rem; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);';
+        notification.textContent = '⏰ Countdown Finished!';
+        document.body.appendChild(notification);
+
         setTimeout(() => {
             display.style.color = '#333';
+            notification.remove();
         }, 3000);
-
-        // Alert
-        if (document.hasFocus()) {
-            alert('Countdown finished!');
-        }
     }
 }
 
