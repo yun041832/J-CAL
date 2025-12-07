@@ -324,7 +324,6 @@ class Timer {
         const hours = Math.floor(this.stopwatchTime / 3600000);
         const minutes = Math.floor((this.stopwatchTime % 3600000) / 60000);
         const seconds = Math.floor((this.stopwatchTime % 60000) / 1000);
-        const milliseconds = Math.floor((this.stopwatchTime % 1000) / 10);
 
         document.getElementById('stopwatchDisplay').textContent = 
             `${this.pad(hours)}:${this.pad(minutes)}:${this.pad(seconds)}`;
