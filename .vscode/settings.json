@@ -1,0 +1,14 @@
+{
+  "explorer.fileNesting.enabled": false,
+  "explorer.sortOrder": "default",
+  "explorer.experimental.fileNesting": {
+    "enabled": false
+  },
+  "explorer.fileSortOrder": [
+    "*",
+    "memo2_app.js",
+    "memo2_style_patch.css",
+    "sw.js",
+    "index.html"
+  ]
+}
