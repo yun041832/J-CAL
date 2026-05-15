@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>캐시 강제 새로고침 안내</title>
+  <style>
+    body {
+      font-family: 'Noto Sans','Noto Sans KR',sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      color: #333;
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+    .step {
+      background: #f8f9fb;
+      padding: 15px 20px;
+      margin: 15px 0;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    .key {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      margin: 0 3px;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left-color: #ffc107;
+      color: #856404;
+    }
+    .success {
+      background: #d4edda;
+      border-left-color: #28a745;
+      color: #155724;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 20px 5px 0 0;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #764ba2;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .version-info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      border-left: 4px solid #2196f3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Jay 캘린더 업데이트 안내</h1>
+    
+    <div class="version-info">
+      <strong>📌 현재 버전:</strong> v0.8.2 (2025-12-07)<br>
+      <strong>🆕 변경사항:</strong>
+      <ul>
+        <li>달력 체크박스 제거 (일정 표시만)</li>
+        <li>달력 기본 4줄 표시</li>
+        <li>세로 늘릴 때 더 많은 일정 표시</li>
+        <li>일정등록 섹션 체크박스 제거</li>
+        <li>색상없음 옵션 추가</li>
+        <li>REMINDER 섹션 추가</li>
+        <li>사용법 섹션 표시</li>
+      </ul>
+    </div>
+
+    <div class="step warning">
+      <strong>⚠️ 중요:</strong> 변경사항이 보이지 않으면 브라우저 캐시를 지워야 합니다!
+    </div>
+
+    <h2>🛠 캐시 강제 새로고침 방법</h2>
+    
+    <div class="step">
+      <strong>방법 1: 키보드 단축키 (가장 빠름)</strong><br>
+      <span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">R</span> (Windows/Linux)<br>
+      또는 <span class="key">Ctrl</span> + <span class="key">F5</span>
+    </div>
+
+    <div class="step">
+      <strong>방법 2: 개발자 도구 사용</strong><br>
+      1. <span class="key">F12</span> 눌러서 개발자 도구 열기<br>
+      2. 새로고침 버튼을 <strong>우클릭</strong><br>
+      3. "캐시 비우기 및 강력 새로고침" 선택
+    </div>
+
+    <div class="step">
+      <strong>방법 3: 수동 캐시 삭제</strong><br>
+      1. <span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">Delete</span><br>
+      2. "캐시된 이미지 및 파일" 체크<br>
+      3. "데이터 삭제" 클릭
+    </div>
+
+    <div class="step success">
+      <strong>✅ 확인 방법:</strong><br>
+      - 달력에서 일정 항목에 체크박스가 <strong>없어야</strong> 정상<br>
+      - 일정등록 섹션에도 체크박스가 <strong>없어야</strong> 정상<br>
+      - 색상 선택 시 맨 위에 "없음" 옵션이 보여야 정상<br>
+      - REMINDER 섹션이 보여야 정상
+    </div>
+
+    <button onclick="window.location.href='index.html'">Jay 캘린더 열기</button>
+    <button onclick="hardRefresh()">강제 새로고침으로 열기</button>
+    
+    <script>
+      function hardRefresh() {
+        // 캐시를 무시하고 강제로 새로고침
+        window.location.href = 'index.html?nocache=' + Date.now();
+      }
+    </script>
+  </div>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!-- memo2_index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Jay 캘린더</title>
+  <link rel="stylesheet" href="memo2_style.css?v=20251207">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20251207">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar__title">위젯 <span class="ver">v0.8.2</span></div>
+      <button class="menu-btn" data-widget="calendar">🗓 달력</button>
+      <button class="menu-btn" data-widget="memo">📝 메모</button>
+      <button class="menu-btn" data-widget="todo">✅ ToDo</button>
+      <button class="menu-btn" data-widget="timer">⏲ 타이머</button>
+      <button class="menu-btn" data-widget="alarm">⏰ 알람</button>
+      <button class="menu-btn" data-widget="stopwatch">⏱ 스탑워치</button>
+      <p class="sidebar__hint">※ 메뉴 버튼을 클릭하면 중앙에 위젯이 열려요.<br>위젯 상단을 끌면 이동, 모서리로 크기 조절.</p>
+    </aside>
+
+    <main class="main">
+      <div class="card">
+        <div class="card__header">
+          <div class="card__title">🏠 홈 달력</div>
+          <div class="card__actions">
+            <button id="todayBtn" class="btn small">오늘</button>
+            <button id="prevMonth" class="icon-btn">◀</button>
+            <button id="nextMonth" class="icon-btn">▶</button>
+          </div>
+        </div>
+
+        <div class="calendar__topbar">
+          <div id="ymLabel" class="ym" style="cursor:pointer;" title="년/월 선택"></div>
+        </div>
+
+        <div class="calendar-wrapper" id="calendarWrapper">
+          <div class="calendar" id="mainCalendar">
+          <div class="calendar__weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="calendarGrid" class="calendar__grid"></div>
+        </div>
+          <div class="calendar-resize-handle"></div>
+        </div>
+
+        <!-- 사용법 설명 섹션 -->
+        <div id="usageSection" class="usage-section">
+          <div class="usage-content">
+            <h3 class="usage-title">사용법</h3>
+            <div id="usageText" class="usage-text"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="right">
+      <!-- 일정등록 섹션 -->
+      <div class="card">
+        <div class="card__header"><div class="card__title">📅 일정 등록</div></div>
+        <div class="datebox">
+          <div id="selectedDateText" class="datebox__date">2025-12-12</div>
+          <div class="datebox__header">
+            <input id="eventTitle" type="text" placeholder="제목">
+            <button id="emojiBtn" class="emoji-btn" type="button">😊</button>
+            <button id="eventColorBtn" class="color-btn" type="button">🎨</button>
+          </div>
+          <div class="datebox__row">
+            <label>시작: <input id="eventStartDate" type="date"></label>
+          </div>
+          <div class="datebox__row">
+            <label>종료: <input id="eventEndDate" type="date"></label>
+          </div>
+          <div class="datebox__row">
+            <label>시간: <input id="eventTime" type="time"></label>
+          </div>
+          <div class="datebox__row">
+            <label><input id="eventAlarm" type="checkbox"> 알림</label>
+            <label><input id="eventRepeat" type="checkbox"> 반복</label>
+          </div>
+          <button id="eventAddBtn" class="btn btn--block">추가</button>
+          <ul id="eventList" class="event__list"></ul>
+        </div>
+      </div>
+
+      <!-- TODO 섹션 -->
+      <div class="card">
+        <div class="card__header"><div class="card__title">✅ ToDo</div></div>
+        <div class="datebox">
+          <div class="todo__input-group">
+            <input id="todoInput" type="text" placeholder="할 일을 입력하고 Enter">
+            <button id="todoEmojiBtn" class="emoji-btn" type="button">😊</button>
+            <button id="todoColorBtn" class="color-btn" type="button">🎨</button>
+          </div>
+          <div class="todo__dates">
+            <label>시작: <input id="todoStartDate" type="date"></label>
+            <label>종료: <input id="todoEndDate" type="date"></label>
+          </div>
+          <button id="todoAddBtn" class="btn btn--block">추가</button>
+          <ul id="todoList" class="todo__list"></ul>
+        </div>
+      </div>
+
+      <!-- REMINDER 섹션 -->
+      <div class="card">
+        <div class="card__header"><div class="card__title">🔔 REMINDER</div></div>
+        <div class="datebox">
+          <div class="reminder__input-group">
+            <input id="reminderInput" type="text" placeholder="리마인더 입력">
+            <button id="reminderEmojiBtn" class="emoji-btn" type="button">😊</button>
+            <button id="reminderColorBtn" class="color-btn" type="button">🎨</button>
+          </div>
+          <button id="reminderAddBtn" class="btn btn--block">추가</button>
+          <ul id="reminderList" class="reminder__list"></ul>
+        </div>
+      </div>
+
+      <!-- 메모 섹션 -->
+      <div class="card">
+        <div class="card__header"><div class="card__title">📝 메모</div></div>
+        <div class="datebox">
+          <div class="memo__header">
+            <label class="memo__datepick">날짜: <input id="memoDate" type="date"></label>
+          </div>
+          <div class="memo__add">
+            <textarea id="memoInput" rows="3" placeholder="메모를 입력하세요 (Enter=줄바꿈, '저장'으로 추가)"></textarea>
+            <button id="memoAddBtn" class="btn">저장</button>
+          </div>
+          <ul id="memoList" class="memo__list"></ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="widgetHost" class="widget-host" aria-live="polite"></div>
+
+  <script src="memo2_app.js?v=20251207"></script>
+</body>
+</html>
