@@ -60,12 +60,27 @@
     width: auto;
     display: block;
   }
+  .sidebar-stack{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  .sidebar-footer-pc{
+    display:none;
+  }
+  @media (min-width:1025px){
+    .sidebar-footer-pc{display:block;}
+  }
+  @media (max-width:768px){
+    #mobile-subbar{display:block !important;}
+  }
 </style>
 
 </head>
 
 <body>
   <div class="app">
+    <div class="sidebar-stack">
     <aside class="sidebar">
       <button class="menu-btn" id="homeBtn">🏠 홈</button>
       <button class="menu-btn" data-widget="calendar">📅 달력</button>
@@ -75,10 +90,6 @@
       <button class="menu-btn" data-widget="stopwatch">⏱️ 스탑워치</button>
       <button class="menu-btn" data-widget="memo">📝 메모</button>
       <button class="menu-btn" data-widget="insight">💡 인사이트</button>
-      <hr style="margin: 12px 16px; border-color: #eee;">
-      <a class="menu-btn" href="https://justdoc.net" target="_blank">📄 저스트닥</a>
-      <a class="menu-btn" href="#" target="_blank">✏️ 글쓰기노트</a>
-      <a class="menu-btn" href="https://jaytoolbox.com" target="_blank">🧰 제이툴박스</a>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
       <p class="sidebar__hint">
@@ -89,6 +100,25 @@
         버튼을 클릭하면<br>위젯이 활성화 됩니다.
       </p>
     </aside>
+    <div class="sidebar-footer-pc">
+      <hr style="margin: 12px 8px; border-color: #eee;">
+      <div style="padding: 4px 8px; font-size: 11px; color: #999;">바로가기</div>
+      <a class="menu-btn" href="https://justdoc.net" target="_blank"
+         style="display:block; width:100%; box-sizing:border-box;">📄 저스트닥</a>
+      <a class="menu-btn" href="#" target="_blank"
+         style="display:block; width:100%; box-sizing:border-box;">✏️ 글쓰기노트</a>
+      <a class="menu-btn" href="https://jaytoolbox.com" target="_blank"
+         style="display:block; width:100%; box-sizing:border-box;">🧰 제이툴박스</a>
+    </div>
+    <div id="mobile-subbar" style="display:none;width:100%;background:#f8f9fa;border-bottom:1px solid #eee;padding:6px 0;text-align:center;">
+      <a href="https://justdoc.net" target="_blank"
+         style="display:inline-block;padding:4px 12px;font-size:12px;color:#555;">📄 저스트닥</a>
+      <a href="#" target="_blank"
+         style="display:inline-block;padding:4px 12px;font-size:12px;color:#555;">✏️ 글쓰기노트</a>
+      <a href="https://jaytoolbox.com" target="_blank"
+         style="display:inline-block;padding:4px 12px;font-size:12px;color:#555;">🧰 제이툴박스</a>
+    </div>
+    </div>
 
     <main class="main">
       <!-- 홈 소개 페이지 (기본 표시) -->
