@@ -562,8 +562,8 @@
         navigator.serviceWorker.register('./sw.js').catch(()=>{});
       });
     }
-  </script>
-  <script>
+
+    (function () {
     const supabase = window.supabase.createClient(
       'https://kwiwsjvuvmwtfboxtfij.supabase.co',
       'sb_publishable_c6617EGJLrdzmJvt_tlAnA_dmYkHJTD'
@@ -610,6 +610,7 @@
     supabase.auth.onAuthStateChange((_event, session) => {
       updateAuthUI(session)
     })
+    })()
   </script>
 
 </body>
