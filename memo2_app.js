@@ -8,6 +8,7 @@ const calendarPage=document.getElementById('calendarPage');
 const memoPage=document.getElementById('memoPage');
 const memoWritePage=document.getElementById('memoWritePage');
 const routinePage=document.getElementById('routinePage');
+const dailyPage=document.getElementById('dailyPage');
 const timerPage=document.getElementById('timerPage');
 const rightPane=document.querySelector('.right');
 
@@ -17,6 +18,7 @@ function showHomeIntro(){
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.add('hidden');
 }
@@ -26,6 +28,7 @@ function showCalendarPage(){
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.remove('hidden');
   renderCalendar?.();
@@ -38,6 +41,7 @@ function showMemoPage(){
   memoPage?.classList.remove('hidden');
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.add('hidden');
   initMemoPage?.();
@@ -48,6 +52,7 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.remove('hidden');
   routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.add('hidden');
   initMemoWritePage?.(editMode,itemId,idx,dstr);
@@ -58,9 +63,21 @@ function showRoutinePage(){
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.remove('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.add('hidden');
   initRoutinePage?.();
+}
+function showDailyPage(){
+  homeIntroSection?.classList.add('hidden');
+  calendarPage?.classList.add('hidden');
+  memoPage?.classList.add('hidden');
+  memoWritePage?.classList.add('hidden');
+  routinePage?.classList.add('hidden');
+  timerPage?.classList.add('hidden');
+  dailyPage?.classList.remove('hidden');
+  rightPane?.classList.add('hidden');
+  initDailyPage?.();
 }
 function showTimerPage(){
   homeIntroSection?.classList.add('hidden');
@@ -68,6 +85,7 @@ function showTimerPage(){
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
   timerPage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
   initTimersPage?.();
@@ -94,6 +112,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(t==='calendar'){ showCalendarPage(); }
       if(t==='memo') showMemoPage();
       if(t==='routine') showRoutinePage();
+      if(t==='daily') showDailyPage();
       if(t==='todo') widgetTodo?.();
       if(t==='timer') showTimerPage();
       if(t==='alarm') widgetAlarm?.();
@@ -198,6 +217,7 @@ if($.memoDate) $.memoDate.value = initDateStr;
 if($.selText) $.selText.textContent = initDateStr;
 
 const kTodo=(d)=>`memo2.todos.${d}`, kMemo=(d)=>`memo2.memos.${d}`;
+function kDaily(d){ return `memo2.daily.${d}`; }
 const storeCache=new Map();
 const cloneDefault=(val)=>{
   if(Array.isArray(val)) return [...val];
@@ -3290,6 +3310,302 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
     };
     doc.addEventListener('mousedown',close);
   },10);
+}
+
+/* ── Daily 페이지 ── */
+let dailyViewMode = 'week';
+let dailySelectedDate = new Date();
+
+function initDailyPage(){
+  if(document.getElementById('dailyPage').dataset.initialized === 'true'){
+    renderDailyWeekCalendar();
+    renderDailyList();
+    return;
+  }
+  document.getElementById('dailyPage').dataset.initialized = 'true';
+
+  const weekViewBtn = document.getElementById('dailyWeekViewBtn');
+  const monthViewBtn = document.getElementById('dailyMonthViewBtn');
+  const addBtn = document.getElementById('dailyAddBtn');
+  const input = document.getElementById('dailyInput');
+  const openWidgetBtn = document.getElementById('openDailyWidgetBtn');
+
+  weekViewBtn?.addEventListener('click', ()=>{
+    dailyViewMode = 'week';
+    weekViewBtn.style.background = '#3b82f6';
+    weekViewBtn.style.color = '#fff';
+    monthViewBtn.style.background = 'var(--card)';
+    monthViewBtn.style.color = '#64748b';
+    document.getElementById('dailyWeekCalendar').style.display = '';
+    document.getElementById('dailyMonthCalendar').style.display = 'none';
+    renderDailyWeekCalendar();
+  });
+
+  monthViewBtn?.addEventListener('click', ()=>{
+    dailyViewMode = 'month';
+    monthViewBtn.style.background = '#3b82f6';
+    monthViewBtn.style.color = '#fff';
+    weekViewBtn.style.background = 'var(--card)';
+    weekViewBtn.style.color = '#64748b';
+    document.getElementById('dailyWeekCalendar').style.display = 'none';
+    document.getElementById('dailyMonthCalendar').style.display = '';
+    renderDailyMonthCalendar();
+  });
+
+  const addDaily = ()=>{
+    const text = input.value.trim();
+    if(!text) return;
+    const dstr = fmtLocalDate(dailySelectedDate);
+    const list = get(kDaily(dstr), []);
+    list.push({ id: Date.now(), text, done: false });
+    set(kDaily(dstr), list);
+    input.value = '';
+    renderDailyList();
+    if(dailyViewMode==='week') renderDailyWeekCalendar();
+    else renderDailyMonthCalendar();
+  };
+
+  addBtn?.addEventListener('click', addDaily);
+  input?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addDaily(); } });
+
+  openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
+
+  renderDailyWeekCalendar();
+  renderDailyList();
+}
+
+function renderDailyWeekCalendar(){
+  const container = document.getElementById('dailyWeekCalendar');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const today = dailySelectedDate;
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+
+  const yearMonthRow = el('div');
+  yearMonthRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px;';
+
+  const yearMonth = el('div', null, `${today.getFullYear()}년 ${today.getMonth()+1}월`);
+  yearMonth.style.cssText = 'font-weight:500;font-size:14px;';
+
+  const navBtns = el('div');
+  navBtns.style.cssText = 'display:flex;gap:4px;';
+
+  const prevBtn = el('button', null, '◀');
+  prevBtn.style.cssText = 'padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;';
+  prevBtn.onclick = ()=>{
+    dailySelectedDate = new Date(today);
+    dailySelectedDate.setDate(today.getDate()-7);
+    renderDailyWeekCalendar();
+    renderDailyList();
+  };
+
+  const nextBtn = el('button', null, '▶');
+  nextBtn.style.cssText = prevBtn.style.cssText;
+  nextBtn.onclick = ()=>{
+    dailySelectedDate = new Date(today);
+    dailySelectedDate.setDate(today.getDate()+7);
+    renderDailyWeekCalendar();
+    renderDailyList();
+  };
+
+  navBtns.append(prevBtn, nextBtn);
+  yearMonthRow.append(yearMonth, navBtns);
+  container.appendChild(yearMonthRow);
+
+  const weekGrid = el('div');
+  weekGrid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 12px 12px;';
+  const weekdays = ['일','월','화','수','목','금','토'];
+
+  for(let i=0; i<7; i++){
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate()+i);
+    const dstr = fmtLocalDate(date);
+    const items = get(kDaily(dstr), []);
+    const hasDone = items.some(it=>it.done);
+    const hasItems = items.length > 0;
+
+    const cell = el('div');
+    cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:10px;cursor:pointer;';
+
+    const dayName = el('div', null, weekdays[i]);
+    dayName.style.cssText = 'font-size:11px;color:#64748b;font-weight:500;';
+
+    const dayNum = el('div', null, String(date.getDate()));
+    dayNum.style.cssText = 'font-size:14px;font-weight:500;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;';
+
+    const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
+    const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
+
+    if(isSelected){
+      dayNum.style.background = '#3b82f6';
+      dayNum.style.color = '#fff';
+    } else if(isToday){
+      dayNum.style.background = '#dbeafe';
+      dayNum.style.color = '#1d4ed8';
+    }
+
+    const dot = el('div');
+    dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${hasItems?(hasDone?'#22c55e':'#3b82f6'):'transparent'};`;
+
+    cell.append(dayName, dayNum, dot);
+    cell.addEventListener('click', ()=>{
+      dailySelectedDate = new Date(date);
+      renderDailyWeekCalendar();
+      renderDailyList();
+    });
+    weekGrid.appendChild(cell);
+  }
+  container.appendChild(weekGrid);
+}
+
+function renderDailyMonthCalendar(){
+  const container = document.getElementById('dailyMonthCalendar');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const y = dailySelectedDate.getFullYear();
+  const m = dailySelectedDate.getMonth();
+  const first = new Date(y, m, 1);
+  const startDay = first.getDay();
+  const totalDays = new Date(y, m+1, 0).getDate();
+
+  const title = el('div', null, `${y}년 ${m+1}월`);
+  title.style.cssText = 'font-weight:500;font-size:14px;margin-bottom:12px;text-align:center;';
+  container.appendChild(title);
+
+  const grid = el('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:4px;';
+
+  ['일','월','화','수','목','금','토'].forEach(d=>{
+    const cell = el('div', null, d);
+    cell.style.cssText = 'text-align:center;font-size:11px;color:#64748b;font-weight:500;padding:4px 0;';
+    grid.appendChild(cell);
+  });
+
+  for(let i=0; i<startDay; i++){
+    grid.appendChild(el('div'));
+  }
+
+  for(let d=1; d<=totalDays; d++){
+    const date = new Date(y, m, d);
+    const dstr = fmtLocalDate(date);
+    const items = get(kDaily(dstr), []);
+    const hasDone = items.some(it=>it.done);
+    const hasItems = items.length > 0;
+    const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
+    const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
+
+    const cell = el('div');
+    cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:8px;cursor:pointer;';
+
+    const num = el('div', null, String(d));
+    num.style.cssText = `font-size:13px;font-weight:500;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${isSelected?'#3b82f6':isToday?'#dbeafe':'transparent'};color:${isSelected?'#fff':isToday?'#1d4ed8':'inherit'};`;
+
+    const dot = el('div');
+    dot.style.cssText = `width:5px;height:5px;border-radius:50%;background:${hasItems?(hasDone?'#22c55e':'#3b82f6'):'transparent'};`;
+
+    cell.append(num, dot);
+    cell.addEventListener('click', ()=>{
+      dailySelectedDate = new Date(date);
+      renderDailyMonthCalendar();
+      renderDailyList();
+    });
+    grid.appendChild(cell);
+  }
+  container.appendChild(grid);
+}
+
+function renderDailyList(){
+  const container = document.getElementById('dailyList');
+  if(!container) return;
+  const dstr = fmtLocalDate(dailySelectedDate);
+  const list = get(kDaily(dstr), []);
+  container.innerHTML = '';
+
+  if(!list.length){
+    const empty = el('div', null, '오늘 작업을 입력해보세요.');
+    empty.style.cssText = 'color:#b0b8c1;font-size:14px;text-align:center;padding:24px 0;';
+    container.appendChild(empty);
+    return;
+  }
+
+  list.forEach((item, idx)=>{
+    const row = el('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid #e9ecf2;margin-bottom:6px;background:var(--card);';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!item.done;
+    cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#3b82f6;';
+
+    const text = el('span', null, item.text);
+    text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
+
+    const delBtn = el('button', null, '✕');
+    delBtn.style.cssText = 'background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0;';
+
+    cb.addEventListener('change', ()=>{
+      list[idx].done = cb.checked;
+      set(kDaily(dstr), list);
+      renderDailyList();
+      if(dailyViewMode==='week') renderDailyWeekCalendar();
+      else renderDailyMonthCalendar();
+    });
+
+    delBtn.addEventListener('click', ()=>{
+      list.splice(idx, 1);
+      set(kDaily(dstr), list);
+      renderDailyList();
+      if(dailyViewMode==='week') renderDailyWeekCalendar();
+      else renderDailyMonthCalendar();
+    });
+
+    row.append(cb, text, delBtn);
+    container.appendChild(row);
+  });
+}
+
+function widgetDaily(){
+  return makeWidget('Daily', (isPopup, win)=>{
+    const doc=win.document;
+    const W=doc.createElement('div');
+    W.style.cssText='display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:8px 12px;';
+
+    const title=doc.createElement('div');
+    title.textContent='📋 Daily';
+    title.style.cssText='font-weight:700;font-size:14px;margin-bottom:8px;';
+    W.append(title);
+
+    const listWrap=doc.createElement('div');
+    listWrap.style.cssText='flex:1;min-height:0;overflow:auto;';
+    W.append(listWrap);
+
+    const render=()=>{
+      const dstr=fmtLocalDate(new Date());
+      const list=JSON.parse(win.localStorage.getItem(kDaily(dstr))||'[]');
+      listWrap.innerHTML='';
+      if(!list.length){
+        const empty=doc.createElement('div');
+        empty.textContent='오늘 작업이 없습니다.';
+        empty.style.cssText='color:#b0b8c1;font-size:13px;text-align:center;padding:16px 0;';
+        listWrap.append(empty);
+        return;
+      }
+      list.forEach(item=>{
+        const row=doc.createElement('div');
+        row.textContent=item.text;
+        row.style.cssText=`padding:8px 10px;border:1px solid #e9ecf2;border-radius:8px;margin-bottom:6px;font-size:13px;${item.done?'text-decoration:line-through;color:#9aa5b1;':''}`;
+        listWrap.append(row);
+      });
+    };
+
+    render();
+    win.addEventListener('storage',(e)=>{ if(e.key?.startsWith('memo2.daily.')) render(); });
+    return W;
+  }, 'widget--daily');
 }
 
 /* ── 루틴 페이지 ── */
