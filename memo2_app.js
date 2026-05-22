@@ -13,6 +13,7 @@ const timerPage=document.getElementById('timerPage');
 const rightPane=document.querySelector('.right');
 
 function showHomeIntro(){
+  localStorage.setItem('memo2.lastPage', 'home');
   homeIntroSection?.classList.remove('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
@@ -23,6 +24,7 @@ function showHomeIntro(){
   rightPane?.classList.add('hidden');
 }
 function showCalendarPage(){
+  localStorage.setItem('memo2.lastPage', 'calendar');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.remove('hidden');
   memoPage?.classList.add('hidden');
@@ -36,6 +38,7 @@ function showCalendarPage(){
   renderMonthlyGoals?.();
 }
 function showMemoPage(){
+  localStorage.setItem('memo2.lastPage', 'memo');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.remove('hidden');
@@ -58,6 +61,7 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   initMemoWritePage?.(editMode,itemId,idx,dstr);
 }
 function showRoutinePage(){
+  localStorage.setItem('memo2.lastPage', 'routine');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
@@ -69,6 +73,7 @@ function showRoutinePage(){
   initRoutinePage?.();
 }
 function showDailyPage(){
+  localStorage.setItem('memo2.lastPage', 'daily');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
@@ -80,6 +85,7 @@ function showDailyPage(){
   initDailyPage?.();
 }
 function showTimerPage(){
+  localStorage.setItem('memo2.lastPage', 'timer');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
@@ -149,8 +155,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     };
   }
   
-  // 초기에는 홈 소개 화면 노출
-  showHomeIntro();
+  // 마지막으로 열었던 페이지 복원
+  const lastPage = localStorage.getItem('memo2.lastPage') || 'home';
+  if(lastPage === 'calendar') showCalendarPage();
+  else if(lastPage === 'memo') showMemoPage();
+  else if(lastPage === 'routine') showRoutinePage();
+  else if(lastPage === 'daily') showDailyPage();
+  else if(lastPage === 'timer') showTimerPage();
+  else showHomeIntro();
 
   // ...existing code...
 });
