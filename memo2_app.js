@@ -3594,9 +3594,6 @@ function renderDailyList(){
     row.draggable = true;
     row.dataset.idx = String(idx);
 
-    const handle = el('span', null, '☰');
-    handle.style.cssText = 'color:#cbd5e1;cursor:grab;font-size:14px;flex-shrink:0;user-select:none;';
-
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = !!item.done;
@@ -3619,7 +3616,7 @@ function renderDailyList(){
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.value = item.text;
-      inp.style.cssText = 'flex:1;font-size:14px;border:none;border-bottom:2px solid #3b82f6;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;';
+      inp.style.cssText = 'flex:1;font-size:14px;border:none;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;';
       const save = ()=>{
         const newText = inp.value.trim();
         if(newText) list[idx].text = newText;
@@ -3678,7 +3675,7 @@ function renderDailyList(){
       renderDailyList();
     });
 
-    row.append(handle, cb, text, editBtn, delBtn);
+    row.append(cb, text, editBtn, delBtn);
     container.appendChild(row);
   });
 }
