@@ -7,11 +7,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
 
-  <title>PC 위젯 온라인 달력 | 루틴·ToDo·체크리스트·메모</title>
-  <meta name="description" content="PC 위젯형 달력. 투두리스트·체크리스트·루틴·메모·타이머로 오늘 일정관리와 할 일을 한 화면에서 정리하세요.">
+  <title>Jay Calendar — Free Browser Productivity Dashboard | Timer, Routine, Memo</title>
+  <meta name="description" content="Free browser-based productivity dashboard. 6 independent timers, daily routine tracker, calendar, and memo — all in one tab. No install, no login required.">
   <link rel="canonical" href="https://jaycalendar.com/">
-
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jaycalendar.com/">
+  <meta property="og:title" content="Jay Calendar — Free Browser Productivity Dashboard">
+  <meta property="og:description" content="6 timers, routine tracker, calendar &amp; memo in one browser tab. Free, no install, no login.">
+  <meta property="og:image" content="https://jaycalendar.com/images/cal.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Jay Calendar — Free Browser Productivity Dashboard">
+  <meta name="twitter:description" content="6 timers, routine tracker, calendar &amp; memo in one tab. Free.">
+  <meta name="twitter:image" content="https://jaycalendar.com/images/cal.png">
   <meta name="theme-color" content="#5c8dff">
+  <meta name="keywords" content="free browser calendar,online timer,routine tracker,productivity dashboard,browser widget,desktop calendar,no install calendar,multiple timer,daily planner,memo">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -84,15 +93,15 @@
   <div class="app">
     <div class="sidebar-stack">
     <aside class="sidebar">
-      <button class="menu-btn" id="homeBtn">🏠 홈</button>
-      <button class="menu-btn" data-widget="calendar">📅 달력</button>
-      <button class="menu-btn" data-widget="routine">✅ 루틴</button>
-      <button class="menu-btn" data-widget="daily">📋 Daily</button>
+      <button class="menu-btn" id="homeBtn" title="홈">🏠 Home</button>
+      <button class="menu-btn" data-widget="calendar" title="달력">📅 Calendar</button>
+      <button class="menu-btn" data-widget="routine" title="루틴">✅ Routine</button>
+      <button class="menu-btn" data-widget="daily" title="데일리">📋 Daily</button>
       <button class="menu-btn" data-widget="todo" style="display:none;">✅ 투두</button>
-      <button class="menu-btn" data-widget="timer">⏲️ 타이머</button>
-      <button class="menu-btn" data-widget="stopwatch">⏱️ 스탑워치</button>
-      <button class="menu-btn" data-widget="memo">📝 메모</button>
-      <button class="menu-btn" data-widget="insight">💡 인사이트</button>
+      <button class="menu-btn" data-widget="timer" title="타이머">⏲️ Timer</button>
+      <button class="menu-btn" data-widget="stopwatch" title="스탑워치">⏱️ Stopwatch</button>
+      <button class="menu-btn" data-widget="memo" title="메모">📝 Memo</button>
+      <button class="menu-btn" data-widget="insight" title="인사이트">💡 Insight</button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
       <p class="sidebar__hint">
@@ -242,7 +251,7 @@
       <div id="homeIntroSection" class="card home-hero" style="display:none;">
         <!-- 메인 헤더 -->
         <div class="home-header">
-          <h1 style="font-size: 32px; margin-bottom: 8px;">오늘 해야 할 일정이나 목표가 있나요?</h1>
+          <h1 style="font-size: 32px; margin-bottom: 8px;">Free Browser Productivity Dashboard — Timer, Routine, Calendar &amp; Memo</h1>
           <p style="font-size: 17px; color: var(--text-secondary); margin-bottom: 40px;">
             매일이 쌓여 한달이 되고 그 한달들이 쌓여 1년, 10년이 됩니다.<br>
             여러분의 열정을 응원합니다.<br>
@@ -368,6 +377,32 @@
           </button>
         </div>
         <div id="memoPageContent" class="memo-page-content" style="flex: 1; overflow-y: auto;"></div>
+      </div>
+
+      <!-- 인사이트 페이지 (기본 숨김) -->
+      <div id="insightPage" class="card hidden" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+          <div class="card__title">💡 Insight</div>
+          <button id="addInsightBtn" class="icon-btn" title="새 글 추가" style="padding: 4px; display: flex; align-items: center; justify-content: center; border: none; background: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160Zm40 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+          </button>
+        </div>
+        <div id="insightTabBar" class="insight-tab-bar"></div>
+        <div id="insightPageContent" class="insight-page-content" style="flex: 1; overflow-y: auto;"></div>
+      </div>
+
+      <!-- 인사이트 작성 페이지 (기본 숨김) -->
+      <div id="insightWritePage" class="card hidden">
+        <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+          <div class="card__title" id="insightWriteTitle">새 인사이트</div>
+          <button id="saveInsightBtn" class="btn-confirm" style="padding: 8px 16px;">저장</button>
+        </div>
+        <div class="insight-write-body">
+          <div id="insightLangToggle" class="insight-lang-toggle"></div>
+          <input type="text" id="insightTitleInput" placeholder="제목" class="insight-write-input insight-write-input--title">
+          <input type="date" id="insightDateInput" class="insight-write-input">
+          <textarea id="insightTextarea" placeholder="내용" class="insight-write-textarea"></textarea>
+        </div>
       </div>
 
       <!-- 메모 작성 페이지 (기본 숨김) -->
@@ -561,7 +596,7 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260522" defer></script>
+  <script src="memo2_app.js?v=20260523" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{

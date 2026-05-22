@@ -7,10 +7,17 @@ const homeIntroSection=document.getElementById('homeIntroSection');
 const calendarPage=document.getElementById('calendarPage');
 const memoPage=document.getElementById('memoPage');
 const memoWritePage=document.getElementById('memoWritePage');
+const insightPage=document.getElementById('insightPage');
+const insightWritePage=document.getElementById('insightWritePage');
 const routinePage=document.getElementById('routinePage');
 const dailyPage=document.getElementById('dailyPage');
 const timerPage=document.getElementById('timerPage');
 const rightPane=document.querySelector('.right');
+
+function hideInsightPages(){
+  insightPage?.classList.add('hidden');
+  insightWritePage?.classList.add('hidden');
+}
 
 function showHomeIntro(){
   localStorage.setItem('memo2.lastPage', 'home');
@@ -22,6 +29,7 @@ function showHomeIntro(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
 }
 function showCalendarPage(){
@@ -33,6 +41,7 @@ function showCalendarPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideInsightPages();
   rightPane?.classList.remove('hidden');
   renderCalendar?.();
   renderRight?.();
@@ -47,6 +56,7 @@ function showMemoPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
   getJayMemoList();
   initMemoPage?.();
@@ -59,6 +69,7 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
   initMemoWritePage?.(editMode,itemId,idx,dstr);
 }
@@ -71,6 +82,7 @@ function showRoutinePage(){
   routinePage?.classList.remove('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
   initRoutinePage?.();
 }
@@ -83,6 +95,7 @@ function showDailyPage(){
   routinePage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   dailyPage?.classList.remove('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
   initDailyPage?.();
 }
@@ -95,8 +108,38 @@ function showTimerPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.remove('hidden');
+  hideInsightPages();
   rightPane?.classList.add('hidden');
   initTimersPage?.();
+}
+function showInsightPage(){
+  localStorage.setItem('memo2.lastPage', 'insight');
+  homeIntroSection?.classList.add('hidden');
+  calendarPage?.classList.add('hidden');
+  memoPage?.classList.add('hidden');
+  memoWritePage?.classList.add('hidden');
+  routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
+  timerPage?.classList.add('hidden');
+  insightWritePage?.classList.add('hidden');
+  insightPage?.classList.remove('hidden');
+  rightPane?.classList.add('hidden');
+  hideUsage?.();
+  initInsightPage?.();
+}
+function showInsightWritePage(editMode=false,editItemId=null){
+  homeIntroSection?.classList.add('hidden');
+  calendarPage?.classList.add('hidden');
+  memoPage?.classList.add('hidden');
+  memoWritePage?.classList.add('hidden');
+  routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
+  timerPage?.classList.add('hidden');
+  insightPage?.classList.add('hidden');
+  insightWritePage?.classList.remove('hidden');
+  rightPane?.classList.add('hidden');
+  hideUsage?.();
+  initInsightWritePage?.(editMode,editItemId);
 }
 // ...existing code...
 
@@ -125,6 +168,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(t==='timer') showTimerPage();
       if(t==='alarm') widgetAlarm?.();
       if(t==='stopwatch') widgetStopwatch?.();
+      if(t==='insight') showInsightPage();
     };
   });
 
@@ -166,6 +210,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'routine') showRoutinePage();
   else if(lastPage === 'daily') showDailyPage();
   else if(lastPage === 'timer') showTimerPage();
+  else if(lastPage === 'insight') showInsightPage();
   else showHomeIntro();
 
   initTimerSettingModal?.();
@@ -307,6 +352,40 @@ function setJayMemoList(list){
   syncJayMemoListToDateKeys(list);
   invalidateStoreCache(JAY_MEMO_LIST_KEY);
 }
+
+const JAY_INSIGHT_LIST_KEY='jay_insight_list';
+let insightActiveLang='KR';
+let insightWriteLang='KR';
+
+function createInsightId(){ return 'insight_'+Date.now(); }
+function normalizeJayInsight(raw){
+  const lang=(raw.lang==='EN'||raw.lang==='KR')?raw.lang:'KR';
+  const ts=raw.createdAt||Date.now();
+  return {
+    id:raw.id||createInsightId(),
+    lang,
+    title:raw.title||'',
+    content:raw.content||'',
+    date:raw.date||fmtLocalDate(new Date(ts)),
+    createdAt:ts,
+  };
+}
+function getJayInsightList(){
+  try{
+    const arr=JSON.parse(localStorage.getItem(JAY_INSIGHT_LIST_KEY)||'[]');
+    if(!Array.isArray(arr)) return [];
+    return arr.map(normalizeJayInsight);
+  }catch{
+    return [];
+  }
+}
+function setJayInsightList(list){
+  localStorage.setItem(JAY_INSIGHT_LIST_KEY,JSON.stringify(list));
+}
+function deleteJayInsightById(id){
+  setJayInsightList(getJayInsightList().filter(i=>i.id!==id));
+}
+
 function getMemosForDate(dstr){
   return getJayMemoList()
     .filter(m=>(m.date||fmtLocalDate(new Date(m.createdAt)))===dstr)
@@ -3622,6 +3701,176 @@ function createMemoCard(item,idx,ref){
     showMemoWritePage(true,item.id,idx,memoDate);
   };
   
+  card.append(dateEl,header,contentWrap);
+  return card;
+}
+
+/* ── 인사이트 페이지 ── */
+function renderInsightTabs(){
+  const bar=document.getElementById('insightTabBar');
+  if(!bar) return;
+  bar.innerHTML='';
+  ['EN','KR'].forEach(lang=>{
+    const cls=insightActiveLang===lang?'insight-tab insight-tab--active':'insight-tab insight-tab--inactive';
+    const btn=el('button',cls,lang);
+    btn.type='button';
+    btn.onclick=()=>{
+      insightActiveLang=lang;
+      renderInsightTabs();
+      renderInsightPageList();
+    };
+    bar.appendChild(btn);
+  });
+}
+
+function renderInsightLangToggle(container,activeLang,onChange){
+  if(!container) return;
+  container.innerHTML='';
+  ['EN','KR'].forEach(lang=>{
+    const cls=activeLang===lang?'insight-lang-btn insight-lang-btn--active':'insight-lang-btn insight-lang-btn--inactive';
+    const btn=el('button',cls,lang);
+    btn.type='button';
+    btn.onclick=()=> onChange(lang);
+    container.appendChild(btn);
+  });
+}
+
+function initInsightPage(){
+  const addBtn=document.getElementById('addInsightBtn');
+  if(addBtn) addBtn.onclick=()=> showInsightWritePage(false);
+  renderInsightTabs();
+  renderInsightPageList();
+}
+
+function initInsightWritePage(editMode=false,editItemId=null){
+  const titleInput=document.getElementById('insightTitleInput');
+  const dateInput=document.getElementById('insightDateInput');
+  const textarea=document.getElementById('insightTextarea');
+  const saveBtn=document.getElementById('saveInsightBtn');
+  const titleEl=document.getElementById('insightWriteTitle');
+  const langToggle=document.getElementById('insightLangToggle');
+  if(!titleInput||!dateInput||!textarea||!saveBtn) return;
+
+  const editItem=editMode&&editItemId
+    ? getJayInsightList().find(i=>i.id===editItemId)
+    : null;
+
+  if(titleEl) titleEl.textContent=editMode?'인사이트 수정':'새 인사이트';
+  insightWriteLang=editItem?.lang||'KR';
+
+  if(editItem){
+    titleInput.value=editItem.title||'';
+    textarea.value=editItem.content||'';
+    dateInput.value=editItem.date||fmtLocalDate(new Date(editItem.createdAt));
+  }else{
+    titleInput.value='';
+    textarea.value='';
+    dateInput.value=fmtLocalDate(new Date());
+  }
+
+  let savedInsightId=editMode&&editItemId?editItemId:null;
+
+  const onLangPick=(lang)=>{
+    insightWriteLang=lang;
+    renderInsightLangToggle(langToggle,insightWriteLang,onLangPick);
+  };
+  renderInsightLangToggle(langToggle,insightWriteLang,onLangPick);
+
+  saveBtn.onclick=()=>{
+    const title=titleInput.value.trim();
+    const content=textarea.value.trim();
+    if(!title&&!content){
+      alert('제목 또는 내용을 입력하세요.');
+      return;
+    }
+    const dateVal=dateInput.value||fmtLocalDate(new Date());
+    let list=getJayInsightList();
+    if(savedInsightId){
+      const idx=list.findIndex(i=>i.id===savedInsightId);
+      if(idx>=0){
+        list[idx]={...list[idx],lang:insightWriteLang,title,content,date:dateVal};
+      }
+    }else{
+      savedInsightId=createInsightId();
+      list.push({
+        id:savedInsightId,
+        lang:insightWriteLang,
+        title,
+        content,
+        date:dateVal,
+        createdAt:Date.now(),
+      });
+    }
+    setJayInsightList(list);
+    insightActiveLang=insightWriteLang;
+    showInsightPage();
+  };
+
+  titleInput.focus();
+}
+
+function renderInsightPageList(){
+  const content=document.getElementById('insightPageContent');
+  if(!content) return;
+  const list=getJayInsightList()
+    .filter(i=>i.lang===insightActiveLang)
+    .slice()
+    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  content.innerHTML='';
+  if(!list.length){
+    const empty=el('div','memo-empty');
+    empty.style.textAlign='center';
+    empty.style.padding='60px 20px';
+    empty.style.color='var(--text-muted, var(--text))';
+    empty.style.fontSize='15px';
+    empty.textContent=insightActiveLang==='EN'?'No posts yet.':'등록된 글이 없습니다.';
+    content.appendChild(empty);
+    return;
+  }
+  const grid=el('div','memo-page-grid');
+  list.forEach(item=>{
+    grid.appendChild(createInsightCard(item));
+  });
+  content.appendChild(grid);
+}
+
+function createInsightCard(item){
+  const card=el('div','memo-card');
+  const postDate=item.date||fmtLocalDate(new Date(item.createdAt||Date.now()));
+  const dateEl=el('div','memo-card__date',postDate);
+  dateEl.style.fontSize='11px';
+  dateEl.style.color='var(--text-muted, var(--text))';
+  dateEl.style.marginBottom='6px';
+  const header=el('div','memo-card__header');
+  header.style.display='flex';
+  header.style.justifyContent='space-between';
+  header.style.alignItems='center';
+  header.style.marginBottom='12px';
+  const titleEl=el('div','memo-card__title',item.title||'(제목 없음)');
+  titleEl.style.fontWeight='600';
+  titleEl.style.fontSize='16px';
+  titleEl.style.flex='1';
+  titleEl.style.overflow='hidden';
+  titleEl.style.textOverflow='ellipsis';
+  titleEl.style.whiteSpace='nowrap';
+  const delBtn=el('button','memo-card__btn','✕');
+  delBtn.title='삭제';
+  delBtn.onclick=(e)=>{
+    e.stopPropagation();
+    if(confirm('삭제할까요?')&&item.id){
+      deleteJayInsightById(item.id);
+      renderInsightPageList();
+    }
+  };
+  header.append(titleEl,delBtn);
+  const contentWrap=el('div','memo-card__content');
+  contentWrap.style.cursor='pointer';
+  contentWrap.style.minHeight='60px';
+  contentWrap.style.lineHeight='1.6';
+  contentWrap.style.wordBreak='break-word';
+  contentWrap.style.whiteSpace='pre-wrap';
+  contentWrap.textContent=item.content||'';
+  contentWrap.onclick=()=> showInsightWritePage(true,item.id);
   card.append(dateEl,header,contentWrap);
   return card;
 }

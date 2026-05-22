@@ -2874,3 +2874,127 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background: #fee;
   color: #ef4444;
 }
+
+.menu-btn {
+  position: relative;
+}
+
+.menu-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  background: var(--text);
+  color: var(--card);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.insight-tab-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+  flex-shrink: 0;
+}
+
+.insight-tab {
+  border-radius: 8px;
+  padding: 6px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.insight-tab--active {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+.insight-tab--inactive {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.insight-lang-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.insight-lang-btn {
+  border-radius: 8px;
+  padding: 6px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.insight-lang-btn--active {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+.insight-lang-btn--inactive {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.insight-page-content {
+  padding: 0 16px 16px;
+}
+
+.insight-write-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insight-write-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+}
+
+.insight-write-input--title {
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-bottom: 2px solid var(--line);
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.insight-write-textarea {
+  width: 100%;
+  min-height: 400px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+}
