@@ -3590,7 +3590,12 @@ function renderDailyList(){
 
   list.forEach((item, idx)=>{
     const row = el('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid #e9ecf2;margin-bottom:6px;background:var(--card);';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid #e9ecf2;margin-bottom:6px;background:var(--card);';
+    row.draggable = true;
+    row.dataset.idx = String(idx);
+
+    const handle = el('span', null, '☰');
+    handle.style.cssText = 'color:#cbd5e1;cursor:grab;font-size:14px;flex-shrink:0;user-select:none;';
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -3598,33 +3603,38 @@ function renderDailyList(){
     cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#3b82f6;';
 
     const text = el('span', null, item.text);
-    text.style.cssText = `flex:1;font-size:14px;cursor:pointer;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
-    text.ondblclick = (e)=>{
+    text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
+
+    const EDIT_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    const editBtn = el('button');
+    editBtn.innerHTML = EDIT_SVG;
+    editBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;opacity:0.6;';
+    editBtn.title = '수정';
+
+    const delBtn = el('button', null, '✕');
+    delBtn.style.cssText = 'background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0;';
+
+    editBtn.addEventListener('click', (e)=>{
       e.stopPropagation();
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.value = item.text;
-      inp.style.cssText = 'flex:1;font-size:14px;border:none;border-bottom:2px solid #3b82f6;outline:none;background:transparent;width:100%;font-family:inherit;';
+      inp.style.cssText = 'flex:1;font-size:14px;border:none;border-bottom:2px solid #3b82f6;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;';
       const save = ()=>{
         const newText = inp.value.trim();
-        if(newText && newText !== item.text){
-          list[idx].text = newText;
-          set(kDaily(dstr), list);
-        }
+        if(newText) list[idx].text = newText;
+        set(kDaily(dstr), list);
         renderDailyList();
       };
       inp.onkeydown = (ev)=>{
-        if(ev.key === 'Enter'){ ev.preventDefault(); save(); }
-        if(ev.key === 'Escape'){ renderDailyList(); }
+        if(ev.key==='Enter'){ ev.preventDefault(); save(); }
+        if(ev.key==='Escape'){ renderDailyList(); }
       };
       inp.onblur = save;
       row.replaceChild(inp, text);
       inp.focus();
       inp.select();
-    };
-
-    const delBtn = el('button', null, '✕');
-    delBtn.style.cssText = 'background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0;';
+    });
 
     cb.addEventListener('change', ()=>{
       list[idx].done = cb.checked;
@@ -3642,7 +3652,33 @@ function renderDailyList(){
       else renderDailyMonthCalendar();
     });
 
-    row.append(cb, text, delBtn);
+    row.addEventListener('dragstart', (e)=>{
+      e.dataTransfer.setData('text/plain', String(idx));
+      row.style.opacity = '0.4';
+    });
+    row.addEventListener('dragend', ()=>{
+      row.style.opacity = '1';
+    });
+    row.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      row.style.borderTop = '2px solid #3b82f6';
+    });
+    row.addEventListener('dragleave', ()=>{
+      row.style.borderTop = '';
+    });
+    row.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      row.style.borderTop = '';
+      const fromIdx = +e.dataTransfer.getData('text/plain');
+      const toIdx = idx;
+      if(fromIdx === toIdx) return;
+      const [moved] = list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, moved);
+      set(kDaily(dstr), list);
+      renderDailyList();
+    });
+
+    row.append(handle, cb, text, editBtn, delBtn);
     container.appendChild(row);
   });
 }
