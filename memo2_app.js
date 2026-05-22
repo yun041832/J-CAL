@@ -3399,7 +3399,6 @@ function renderDailyWeekCalendar(){
     dailySelectedDate = new Date(today);
     dailySelectedDate.setDate(today.getDate()-7);
     renderDailyWeekCalendar();
-    renderDailyList();
   };
 
   const nextBtn = el('button', null, '▶');
@@ -3408,56 +3407,100 @@ function renderDailyWeekCalendar(){
     dailySelectedDate = new Date(today);
     dailySelectedDate.setDate(today.getDate()+7);
     renderDailyWeekCalendar();
-    renderDailyList();
   };
 
   navBtns.append(prevBtn, nextBtn);
   yearMonthRow.append(yearMonth, navBtns);
   container.appendChild(yearMonthRow);
 
-  const weekGrid = el('div');
-  weekGrid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 12px 12px;';
   const weekdays = ['일','월','화','수','목','금','토'];
+
+  const weekGrid = el('div');
+  weekGrid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 12px 12px;flex:1;overflow:hidden;';
 
   for(let i=0; i<7; i++){
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate()+i);
     const dstr = fmtLocalDate(date);
     const items = get(kDaily(dstr), []);
-    const hasDone = items.some(it=>it.done);
-    const hasItems = items.length > 0;
-
-    const cell = el('div');
-    cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:10px;cursor:pointer;';
-
-    const dayName = el('div', null, weekdays[i]);
-    dayName.style.cssText = 'font-size:11px;color:#64748b;font-weight:500;';
-
-    const dayNum = el('div', null, String(date.getDate()));
-    dayNum.style.cssText = 'font-size:14px;font-weight:500;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;';
-
     const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
-    if(isSelected){
-      dayNum.style.background = '#3b82f6';
-      dayNum.style.color = '#fff';
-    } else if(isToday){
-      dayNum.style.background = '#dbeafe';
-      dayNum.style.color = '#1d4ed8';
-    }
+    const col = el('div');
+    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#3b82f6':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
+
+    const dayHeader = el('div');
+    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#3b82f6':isToday?'#dbeafe':'#f8fafc'};`;
+
+    const dayName = el('div', null, weekdays[i]);
+    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#1d4ed8':'#64748b'};`;
+
+    const dayNum = el('div', null, String(date.getDate()));
+    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#1d4ed8':'#111'};`;
 
     const dot = el('div');
-    dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${hasItems?(hasDone?'#22c55e':'#3b82f6'):'transparent'};`;
+    dot.style.cssText = `width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
 
-    cell.append(dayName, dayNum, dot);
-    cell.addEventListener('click', ()=>{
+    dayHeader.append(dayName, dayNum, dot);
+
+    const itemList = el('div');
+    itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
+
+    items.forEach((item, idx)=>{
+      const row = el('div');
+      row.style.cssText = `display:flex;align-items:flex-start;gap:4px;padding:4px 2px;border-radius:6px;`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!item.done;
+      cb.style.cssText = 'width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#3b82f6;';
+
+      const text = el('span', null, item.text);
+      text.style.cssText = `font-size:11px;line-height:1.4;word-break:break-all;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
+
+      cb.addEventListener('change', (e)=>{
+        e.stopPropagation();
+        const list = get(kDaily(dstr), []);
+        list[idx].done = cb.checked;
+        set(kDaily(dstr), list);
+        renderDailyWeekCalendar();
+      });
+
+      row.append(cb, text);
+      itemList.appendChild(row);
+    });
+
+    const addRow = el('div');
+    addRow.style.cssText = 'padding:4px;';
+    const addInput = document.createElement('input');
+    addInput.type = 'text';
+    addInput.placeholder = '+';
+    addInput.style.cssText = 'width:100%;font-size:11px;border:none;border-top:1px solid #e2e8f0;padding:4px 2px;outline:none;background:transparent;color:#64748b;';
+    addInput.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        e.stopPropagation();
+        const text = addInput.value.trim();
+        if(!text) return;
+        const list = get(kDaily(dstr), []);
+        list.push({ id: Date.now(), text, done: false });
+        set(kDaily(dstr), list);
+        addInput.value = '';
+        renderDailyWeekCalendar();
+      }
+    });
+    addRow.appendChild(addInput);
+
+    col.addEventListener('click', (e)=>{
+      if(e.target === cb || e.target === addInput) return;
       dailySelectedDate = new Date(date);
       renderDailyWeekCalendar();
       renderDailyList();
     });
-    weekGrid.appendChild(cell);
+
+    col.append(dayHeader, itemList, addRow);
+    weekGrid.appendChild(col);
   }
+
   container.appendChild(weekGrid);
 }
 
