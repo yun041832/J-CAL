@@ -2040,6 +2040,47 @@ const TIME_STYLE=`
         .stopwatch__display{width:100%;max-width:100%;text-align:center;font-weight:800;font-size:72px;line-height:1;letter-spacing:0}
         @media (min-width:600px){ .stopwatch__display{font-size:84px;} }
 `;
+/* about:blank 위젯 전용 — openWidgetPopup document.write에만 삽입 */
+const WIDGET_TIMER_BTN_STYLE=`
+        .timer__footer{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:220px;margin:0 auto 6px}
+        .timer__footer .timer__controls{display:flex;justify-content:center;gap:12px;width:100%;margin:0}
+        .timer-label-btn{
+          display:inline-block;
+          padding:5px 16px;
+          background:#eef2ff;
+          color:#5c8dff;
+          border:1.5px solid #c7d7ff;
+          border-radius:999px;
+          font-size:13px;
+          font-weight:600;
+          cursor:pointer;
+          font-family:inherit;
+          transition:background 0.15s;
+          margin-bottom:8px;
+          max-width:100%;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        .timer-label-btn:hover{background:#dce8ff}
+        .timer-btn{
+          width:44px;
+          height:44px;
+          border-radius:50%;
+          border:none;
+          background:#5c8dff;
+          color:#fff;
+          font-size:18px;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          box-shadow:0 2px 8px rgba(92,141,255,0.3);
+          transition:background 0.2s;
+        }
+        .timer-btn:hover{background:#4a7be8}
+        .timer-btn svg{display:block}
+`;
 function ensureTimeStyles(win){
   try{
     if(win.document.getElementById(TIME_STYLE_ID)) return;
@@ -2070,6 +2111,7 @@ function openWidgetPopup(title, bodyBuilder, opts){
         .color-pop{position:absolute;z-index:9999;background:#fff;border:1px solid #e9ecf2;border-radius:10px;padding:8px;display:grid;grid-template-columns:repeat(10,16px);gap:6px;box-shadow:0 6px 18px rgba(17,24,39,.08)}
         .color-pop .sw{width:16px;height:16px;border-radius:4px;border:1px solid #d6dae3;cursor:pointer}
 ${TIME_STYLE}
+${WIDGET_TIMER_BTN_STYLE}
         /* ★ 미니 달력 */
         .mini-cal__head{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
         .mini-cal__days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
