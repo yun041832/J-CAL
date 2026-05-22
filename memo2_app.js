@@ -3491,7 +3491,7 @@ function renderDailyWeekCalendar(){
     addRow.appendChild(addInput);
 
     col.addEventListener('click', (e)=>{
-      if(e.target === cb || e.target === addInput) return;
+      if(e.target.closest('input')) return;
       dailySelectedDate = new Date(date);
       renderDailyWeekCalendar();
       renderDailyList();
