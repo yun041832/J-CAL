@@ -2462,6 +2462,82 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   display: none;
 }
 
+/* ── 스탑워치 (브라우저 본체 · 플로팅 위젯) ── */
+.widget--stopwatch .stopwatch-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.widget--stopwatch .stopwatch-time {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.widget--stopwatch .stopwatch-status {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 999px;
+  padding: 3px 12px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+[data-theme="dark"] .widget--stopwatch .stopwatch-status {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+}
+
+.widget--stopwatch .stopwatch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget--stopwatch .stopwatch-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.widget--stopwatch .stopwatch-btn:hover {
+  opacity: 0.92;
+}
+
+.widget--stopwatch .stopwatch-btn--reset {
+  background: var(--card);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+
+[data-theme="dark"] .widget--stopwatch .stopwatch-btn--reset {
+  background: var(--card);
+}
+
 @media (max-width: 1200px) {
   .timer-grid {
     grid-template-columns: repeat(2, 1fr);

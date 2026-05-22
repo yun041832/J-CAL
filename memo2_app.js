@@ -2028,17 +2028,10 @@ const TIME_STYLE=`
         .timer__inputs input{width:100%;box-sizing:border-box;padding:6px 6px;font-size:14px}
         /* 알람 & 스탑워치 공통 */
         .time-card{width:100%;max-width:260px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;box-sizing:border-box}
-        .widget--stopwatch .time-card{max-width:520px}
         .time-circle{position:relative;width:220px;height:220px;border:10px solid #e9ecf2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:4px auto 6px;box-sizing:border-box}
         .time-circle__label{font-size:26px;font-weight:800}
-        .time-sub{font-size:12px;color:#334155;background:#eef2ff;border-radius:999px;padding:4px 10px;margin:0 auto}
         .time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:240px}
         .time-grid input,.time-grid select{width:100%;box-sizing:border-box;padding:6px;font-size:14px;text-align:center}
-        .time-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:240px;margin-top:2px}
-        /* 스탑워치 전용 */
-        .stopwatch__wrap{width:100%;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
-        .stopwatch__display{width:100%;max-width:100%;text-align:center;font-weight:800;font-size:72px;line-height:1;letter-spacing:0}
-        @media (min-width:600px){ .stopwatch__display{font-size:84px;} }
 `;
 /* about:blank 위젯 전용 — openWidgetPopup document.write에만 삽입 */
 const WIDGET_TIMER_BTN_STYLE=`
@@ -2081,6 +2074,65 @@ const WIDGET_TIMER_BTN_STYLE=`
         .timer-btn:hover{background:#4a7be8}
         .timer-btn svg{display:block}
 `;
+const WIDGET_STOPWATCH_STYLE=`
+        .stopwatch-card--popup{
+          background:#ffffff;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+          box-sizing:border-box;
+          width:100%;
+          min-height:100%;
+          padding:32px;
+        }
+        .stopwatch-card--popup .stopwatch-time{
+          font-size:64px;
+          font-weight:800;
+          color:#111827;
+          letter-spacing:3px;
+          margin-bottom:12px;
+          line-height:1.1;
+          font-variant-numeric:tabular-nums;
+        }
+        .stopwatch-card--popup .stopwatch-status{
+          font-size:13px;
+          color:#5c8dff;
+          background:#eef2ff;
+          border-radius:999px;
+          padding:4px 14px;
+          display:inline-block;
+          margin-bottom:24px;
+          font-weight:600;
+        }
+        .stopwatch-card--popup .stopwatch-actions{
+          display:flex;
+          flex-wrap:wrap;
+          justify-content:center;
+          align-items:center;
+          gap:8px;
+        }
+        .stopwatch-card--popup .stopwatch-btn{
+          border-radius:999px;
+          padding:10px 24px;
+          font-size:15px;
+          font-weight:600;
+          border:none;
+          cursor:pointer;
+          font-family:inherit;
+          background:#5c8dff;
+          color:#fff;
+          transition:background 0.15s;
+        }
+        .stopwatch-card--popup .stopwatch-btn:hover{background:#4a7be8}
+        .stopwatch-card--popup .stopwatch-btn--reset{
+          background:#fff;
+          color:#5c8dff;
+          border:1.5px solid #5c8dff;
+        }
+        .stopwatch-card--popup .stopwatch-btn--reset:hover{background:#eef2ff}
+`;
 function ensureTimeStyles(win){
   try{
     if(win.document.getElementById(TIME_STYLE_ID)) return;
@@ -2112,6 +2164,7 @@ function openWidgetPopup(title, bodyBuilder, opts){
         .color-pop .sw{width:16px;height:16px;border-radius:4px;border:1px solid #d6dae3;cursor:pointer}
 ${TIME_STYLE}
 ${WIDGET_TIMER_BTN_STYLE}
+${WIDGET_STOPWATCH_STYLE}
         /* ★ 미니 달력 */
         .mini-cal__head{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
         .mini-cal__days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
@@ -4922,58 +4975,32 @@ function widgetStopwatch(){
   return makeWidget('스탑워치',(isPopup, win)=>{
     ensureTimeStyles(win);
     const doc=win.document;
-    const card=doc.createElement('div'); card.className='time-card';
-    const wrap=doc.createElement('div'); wrap.className='stopwatch__wrap';
-    const label=doc.createElement('div'); label.className='stopwatch__display'; label.textContent='00:00.00'; wrap.appendChild(label);
-    const sub=doc.createElement('div'); sub.className='time-sub'; sub.textContent='대기';
+    const card=doc.createElement('div');
+    card.className='stopwatch-card'+(isPopup?' stopwatch-card--popup':'');
+    const label=doc.createElement('div');
+    label.className='stopwatch-time';
+    label.textContent='00:00.00';
+    const sub=doc.createElement('div');
+    sub.className='stopwatch-status';
+    sub.textContent='대기';
 
-    const actions=doc.createElement('div'); actions.className='time-actions';
-    const startBtn=el('button','btn','시작'); const pauseBtn=el('button','btn','일시정지'); const resetBtn=el('button','btn','리셋');
+    const actions=doc.createElement('div');
+    actions.className='stopwatch-actions';
+    const startBtn=doc.createElement('button');
+    startBtn.type='button';
+    startBtn.className='stopwatch-btn stopwatch-btn--primary';
+    startBtn.textContent='시작';
+    const pauseBtn=doc.createElement('button');
+    pauseBtn.type='button';
+    pauseBtn.className='stopwatch-btn stopwatch-btn--primary';
+    pauseBtn.textContent='일시정지';
+    const resetBtn=doc.createElement('button');
+    resetBtn.type='button';
+    resetBtn.className='stopwatch-btn stopwatch-btn--reset';
+    resetBtn.textContent='리셋';
     actions.append(startBtn,pauseBtn,resetBtn);
 
-    card.append(wrap,sub,actions);
-
-    const applyLayout=()=>{
-      card.style.display='flex';
-      card.style.flexDirection='column';
-      card.style.alignItems='center';
-      card.style.justifyContent=isPopup?'center':'flex-start';
-      card.style.gap=isPopup?'14px':'8px';
-      card.style.width='100%';
-      card.style.boxSizing='border-box';
-      if(isPopup){
-        card.style.height='100%';
-        card.style.padding='50px';
-      }else{
-        card.style.padding='10px';
-      }
-      wrap.style.width='100%';
-      wrap.style.display='flex';
-      wrap.style.alignItems='center';
-      wrap.style.justifyContent='center';
-      wrap.style.margin='0 auto';
-    };
-    applyLayout();
-
-    const resize=()=>{
-      const rect=card.getBoundingClientRect();
-      if(isPopup){
-        const usableW=Math.max(120, rect.width - 100); // 50px padding per side
-        const subH=sub.offsetHeight||28;
-        const actH=actions.offsetHeight||42;
-        const remainH=Math.max(140, rect.height - 100 - subH - actH - 16);
-        const chars=Math.max(1, label.textContent.length);
-        const widthFactor=0.58; // rough width per char vs font-size
-        const size=Math.max(36, Math.min(remainH, usableW/(chars*widthFactor)));
-        label.style.fontSize=`${size}px`;
-      }else{
-        const pad=24;
-        const usableW=Math.max(140, rect.width - pad);
-        const usableH=Math.max(140, rect.height - 120);
-        const size=Math.max(32, Math.min(usableW/4.5, usableH/2.4, 220));
-        label.style.fontSize=`${size}px`;
-      }
-    };
+    card.append(label,sub,actions);
 
     let segmentStart=0, accMs=0, raf=null, running=false;
     const fmt=(ms)=>{
@@ -5028,14 +5055,6 @@ function widgetStopwatch(){
     win.addEventListener('jcal-stopwatch-sync',onSwSync);
     win.addEventListener('storage',(e)=>{ if(SW_LS_KEYS.includes(e.key)) onSwSync(); });
     applyFromStorage();
-
-    if(win.ResizeObserver){
-      const ro=new win.ResizeObserver(()=>resize());
-      ro.observe(card);
-    }
-    win.addEventListener('resize', resize);
-    win.setTimeout(resize, 0);
-    win.setTimeout(resize, 100);
 
     return card;
   }, 'widget--stopwatch');
