@@ -48,6 +48,7 @@ function showMemoPage(){
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
   rightPane?.classList.add('hidden');
+  getJayMemoList();
   initMemoPage?.();
 }
 function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
@@ -156,6 +157,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     };
   }
   
+  getJayMemoList();
+
   // 마지막으로 열었던 페이지 복원
   const lastPage = localStorage.getItem('memo2.lastPage') || 'home';
   if(lastPage === 'calendar') showCalendarPage();
@@ -232,7 +235,121 @@ if($.memoDate) $.memoDate.value = initDateStr;
 if($.selText) $.selText.textContent = initDateStr;
 
 const kTodo=(d)=>`memo2.todos.${d}`, kMemo=(d)=>`memo2.memos.${d}`;
+const JAY_MEMO_LIST_KEY='jay_memo_list';
+const JAY_MEMO_MIGRATED_KEY='memo2.jay_memo_migrated';
 function kDaily(d){ return `memo2.daily.${d}`; }
+
+function createMemoId(){ return 'memo_'+Date.now(); }
+function normalizeJayMemo(raw,defaultDate){
+  const ts=raw.createdAt||Date.now();
+  return {
+    id:raw.id||createMemoId(),
+    title:raw.title||'',
+    content:raw.content??raw.text??'',
+    date:raw.date||defaultDate||fmtLocalDate(new Date(ts)),
+    createdAt:ts,
+    emoji:raw.emoji||'',
+    color:raw.color||'',
+  };
+}
+function migrateJayMemoListIfNeeded(){
+  if(localStorage.getItem(JAY_MEMO_MIGRATED_KEY)==='true') return;
+  const merged=[];
+  const seen=new Set();
+  try{
+    const existing=JSON.parse(localStorage.getItem(JAY_MEMO_LIST_KEY)||'[]');
+    if(Array.isArray(existing)){
+      existing.forEach((raw,idx)=>{
+        const m=normalizeJayMemo(raw);
+        if(!seen.has(m.id)){ seen.add(m.id); merged.push(m); }
+      });
+    }
+  }catch{}
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key||!key.startsWith('memo2.memos.')) continue;
+    const dstr=key.slice('memo2.memos.'.length);
+    let arr=[];
+    try{ arr=JSON.parse(localStorage.getItem(key)||'[]'); }catch{}
+    if(!Array.isArray(arr)) continue;
+    arr.forEach((raw,idx)=>{
+      const m=normalizeJayMemo(raw,dstr);
+      if(!m.id) m.id='memo_'+(m.createdAt)+'_'+idx;
+      if(!seen.has(m.id)){ seen.add(m.id); merged.push(m); }
+    });
+  }
+  setJayMemoList(merged);
+  localStorage.setItem(JAY_MEMO_MIGRATED_KEY,'true');
+}
+function syncJayMemoListToDateKeys(list){
+  const byDate={};
+  list.forEach(m=>{
+    const d=m.date||fmtLocalDate(new Date(m.createdAt));
+    if(!byDate[d]) byDate[d]=[];
+    byDate[d].push({
+      id:m.id,
+      title:m.title,
+      text:m.content,
+      emoji:m.emoji,
+      color:m.color,
+      createdAt:m.createdAt,
+    });
+  });
+  Object.keys(byDate).forEach(d=>set(kMemo(d),byDate[d]));
+}
+function getJayMemoList(){
+  migrateJayMemoListIfNeeded();
+  const list=get(JAY_MEMO_LIST_KEY,[]);
+  return Array.isArray(list)?list:[];
+}
+function setJayMemoList(list){
+  set(JAY_MEMO_LIST_KEY,list);
+  syncJayMemoListToDateKeys(list);
+  invalidateStoreCache(JAY_MEMO_LIST_KEY);
+}
+function getMemosForDate(dstr){
+  return getJayMemoList()
+    .filter(m=>(m.date||fmtLocalDate(new Date(m.createdAt)))===dstr)
+    .map(m=>({
+      id:m.id,
+      title:m.title,
+      text:m.content,
+      content:m.content,
+      emoji:m.emoji,
+      color:m.color,
+      date:m.date,
+      createdAt:m.createdAt,
+    }));
+}
+function formatMemoCardDate(dateStr){
+  if(!dateStr) return '';
+  const parts=dateStr.split('-').map(Number);
+  if(parts.length>=3&&!Number.isNaN(parts[1])&&!Number.isNaN(parts[2])){
+    return `${parts[1]}월 ${parts[2]}일`;
+  }
+  return dateStr;
+}
+function ensureMemoDateInput(){
+  let dateInput=document.getElementById('memoDateInput');
+  if(dateInput) return dateInput;
+  const titleInput=document.getElementById('memoTitleInput');
+  const textarea=document.getElementById('memoTextarea');
+  if(!titleInput||!textarea||!titleInput.parentElement) return null;
+  dateInput=document.createElement('input');
+  dateInput.type='date';
+  dateInput.id='memoDateInput';
+  dateInput.style.width='100%';
+  dateInput.style.border='1px solid var(--line)';
+  dateInput.style.borderRadius='8px';
+  dateInput.style.padding='8px 12px';
+  dateInput.style.fontSize='14px';
+  dateInput.style.fontFamily='inherit';
+  dateInput.style.boxSizing='border-box';
+  dateInput.style.background='var(--card)';
+  dateInput.style.color='var(--text)';
+  titleInput.parentElement.insertBefore(dateInput,textarea);
+  return dateInput;
+}
 const storeCache=new Map();
 const cloneDefault=(val)=>{
   if(Array.isArray(val)) return [...val];
@@ -1776,8 +1893,19 @@ function reminderItemEl(item,idx,ref){
 /* ── 오른쪽 메모 ── */
 function renderMemos(){
   const dstr=$.memoDate.value||fmtLocalDate(ST.selected);
-  const list=get(kMemo(dstr));
-  $.memoList.innerHTML=''; list.forEach((it,i)=> $.memoList.appendChild(memoItemEl(it,i,list,dstr)));
+  const list=getMemosForDate(dstr);
+  $.memoList.innerHTML='';
+  list.forEach((it,i)=> $.memoList.appendChild(memoItemEl(it,i,list,dstr)));
+}
+function updateJayMemoById(id,patch){
+  const list=getJayMemoList();
+  const idx=list.findIndex(m=>m.id===id);
+  if(idx<0) return;
+  list[idx]={...list[idx],...patch};
+  setJayMemoList(list);
+}
+function deleteJayMemoById(id){
+  setJayMemoList(getJayMemoList().filter(m=>m.id!==id));
 }
 function showEventConfigModal(anchor){
   const doc=anchor?.ownerDocument||document;
@@ -1904,7 +2032,7 @@ function showEventConfigModal(anchor){
 function memoItemEl(item,idx,ref,dstr){
   const li=el('li','memo-item');
   if(!item.hasOwnProperty('emoji')) item.emoji='';
-  const text=el('span','memo-text',(item.emoji?item.emoji+' ':'')+item.text);
+  const text=el('span','memo-text',(item.emoji?item.emoji+' ':'')+(item.content??item.text??''));
   const applyColor=(col)=>{
     if(col==='rainbow'){
       text.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)';
@@ -1939,9 +2067,14 @@ function memoItemEl(item,idx,ref,dstr){
     const ta=document.createElement('textarea'); 
     ta.className='memo-edit'; 
     ta.rows=3; 
-    ta.value=item.text;
+    ta.value=item.content??item.text??'';
     const save=el('button','btn','저장'), cancel=el('button','btn','취소');
-    save.onclick=()=>{ item.text=ta.value.trim()||item.text; set(kMemo(dstr),ref); renderMemos(); postApp({type:'refresh'}); };
+    save.onclick=()=>{
+      const val=ta.value.trim()||(item.content??item.text??'');
+      if(item.id) updateJayMemoById(item.id,{content:val});
+      else{ item.text=val; item.content=val; }
+      renderMemos(); renderMemoPageList?.(); postApp({type:'refresh'});
+    };
     cancel.onclick=()=> renderMemos();
     box.append(ta,save,cancel); 
     li.replaceChild(box,text); 
@@ -1949,12 +2082,29 @@ function memoItemEl(item,idx,ref,dstr){
   };
 
   menuBtn.onclick=(e)=>{ e.stopPropagation(); showMemoMenu(menuBtn,item,idx,ref,dstr); };
-  delBtn.onclick=(e)=>{ e.stopPropagation(); ref.splice(idx,1); set(kMemo(dstr),ref); renderMemos(); postApp({type:'refresh'}); };
+  delBtn.onclick=(e)=>{
+    e.stopPropagation();
+    if(item.id) deleteJayMemoById(item.id);
+    renderMemos(); renderMemoPageList?.(); postApp({type:'refresh'});
+  };
 
   text.draggable=true;
   text.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',String(idx)); });
   li.addEventListener('dragover',e=>e.preventDefault());
-  li.addEventListener('drop',e=>{ e.preventDefault(); const from=+e.dataTransfer.getData('text/plain'); const to=idx; if(from===to)return; const [m]=ref.splice(from,1); ref.splice(to,0,m); set(kMemo(dstr),ref); renderMemos(); postApp({type:'refresh'}); });
+  li.addEventListener('drop',e=>{
+    e.preventDefault();
+    const from=+e.dataTransfer.getData('text/plain'); const to=idx;
+    if(from===to) return;
+    const [m]=ref.splice(from,1); ref.splice(to,0,m);
+    const all=getJayMemoList();
+    const others=all.filter(x=>(x.date||fmtLocalDate(new Date(x.createdAt)))!==dstr);
+    const dayMemos=ref.map(r=>{
+      const j=all.find(x=>x.id===r.id);
+      return j?{...j,content:r.content??r.text??''}:normalizeJayMemo({...r,date:dstr});
+    });
+    setJayMemoList([...others,...dayMemos]);
+    renderMemos(); renderMemoPageList?.(); postApp({type:'refresh'});
+  });
 
   return li;
 }
@@ -1973,14 +2123,22 @@ function showMemoMenu(anchor,item,idx,ref,dstr){
     const anchorRect=anchor.getBoundingClientRect();
     const tempAnchor={ getBoundingClientRect:()=>anchorRect, ownerDocument:doc };
     pop.remove(); openPop=null;
-    showEmojiPicker(tempAnchor,(emoji)=>{ item.emoji=emoji; set(kMemo(dstr),ref); renderMemos(); postApp({type:'refresh'}); });
+    showEmojiPicker(tempAnchor,(emoji)=>{
+      item.emoji=emoji;
+      if(item.id) updateJayMemoById(item.id,{emoji});
+      renderMemos(); renderMemoPageList?.(); postApp({type:'refresh'});
+    });
   };
   colorBtn.onclick=(e)=>{
     e.stopPropagation();
     const anchorRect=anchor.getBoundingClientRect();
     const tempAnchor={ getBoundingClientRect:()=>anchorRect, ownerDocument:doc };
     pop.remove(); openPop=null;
-    showPalette(tempAnchor,(color)=>{ item.color=color; set(kMemo(dstr),ref); renderMemos(); postApp({type:'refresh'}); });
+    showPalette(tempAnchor,(color)=>{
+      item.color=color;
+      if(item.id) updateJayMemoById(item.id,{color});
+      renderMemos(); renderMemoPageList?.(); postApp({type:'refresh'});
+    });
   };
 
   pop.append(emojiBtn,colorBtn);
@@ -2011,9 +2169,25 @@ function showMemoMenu(anchor,item,idx,ref,dstr){
   };
   setTimeout(()=>doc.addEventListener('click',closeMenu),10);
 }
-$.memoAdd.onclick=()=>{ const txt=$.memoInput.value.replace(/\s+$/,''); if(!txt) return;
+$.memoAdd.onclick=()=>{
+  const txt=$.memoInput.value.replace(/\s+$/,'');
+  if(!txt) return;
   const dstr=$.memoDate.value||fmtLocalDate(ST.selected);
-  const list=get(kMemo(dstr)); list.push({text:txt}); set(kMemo(dstr),list); $.memoInput.value=''; renderMemos(); postApp({type:'refresh'});
+  const list=getJayMemoList();
+  list.push({
+    id:createMemoId(),
+    title:'',
+    content:txt,
+    date:dstr,
+    createdAt:Date.now(),
+    emoji:'',
+    color:'',
+  });
+  setJayMemoList(list);
+  $.memoInput.value='';
+  renderMemos();
+  renderMemoPageList?.();
+  postApp({type:'refresh'});
 };
 $.memoInput.onkeydown=()=>{};
 
@@ -3253,128 +3427,75 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   const textarea=document.getElementById('memoTextarea');
   const saveBtn=document.getElementById('saveMemoBtn');
   const titleEl=document.getElementById('memoWriteTitle');
+  const dateInput=ensureMemoDateInput();
   
-  if(!titleInput || !textarea || !saveBtn) return;
+  if(!titleInput||!textarea||!saveBtn) return;
   
-  // 타이틀 변경
-  if(titleEl){
-    titleEl.textContent = editMode ? '메모 수정' : '새 메모 작성';
+  if(titleEl) titleEl.textContent=editMode?'메모 수정':'새 메모 작성';
+  
+  const editItem=editMode&&editItemId
+    ? getJayMemoList().find(m=>m.id===editItemId)
+    : null;
+  
+  if(editItem){
+    titleInput.value=editItem.title||'';
+    textarea.value=editItem.content||'';
+    if(dateInput) dateInput.value=editItem.date||fmtLocalDate(new Date(editItem.createdAt));
+  }else{
+    titleInput.value='';
+    textarea.value='';
+    if(dateInput) dateInput.value=fmtLocalDate(new Date());
   }
   
-  // 수정 모드면 기존 내용 표시
-  if(editMode && editItemId){
-    const dstr = editDstr || fmtLocalDate(ST.selected);
-    const list = get(kMemo(dstr)) || [];
-    const editItem = list.find(m => m.id === editItemId);
-    if(editItem){
-      titleInput.value = editItem.title || '';
-      textarea.value = editItem.text || '';
-    } else {
-      titleInput.value = '';
-      textarea.value = '';
-    }
-  } else {
-    titleInput.value = '';
-    textarea.value = '';
-  }
+  let savedMemoId=editMode&&editItemId?editItemId:null;
+  let autoSaveTimer=null;
   
-  // 자동저장용 변수
-  let savedMemoId = editMode ? editItemId : null;
-  let autoSaveTimer = null;
-  
-  const autoSave = ()=>{
-    const title = titleInput.value.trim();
-    const text = textarea.value.trim();
-    
-    // 제목과 내용이 모두 비어있으면 저장하지 않음
-    if(!title && !text) return;
-    
-    const dstr = editDstr || fmtLocalDate(ST.selected);
-    let list = get(kMemo(dstr)) || [];
-    
+  const persistMemo=()=>{
+    const title=titleInput.value.trim();
+    const content=textarea.value.trim();
+    if(!title&&!content) return;
+    const dateVal=dateInput?.value||fmtLocalDate(ST.selected);
+    let list=getJayMemoList();
     if(savedMemoId){
-      // 이미 저장된 메모 수정
-      const memo = list.find(m => m.id === savedMemoId);
-      if(memo){
-        memo.title = title;
-        memo.text = text;
-      } else {
-        // ID로 메모를 찾지 못한 경우 (삭제되었거나 다른 날짜)
-        // 새 메모로 추가하지 않고 무시
-        return;
-      }
-    } else {
-      // 새 메모 추가
-      savedMemoId = Date.now();
+      const idx=list.findIndex(m=>m.id===savedMemoId);
+      if(idx<0) return;
+      list[idx]={...list[idx],title,content,date:dateVal};
+    }else{
+      savedMemoId=createMemoId();
       list.push({
-        id: savedMemoId,
+        id:savedMemoId,
         title,
-        text,
-        emoji: '',
-        color: ''
+        content,
+        date:dateVal,
+        createdAt:Date.now(),
+        emoji:'',
+        color:'',
       });
     }
-    
-    set(kMemo(dstr), list);
+    setJayMemoList(list);
     renderMemos();
+    renderMemoPageList();
     postApp({type:'refresh'});
   };
   
-  // 입력 시 자동저장 (디바운스)
-  const onInput = ()=>{
+  const onInput=()=>{
     if(autoSaveTimer) clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(autoSave, 1000); // 1초 후 자동저장
+    autoSaveTimer=setTimeout(persistMemo,1000);
   };
   
-  titleInput.addEventListener('input', onInput);
-  textarea.addEventListener('input', onInput);
+  titleInput.oninput=onInput;
+  textarea.oninput=onInput;
+  if(dateInput) dateInput.onchange=onInput;
   
-  // 저장 버튼
-  saveBtn.onclick = ()=>{
-    const title = titleInput.value.trim();
-    const text = textarea.value.trim();
-    
-    if(!title && !text){
+  saveBtn.onclick=()=>{
+    const title=titleInput.value.trim();
+    const content=textarea.value.trim();
+    if(!title&&!content){
       alert('제목 또는 내용을 입력하세요.');
       return;
     }
-    
-    // 자동저장 타이머 제거
     if(autoSaveTimer) clearTimeout(autoSaveTimer);
-    
-    const dstr = editDstr || fmtLocalDate(ST.selected);
-    let list = get(kMemo(dstr)) || [];
-    
-    if(editMode && editItemId){
-      // 수정 모드 - ID로 찾아서 수정
-      const memo = list.find(m => m.id === editItemId);
-      if(memo){
-        memo.title = title;
-        memo.text = text;
-      }
-    } else if(savedMemoId){
-      // 자동저장으로 이미 추가된 메모 수정
-      const memo = list.find(m => m.id === savedMemoId);
-      if(memo){
-        memo.title = title;
-        memo.text = text;
-      }
-    } else {
-      // 새 메모 추가
-      list.push({
-        id: Date.now(),
-        title,
-        text,
-        emoji: '',
-        color: ''
-      });
-    }
-    
-    set(kMemo(dstr), list);
-    renderMemos();
-    postApp({type:'refresh'});
-    
-    // 저장 후 메모 목록으로 돌아가기
+    persistMemo();
     showMemoPage();
   };
   
@@ -3385,46 +3506,40 @@ function renderMemoPageList(){
   const content=document.getElementById('memoPageContent');
   if(!content) return;
   
-  // 현재 선택된 날짜의 메모 가져오기
-  const dstr=fmtLocalDate(ST.selected);
-  let list=get(kMemo(dstr));
+  const list=getJayMemoList()
+    .slice()
+    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   
   content.innerHTML='';
   
-  if(!list || list.length===0){
+  if(!list.length){
     const empty=el('div','memo-empty');
     empty.style.textAlign='center';
     empty.style.padding='60px 20px';
-    empty.style.color='#94a3b8';
+    empty.style.color='var(--text-muted)';
     empty.style.fontSize='15px';
     empty.textContent='등록된 메모가 없습니다.';
     content.appendChild(empty);
     return;
   }
   
-  // ID가 없는 메모에 ID 추가 (마이그레이션)
-  let needsSave = false;
-  list.forEach((item, idx) => {
-    if(!item.id){
-      item.id = Date.now() + idx;
-      needsSave = true;
-    }
-  });
-  if(needsSave){
-    set(kMemo(dstr), list);
-  }
-  
   const grid=el('div','memo-page-grid');
   list.forEach((item,idx)=>{
-    const card=createMemoCard(item,idx,list,dstr);
-    grid.appendChild(card);
+    grid.appendChild(createMemoCard(item,idx,list));
   });
   
   content.appendChild(grid);
 }
 
-function createMemoCard(item,idx,ref,dstr){
+function createMemoCard(item,idx,ref){
   const card=el('div','memo-card');
+  const memoDate=item.date||fmtLocalDate(new Date(item.createdAt||Date.now()));
+  
+  const dateEl=el('div','memo-card__date',formatMemoCardDate(memoDate));
+  dateEl.style.fontSize='11px';
+  dateEl.style.color='var(--text-muted)';
+  dateEl.style.marginBottom='6px';
+  dateEl.title=memoDate;
   
   // 헤더 (제목과 버튼들)
   const header=el('div','memo-card__header');
@@ -3451,16 +3566,14 @@ function createMemoCard(item,idx,ref,dstr){
   widgetBtn.title='위젯으로 열기';
   widgetBtn.onclick=(e)=>{
     e.stopPropagation();
-    // 바로 팝업 위젯으로 열기
-    openMemoWidgetPopup(item,idx,ref,dstr);
+    openMemoWidgetPopup(item);
   };
   
   const delBtn=el('button','memo-card__btn','✕');
   delBtn.title='삭제';
   delBtn.onclick=(e)=>{
     e.stopPropagation();
-    ref.splice(idx,1);
-    set(kMemo(dstr),ref);
+    if(item.id) deleteJayMemoById(item.id);
     renderMemoPageList();
     renderMemos();
     postApp({type:'refresh'});
@@ -3479,7 +3592,7 @@ function createMemoCard(item,idx,ref,dstr){
   
   // 이모티콘과 텍스트
   const emojiSpan=item.emoji?el('span','memo-card__emoji',item.emoji+' '):'';
-  const textSpan=el('span','',item.text||'');
+  const textSpan=el('span','',item.content||'');
   if(emojiSpan) contentWrap.appendChild(emojiSpan);
   contentWrap.appendChild(textSpan);
   
@@ -3506,15 +3619,14 @@ function createMemoCard(item,idx,ref,dstr){
   
   // 내용 클릭으로 편집
   contentWrap.onclick=()=>{
-    // ID를 기반으로 편집하도록 수정
-    showMemoWritePage(true,item.id,idx,dstr);
+    showMemoWritePage(true,item.id,idx,memoDate);
   };
   
-  card.append(header,contentWrap);
+  card.append(dateEl,header,contentWrap);
   return card;
 }
 
-function openMemoWidget(item,idx,ref,dstr){
+function openMemoWidget(item){
   // 개별 메모를 위젯으로 여는 함수
   function build(isPopup, win){
     const doc=win.document;
@@ -3536,7 +3648,7 @@ function openMemoWidget(item,idx,ref,dstr){
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
     content.style.whiteSpace='pre-wrap';
-    content.textContent=(item.emoji?item.emoji+' ':'')+item.text;
+    content.textContent=(item.emoji?item.emoji+' ':'')+(item.content||'');
     
     W.append(title,content);
     return W;
@@ -3544,7 +3656,7 @@ function openMemoWidget(item,idx,ref,dstr){
   return makeWidget(item.title||'메모', build, 'widget--memo');
 }
 
-function openMemoWidgetPopup(item,idx,ref,dstr){
+function openMemoWidgetPopup(item){
   // 개별 메모를 팝업 위젯으로 바로 여는 함수
   function build(isPopup, win){
     const doc=win.document;
@@ -3566,7 +3678,7 @@ function openMemoWidgetPopup(item,idx,ref,dstr){
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
     content.style.whiteSpace='pre-wrap';
-    content.textContent=(item.emoji?item.emoji+' ':'')+item.text;
+    content.textContent=(item.emoji?item.emoji+' ':'')+(item.content||'');
     
     W.append(title,content);
     return W;
@@ -3587,14 +3699,13 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
     e.stopPropagation();
     pop.remove();
     openPop=null;
-    showMemoWritePage(true,item.id,idx,dstr);
+    showMemoWritePage(true,item.id,idx,item.date);
   };
   
   delBtn.onclick=(e)=>{
     e.stopPropagation();
     if(confirm('이 메모를 삭제하시겠습니까?')){
-      ref.splice(idx,1);
-      set(kMemo(dstr),ref);
+      if(item.id) deleteJayMemoById(item.id);
       renderMemoPageList();
       renderMemos();
       postApp({type:'refresh'});
