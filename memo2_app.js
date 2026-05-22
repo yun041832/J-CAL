@@ -3598,7 +3598,30 @@ function renderDailyList(){
     cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#3b82f6;';
 
     const text = el('span', null, item.text);
-    text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
+    text.style.cssText = `flex:1;font-size:14px;cursor:pointer;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
+    text.ondblclick = (e)=>{
+      e.stopPropagation();
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = item.text;
+      inp.style.cssText = 'flex:1;font-size:14px;border:none;border-bottom:2px solid #3b82f6;outline:none;background:transparent;width:100%;font-family:inherit;';
+      const save = ()=>{
+        const newText = inp.value.trim();
+        if(newText && newText !== item.text){
+          list[idx].text = newText;
+          set(kDaily(dstr), list);
+        }
+        renderDailyList();
+      };
+      inp.onkeydown = (ev)=>{
+        if(ev.key === 'Enter'){ ev.preventDefault(); save(); }
+        if(ev.key === 'Escape'){ renderDailyList(); }
+      };
+      inp.onblur = save;
+      row.replaceChild(inp, text);
+      inp.focus();
+      inp.select();
+    };
 
     const delBtn = el('button', null, '✕');
     delBtn.style.cssText = 'background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0;';
