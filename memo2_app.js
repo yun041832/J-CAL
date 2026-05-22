@@ -2117,6 +2117,67 @@ function makeWidget(title, bodyBuilder, rootClass){
   w.append(head,body); $.host.appendChild(w); return w;
 }
 
+/* ── 스탑워치·타이머 localStorage 동기화 (브라우저↔위젯) ── */
+const SW_LS_KEYS=['stopwatch_start_time','stopwatch_is_running','stopwatch_elapsed_ms'];
+const TM_LS_KEYS=['timer_start_time','timer_is_running','timer_remaining_ms'];
+
+function readStopwatchMs(){
+  const elapsed=parseInt(localStorage.getItem('stopwatch_elapsed_ms')||'0',10)||0;
+  const running=localStorage.getItem('stopwatch_is_running')==='true';
+  const start=parseInt(localStorage.getItem('stopwatch_start_time')||'0',10)||0;
+  if(running&&start) return elapsed+(Date.now()-start);
+  return elapsed;
+}
+function persistStopwatch(running,elapsedMs,startTime){
+  if(running){
+    localStorage.setItem('stopwatch_is_running','true');
+    localStorage.setItem('stopwatch_elapsed_ms',String(elapsedMs));
+    localStorage.setItem('stopwatch_start_time',String(startTime||Date.now()));
+  }else{
+    localStorage.setItem('stopwatch_is_running','false');
+    localStorage.setItem('stopwatch_elapsed_ms',String(elapsedMs));
+    localStorage.removeItem('stopwatch_start_time');
+  }
+  try{ window.dispatchEvent(new Event('jcal-stopwatch-sync')); }catch{}
+}
+function clearStopwatchStorage(){
+  SW_LS_KEYS.forEach(k=>localStorage.removeItem(k));
+  try{ window.dispatchEvent(new Event('jcal-stopwatch-sync')); }catch{}
+}
+
+function readTimerRemainingMs(){
+  let remaining=parseInt(localStorage.getItem('timer_remaining_ms')||'0',10)||0;
+  const running=localStorage.getItem('timer_is_running')==='true';
+  const start=parseInt(localStorage.getItem('timer_start_time')||'0',10)||0;
+  if(running&&start) remaining=Math.max(0,remaining-(Date.now()-start));
+  return {running,remaining};
+}
+function persistTimer(running,remainingMs,startTime){
+  if(running){
+    localStorage.setItem('timer_is_running','true');
+    localStorage.setItem('timer_remaining_ms',String(remainingMs));
+    localStorage.setItem('timer_start_time',String(startTime||Date.now()));
+  }else{
+    localStorage.setItem('timer_is_running','false');
+    localStorage.setItem('timer_remaining_ms',String(remainingMs));
+    localStorage.removeItem('timer_start_time');
+  }
+  try{ window.dispatchEvent(new Event('jcal-timer-sync')); }catch{}
+}
+function clearTimerStorage(){
+  TM_LS_KEYS.forEach(k=>localStorage.removeItem(k));
+  try{ window.dispatchEvent(new Event('jcal-timer-sync')); }catch{}
+}
+function restoreTimerFromLs(applyFn){
+  if(localStorage.getItem('timer_is_running')==null) return;
+  const tr=readTimerRemainingMs();
+  if(tr.running&&tr.remaining>0){
+    applyFn({type:'start',totalMs:tr.remaining,endEpoch:Date.now()+tr.remaining},true);
+  }else if(!tr.running){
+    applyFn({type:'pause',remainMs:tr.remaining},true);
+  }
+}
+
 /* ── 전역 타이머(동기화/복원) ── */
 function getGlobalTimerId(){
   let id=localStorage.getItem('memo2.timer.globalId');
@@ -2190,20 +2251,24 @@ function widgetTimer(){
         if(raf) cancelAnimationFrame(raf); draw(dur); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
         saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
+        persistTimer(true,dur,Date.now());
       }else if(msg.type==='pause'){
         if(raf){ cancelAnimationFrame(raf); raf=null; } paused=true; remainMs=msg.remainMs; eta.textContent='—'; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`; draw(remainMs);
         if(!remote) send({type:'pause',remainMs});
         saveState({status:'paused',totalMs,remainMs});
+        persistTimer(false,remainMs);
       }else if(msg.type==='resume'){
         paused=false; endPerf=performance.now()+msg.remainMs; eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'resume',remainMs:msg.remainMs});
         saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
+        persistTimer(true,msg.remainMs,Date.now());
       }else if(msg.type==='reset'){
         if(raf) cancelAnimationFrame(raf); raf=null; paused=false; totalMs=0; endPerf=0; remainMs=0;
         fg.setAttribute('stroke-dashoffset',String(C)); disp.textContent='00:00:00'; eta.textContent='—'; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
         if(!remote) send({type:'reset'});
         saveState({status:'idle'});
+        clearTimerStorage();
       }
     }
 
@@ -2218,6 +2283,9 @@ function widgetTimer(){
 
     if(bc) bc.onmessage=(e)=>{ if(e.data?.src===selfId) return; apply(e.data,true); };
     targetWin.addEventListener('storage',(e)=>{ if(e.key!==key||!e.newValue) return; const msg=JSON.parse(e.newValue); if(msg.src===selfId) return; apply(msg,true); });
+    const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+    targetWin.addEventListener('jcal-timer-sync',onTimerLsSync);
+    targetWin.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
 
     // 복원
     try{
@@ -2225,8 +2293,8 @@ function widgetTimer(){
       if(snap){
         if(snap.status==='running'&&snap.endEpoch){ apply({type:'start',totalMs:snap.totalMs||0,endEpoch:snap.endEpoch},true); }
         else if(snap.status==='paused'&&typeof snap.remainMs==='number'){ totalMs=snap.totalMs||0; apply({type:'pause',remainMs:snap.remainMs},true); }
-      }
-    }catch{}
+      } else restoreTimerFromLs(apply);
+    }catch{ restoreTimerFromLs(apply); }
 
     wrap.append(ring,eta,row);
     return wrap;
@@ -2406,6 +2474,7 @@ function createTimerBox(index){
       raf=requestAnimationFrame(tick);
       if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
       saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
+      persistTimer(true,dur,Date.now());
     }else if(msg.type==='pause'){
       if(raf){ cancelAnimationFrame(raf); raf=null; } 
       paused=true; 
@@ -2415,6 +2484,7 @@ function createTimerBox(index){
       draw(remainMs);
       if(!remote) send({type:'pause',remainMs});
       saveState({status:'paused',totalMs,remainMs});
+      persistTimer(false,remainMs);
     }else if(msg.type==='resume'){
       paused=false; 
       endPerf=performance.now()+msg.remainMs; 
@@ -2424,6 +2494,7 @@ function createTimerBox(index){
       raf=requestAnimationFrame(tick);
       if(!remote) send({type:'resume',remainMs:msg.remainMs});
       saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
+      persistTimer(true,msg.remainMs,Date.now());
     }else if(msg.type==='reset'){
       if(raf) cancelAnimationFrame(raf); 
       raf=null; 
@@ -2437,6 +2508,7 @@ function createTimerBox(index){
       bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
       if(!remote) send({type:'reset'});
       saveState({status:'idle'});
+      clearTimerStorage();
     }
   }
   
@@ -2471,6 +2543,9 @@ function createTimerBox(index){
     if(msg.src===selfId) return; 
     apply(msg,true); 
   });
+  const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+  window.addEventListener('jcal-timer-sync',onTimerLsSync);
+  window.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
   
   // 복원
   try{
@@ -2483,8 +2558,8 @@ function createTimerBox(index){
         totalMs=snap.totalMs||0; 
         apply({type:'pause',remainMs:snap.remainMs},true); 
       }
-    }
-  }catch{}
+    } else restoreTimerFromLs(apply);
+  }catch{ restoreTimerFromLs(apply); }
   
   return box;
 }
@@ -2627,6 +2702,7 @@ function openTimerWidgetPopup(index){
         raf=requestAnimationFrame(tick);
         if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
         saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
+        persistTimer(true,dur,Date.now());
       }else if(msg.type==='pause'){
         if(raf){ cancelAnimationFrame(raf); raf=null; } 
         paused=true; 
@@ -2636,6 +2712,7 @@ function openTimerWidgetPopup(index){
         draw(remainMs);
         if(!remote) send({type:'pause',remainMs});
         saveState({status:'paused',totalMs,remainMs});
+        persistTimer(false,remainMs);
       }else if(msg.type==='resume'){
         paused=false; 
         endPerf=performance.now()+msg.remainMs; 
@@ -2645,6 +2722,7 @@ function openTimerWidgetPopup(index){
         raf=requestAnimationFrame(tick);
         if(!remote) send({type:'resume',remainMs:msg.remainMs});
         saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
+        persistTimer(true,msg.remainMs,Date.now());
       }else if(msg.type==='reset'){
         if(raf) cancelAnimationFrame(raf); 
         raf=null; 
@@ -2658,6 +2736,7 @@ function openTimerWidgetPopup(index){
         bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
         if(!remote) send({type:'reset'});
         saveState({status:'idle'});
+        clearTimerStorage();
       }
     }
 
@@ -2691,6 +2770,9 @@ function openTimerWidgetPopup(index){
       if(msg.src===selfId) return; 
       apply(msg,true); 
     });
+    const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+    targetWin.addEventListener('jcal-timer-sync',onTimerLsSync);
+    targetWin.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
 
     // 복원
     try{
@@ -2703,8 +2785,8 @@ function openTimerWidgetPopup(index){
           totalMs=snap.totalMs||0; 
           apply({type:'pause',remainMs:snap.remainMs},true); 
         }
-      }
-    }catch{}
+      } else restoreTimerFromLs(apply);
+    }catch{ restoreTimerFromLs(apply); }
 
     wrap.append(ring,eta,inputs,row);
     return wrap;
@@ -4728,32 +4810,59 @@ function widgetStopwatch(){
       }
     };
 
-    let startTs=0, accMs=0, raf=null, running=false;
+    let segmentStart=0, accMs=0, raf=null, running=false;
     const fmt=(ms)=>{
       const cs=Math.floor(ms/10)%100; const s=Math.floor(ms/1000)%60; const m=Math.floor(ms/60000);
       return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
     };
+    const currentMs=()=> running ? accMs+(Date.now()-segmentStart) : accMs;
     const tick=()=>{
       if(!running) return;
-      const now=performance.now(); const ms=accMs+(now-startTs);
-      label.textContent=fmt(ms);
+      label.textContent=fmt(currentMs());
       raf=win.requestAnimationFrame(tick);
+    };
+    const applyFromStorage=()=>{
+      const ms=readStopwatchMs();
+      const isRunning=localStorage.getItem('stopwatch_is_running')==='true';
+      const base=parseInt(localStorage.getItem('stopwatch_elapsed_ms')||'0',10)||0;
+      const start=parseInt(localStorage.getItem('stopwatch_start_time')||'0',10)||0;
+      if(raf){ win.cancelAnimationFrame(raf); raf=null; }
+      if(isRunning&&start){
+        running=true; accMs=base; segmentStart=start; sub.textContent='측정 중';
+        label.textContent=fmt(ms); raf=win.requestAnimationFrame(tick);
+      }else{
+        running=false; accMs=ms; segmentStart=0;
+        label.textContent=fmt(ms); sub.textContent=ms>0?'일시정지':'대기';
+      }
     };
 
     startBtn.onclick=()=>{
       if(running) return;
-      running=true; startTs=performance.now(); sub.textContent='측정 중';
+      segmentStart=Date.now(); running=true; sub.textContent='측정 중';
+      persistStopwatch(true,accMs,segmentStart);
       raf=win.requestAnimationFrame(tick);
     };
     pauseBtn.onclick=()=>{
-      if(!running){ running=true; startTs=performance.now(); sub.textContent='측정 중'; raf=win.requestAnimationFrame(tick); return; }
-      running=false; accMs+=performance.now()-startTs; sub.textContent='일시정지';
+      if(!running){
+        segmentStart=Date.now(); running=true; sub.textContent='측정 중';
+        persistStopwatch(true,accMs,segmentStart);
+        raf=win.requestAnimationFrame(tick);
+        return;
+      }
+      running=false; accMs=currentMs(); segmentStart=0; sub.textContent='일시정지';
+      persistStopwatch(false,accMs);
       if(raf){ win.cancelAnimationFrame(raf); raf=null; }
     };
     resetBtn.onclick=()=>{
-      running=false; accMs=0; startTs=0; label.textContent='00:00.00'; sub.textContent='대기';
+      running=false; accMs=0; segmentStart=0; label.textContent='00:00.00'; sub.textContent='대기';
+      clearStopwatchStorage();
       if(raf){ win.cancelAnimationFrame(raf); raf=null; }
     };
+
+    const onSwSync=()=> applyFromStorage();
+    win.addEventListener('jcal-stopwatch-sync',onSwSync);
+    win.addEventListener('storage',(e)=>{ if(SW_LS_KEYS.includes(e.key)) onSwSync(); });
+    applyFromStorage();
 
     if(win.ResizeObserver){
       const ro=new win.ResizeObserver(()=>resize());
