@@ -2046,8 +2046,15 @@ function ensureTimeStyles(win){
   }catch{}
 }
 
-function openWidgetPopup(title, bodyBuilder){
-  const win=window.open('', '_blank', 'width=420,height=420,resizable=yes');
+function openWidgetPopup(title, bodyBuilder, opts){
+  opts=opts||{};
+  let openUrl='about:blank';
+  if(opts.timerIndex!=null){
+    const u=new URL(window.location.href);
+    u.searchParams.set('index',String(opts.timerIndex));
+    openUrl=u.href;
+  }
+  const win=window.open(openUrl,'_blank','width=420,height=420,resizable=yes');
   if(!win) return null;
   win.document.write(`<!doctype html><meta charset="utf-8"><title>${title}</title>
       <style id="${TIME_STYLE_ID}">
@@ -2119,7 +2126,44 @@ function makeWidget(title, bodyBuilder, rootClass){
 
 /* ── 스탑워치·타이머 localStorage 동기화 (브라우저↔위젯) ── */
 const SW_LS_KEYS=['stopwatch_start_time','stopwatch_is_running','stopwatch_elapsed_ms'];
-const TM_LS_KEYS=['timer_start_time','timer_is_running','timer_remaining_ms'];
+const TIMER_PRESETS=[
+  15*60*1000,
+  30*60*1000,
+  60*60*1000,
+  90*60*1000,
+  120*60*1000,
+  180*60*1000,
+];
+const LEGACY_TM_LS_KEYS=['timer_start_time','timer_is_running','timer_remaining_ms'];
+
+function timerLsKey(i,suffix){ return `timer_${i}_${suffix}`; }
+function removeLegacyGlobalTimerKeys(){
+  LEGACY_TM_LS_KEYS.forEach(k=>localStorage.removeItem(k));
+}
+function getPopupTimerIndex(targetWin,fallback){
+  try{
+    const q=new URLSearchParams(targetWin.location.search).get('index');
+    if(q!=null&&q!==''){
+      const n=parseInt(q,10);
+      if(!isNaN(n)) return Math.max(0,Math.min(5,n));
+    }
+  }catch{}
+  return fallback;
+}
+function ensureTimerPreset(i){
+  const key=timerLsKey(i,'preset_ms');
+  if(localStorage.getItem(key)==null){
+    localStorage.setItem(key,String(TIMER_PRESETS[i]??TIMER_PRESETS[0]));
+  }
+  return parseInt(localStorage.getItem(key),10)||TIMER_PRESETS[i]||0;
+}
+function msToHms(ms){
+  const sec=Math.floor(ms/1000);
+  return {h:Math.floor(sec/3600),m:Math.floor((sec%3600)/60),s:sec%60};
+}
+function isTimerLsKeyForIndex(key,i){
+  return key===timerLsKey(i,'start_time')||key===timerLsKey(i,'is_running')||key===timerLsKey(i,'remaining_ms');
+}
 
 function readStopwatchMs(){
   const elapsed=parseInt(localStorage.getItem('stopwatch_elapsed_ms')||'0',10)||0;
@@ -2145,34 +2189,37 @@ function clearStopwatchStorage(){
   try{ window.dispatchEvent(new Event('jcal-stopwatch-sync')); }catch{}
 }
 
-function readTimerRemainingMs(){
-  let remaining=parseInt(localStorage.getItem('timer_remaining_ms')||'0',10)||0;
-  const running=localStorage.getItem('timer_is_running')==='true';
-  const start=parseInt(localStorage.getItem('timer_start_time')||'0',10)||0;
+function readTimerRemainingMs(i){
+  let remaining=parseInt(localStorage.getItem(timerLsKey(i,'remaining_ms'))||'0',10)||0;
+  const running=localStorage.getItem(timerLsKey(i,'is_running'))==='true';
+  const start=parseInt(localStorage.getItem(timerLsKey(i,'start_time'))||'0',10)||0;
   if(running&&start) remaining=Math.max(0,remaining-(Date.now()-start));
   return {running,remaining};
 }
-function persistTimer(running,remainingMs,startTime){
+function persistTimer(i,running,remainingMs,startTime){
   if(running){
-    localStorage.setItem('timer_is_running','true');
-    localStorage.setItem('timer_remaining_ms',String(remainingMs));
-    localStorage.setItem('timer_start_time',String(startTime||Date.now()));
+    localStorage.setItem(timerLsKey(i,'is_running'),'true');
+    localStorage.setItem(timerLsKey(i,'remaining_ms'),String(remainingMs));
+    localStorage.setItem(timerLsKey(i,'start_time'),String(startTime||Date.now()));
   }else{
-    localStorage.setItem('timer_is_running','false');
-    localStorage.setItem('timer_remaining_ms',String(remainingMs));
-    localStorage.removeItem('timer_start_time');
+    localStorage.setItem(timerLsKey(i,'is_running'),'false');
+    localStorage.setItem(timerLsKey(i,'remaining_ms'),String(remainingMs));
+    localStorage.removeItem(timerLsKey(i,'start_time'));
   }
-  try{ window.dispatchEvent(new Event('jcal-timer-sync')); }catch{}
+  try{ window.dispatchEvent(new CustomEvent('jcal-timer-sync',{detail:{index:i}})); }catch{}
 }
-function clearTimerStorage(){
-  TM_LS_KEYS.forEach(k=>localStorage.removeItem(k));
-  try{ window.dispatchEvent(new Event('jcal-timer-sync')); }catch{}
+function clearTimerStorage(i){
+  localStorage.removeItem(timerLsKey(i,'start_time'));
+  localStorage.removeItem(timerLsKey(i,'is_running'));
+  localStorage.removeItem(timerLsKey(i,'remaining_ms'));
+  try{ window.dispatchEvent(new CustomEvent('jcal-timer-sync',{detail:{index:i}})); }catch{}
 }
-function restoreTimerFromLs(applyFn){
-  if(localStorage.getItem('timer_is_running')==null) return;
-  const tr=readTimerRemainingMs();
+function restoreTimerFromLs(i,applyFn){
+  if(localStorage.getItem(timerLsKey(i,'is_running'))==null) return;
+  const tr=readTimerRemainingMs(i);
+  const preset=ensureTimerPreset(i);
   if(tr.running&&tr.remaining>0){
-    applyFn({type:'start',totalMs:tr.remaining,endEpoch:Date.now()+tr.remaining},true);
+    applyFn({type:'start',totalMs:Math.max(tr.remaining,preset),endEpoch:Date.now()+tr.remaining},true);
   }else if(!tr.running){
     applyFn({type:'pause',remainMs:tr.remaining},true);
   }
@@ -2188,6 +2235,7 @@ function widgetTimer(){
   const groupId=getGlobalTimerId();
   const key=`memo2.timer.${groupId}`;
   const stateKey=`memo2.timer.state.${groupId}`;
+  const timerIndex=0;
 
   function build(isPopup, targetWin){
     const selfId=Math.random().toString(36).slice(2);
@@ -2251,30 +2299,30 @@ function widgetTimer(){
         if(raf) cancelAnimationFrame(raf); draw(dur); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
         saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
-        persistTimer(true,dur,Date.now());
+        persistTimer(timerIndex,true,dur,Date.now());
       }else if(msg.type==='pause'){
         if(raf){ cancelAnimationFrame(raf); raf=null; } paused=true; remainMs=msg.remainMs; eta.textContent='—'; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`; draw(remainMs);
         if(!remote) send({type:'pause',remainMs});
         saveState({status:'paused',totalMs,remainMs});
-        persistTimer(false,remainMs);
+        persistTimer(timerIndex,false,remainMs);
       }else if(msg.type==='resume'){
         paused=false; endPerf=performance.now()+msg.remainMs; eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'resume',remainMs:msg.remainMs});
         saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
-        persistTimer(true,msg.remainMs,Date.now());
+        persistTimer(timerIndex,true,msg.remainMs,Date.now());
       }else if(msg.type==='reset'){
         if(raf) cancelAnimationFrame(raf); raf=null; paused=false; totalMs=0; endPerf=0; remainMs=0;
         fg.setAttribute('stroke-dashoffset',String(C)); disp.textContent='00:00:00'; eta.textContent='—'; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
         if(!remote) send({type:'reset'});
         saveState({status:'idle'});
-        clearTimerStorage();
+        clearTimerStorage(timerIndex);
       }
     }
 
     bStart.onclick=()=>{ 
-      // 입력 필드가 없으므로 기본 3분 설정
-      if(totalMs<=0) totalMs=3*60*1000;
+      // 입력 필드가 없으므로 프리셋(타이머 1) 기본값
+      if(totalMs<=0) totalMs=ensureTimerPreset(timerIndex);
       const duration=remainMs>0?remainMs:totalMs; 
       apply({type:'start',totalMs,endEpoch:Date.now()+duration},false); 
     };
@@ -2283,9 +2331,9 @@ function widgetTimer(){
 
     if(bc) bc.onmessage=(e)=>{ if(e.data?.src===selfId) return; apply(e.data,true); };
     targetWin.addEventListener('storage',(e)=>{ if(e.key!==key||!e.newValue) return; const msg=JSON.parse(e.newValue); if(msg.src===selfId) return; apply(msg,true); });
-    const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+    const onTimerLsSync=(e)=>{ if(e?.detail?.index!=null&&e.detail.index!==timerIndex) return; if(raf) return; restoreTimerFromLs(timerIndex,apply); };
     targetWin.addEventListener('jcal-timer-sync',onTimerLsSync);
-    targetWin.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
+    targetWin.addEventListener('storage',(e)=>{ if(isTimerLsKeyForIndex(e.key,timerIndex)) onTimerLsSync(); });
 
     // 복원
     try{
@@ -2293,8 +2341,8 @@ function widgetTimer(){
       if(snap){
         if(snap.status==='running'&&snap.endEpoch){ apply({type:'start',totalMs:snap.totalMs||0,endEpoch:snap.endEpoch},true); }
         else if(snap.status==='paused'&&typeof snap.remainMs==='number'){ totalMs=snap.totalMs||0; apply({type:'pause',remainMs:snap.remainMs},true); }
-      } else restoreTimerFromLs(apply);
-    }catch{ restoreTimerFromLs(apply); }
+      } else restoreTimerFromLs(timerIndex,apply);
+    }catch{ restoreTimerFromLs(timerIndex,apply); }
 
     wrap.append(ring,eta,row);
     return wrap;
@@ -2311,32 +2359,36 @@ function initTimersPage(){
   if(grid.dataset.initialized==='true') return;
   grid.dataset.initialized='true';
   
-  // 6개 타이머 생성
-  for(let i=1; i<=6; i++){
+  removeLegacyGlobalTimerKeys();
+  for(let i=0; i<6; i++){
+    ensureTimerPreset(i);
     const box=createTimerBox(i);
     grid.appendChild(box);
   }
 }
 
-function createTimerBox(index){
-  const key=`memo2.timer.multi.${index}`;
-  const stateKey=`memo2.timer.state.multi.${index}`;
-  const settingsKey=`memo2.timer.settings.multi.${index}`;
+function createTimerBox(timerIndex){
+  const key=`memo2.timer.multi.${timerIndex}`;
+  const stateKey=`memo2.timer.state.multi.${timerIndex}`;
+  const settingsKey=`memo2.timer.settings.multi.${timerIndex}`;
+  const displayNum=timerIndex+1;
   
-  // 저장된 설정값 불러오기
+  ensureTimerPreset(timerIndex);
   let savedSettings={h:0,m:0,s:0};
   try{
     const saved=localStorage.getItem(settingsKey);
     if(saved) savedSettings=JSON.parse(saved);
-  }catch{}
+    else savedSettings=msToHms(ensureTimerPreset(timerIndex));
+  }catch{ savedSettings=msToHms(ensureTimerPreset(timerIndex)); }
   
   const box=el('div','timer-box');
+  box.dataset.timerIndex=String(timerIndex);
   
   // 헤더 (화살표, X 버튼)
   const header=el('div','timer-box__header');
   const popoutBtn=el('button','timer-box__btn','↗');
   popoutBtn.title='위젯으로 열기';
-  popoutBtn.onclick=()=> openTimerWidgetPopup(index);
+  popoutBtn.onclick=()=> openTimerWidgetPopup(timerIndex);
   header.appendChild(popoutBtn);
   
   // SVG 원형 프로그레스
@@ -2446,7 +2498,7 @@ function createTimerBox(index){
     if(left<=0){ 
       cancelAnimationFrame(raf); 
       raf=null; 
-      alert(`타이머 ${index} 종료`); 
+      alert(`타이머 ${displayNum} 종료`); 
       apply({type:'reset'}); 
       return; 
     } 
@@ -2474,7 +2526,7 @@ function createTimerBox(index){
       raf=requestAnimationFrame(tick);
       if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
       saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
-      persistTimer(true,dur,Date.now());
+      persistTimer(timerIndex,true,dur,Date.now());
     }else if(msg.type==='pause'){
       if(raf){ cancelAnimationFrame(raf); raf=null; } 
       paused=true; 
@@ -2484,7 +2536,7 @@ function createTimerBox(index){
       draw(remainMs);
       if(!remote) send({type:'pause',remainMs});
       saveState({status:'paused',totalMs,remainMs});
-      persistTimer(false,remainMs);
+      persistTimer(timerIndex,false,remainMs);
     }else if(msg.type==='resume'){
       paused=false; 
       endPerf=performance.now()+msg.remainMs; 
@@ -2494,7 +2546,7 @@ function createTimerBox(index){
       raf=requestAnimationFrame(tick);
       if(!remote) send({type:'resume',remainMs:msg.remainMs});
       saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
-      persistTimer(true,msg.remainMs,Date.now());
+      persistTimer(timerIndex,true,msg.remainMs,Date.now());
     }else if(msg.type==='reset'){
       if(raf) cancelAnimationFrame(raf); 
       raf=null; 
@@ -2508,7 +2560,7 @@ function createTimerBox(index){
       bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
       if(!remote) send({type:'reset'});
       saveState({status:'idle'});
-      clearTimerStorage();
+      clearTimerStorage(timerIndex);
     }
   }
   
@@ -2516,7 +2568,7 @@ function createTimerBox(index){
     saveSettings();
     const hh=+ih.value||0, mm=+im.value||0, ss=+is.value||0; 
     totalMs=((hh*3600)+(mm*60)+ss)*1000; 
-    if(totalMs<=0) return;
+    if(totalMs<=0) totalMs=ensureTimerPreset(timerIndex);
     const duration=remainMs>0?remainMs:totalMs; 
     apply({type:'start',totalMs,endEpoch:Date.now()+duration}); 
   };
@@ -2543,9 +2595,9 @@ function createTimerBox(index){
     if(msg.src===selfId) return; 
     apply(msg,true); 
   });
-  const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+  const onTimerLsSync=(e)=>{ if(e?.detail?.index!=null&&e.detail.index!==timerIndex) return; if(raf) return; restoreTimerFromLs(timerIndex,apply); };
   window.addEventListener('jcal-timer-sync',onTimerLsSync);
-  window.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
+  window.addEventListener('storage',(e)=>{ if(isTimerLsKeyForIndex(e.key,timerIndex)) onTimerLsSync(); });
   
   // 복원
   try{
@@ -2558,24 +2610,36 @@ function createTimerBox(index){
         totalMs=snap.totalMs||0; 
         apply({type:'pause',remainMs:snap.remainMs},true); 
       }
-    } else restoreTimerFromLs(apply);
-  }catch{ restoreTimerFromLs(apply); }
+    } else restoreTimerFromLs(timerIndex,apply);
+  }catch{ restoreTimerFromLs(timerIndex,apply); }
+
+  const presetMs=ensureTimerPreset(timerIndex);
+  if(!raf&&!paused){
+    totalMs=presetMs;
+    draw(presetMs);
+  }
   
   return box;
 }
 
-function openTimerWidgetPopup(index){
-  const key=`memo2.timer.multi.${index}`;
-  const stateKey=`memo2.timer.state.multi.${index}`;
-  const settingsKey=`memo2.timer.settings.multi.${index}`;
+function openTimerWidgetPopup(timerIndex){
+  const key=`memo2.timer.multi.${timerIndex}`;
+  const stateKey=`memo2.timer.state.multi.${timerIndex}`;
+  const settingsKey=`memo2.timer.settings.multi.${timerIndex}`;
+  const displayNum=timerIndex+1;
   
   function build(isPopup, targetWin){
-    // 저장된 설정값 불러오기
+    const idx=getPopupTimerIndex(targetWin,timerIndex);
+    const key=`memo2.timer.multi.${idx}`;
+    const stateKey=`memo2.timer.state.multi.${idx}`;
+    const settingsKey=`memo2.timer.settings.multi.${idx}`;
+    ensureTimerPreset(idx);
     let savedSettings={h:0,m:0,s:0};
     try{
       const saved=localStorage.getItem(settingsKey);
       if(saved) savedSettings=JSON.parse(saved);
-    }catch{}
+      else savedSettings=msToHms(ensureTimerPreset(idx));
+    }catch{ savedSettings=msToHms(ensureTimerPreset(idx)); }
     
     const selfId=Math.random().toString(36).slice(2);
     const bc=('BroadcastChannel' in targetWin)? new targetWin.BroadcastChannel(key): null;
@@ -2680,9 +2744,10 @@ function openTimerWidgetPopup(index){
       if(left<=0){ 
         cancelAnimationFrame(raf); 
         raf=null; 
-        alert(`타이머 ${index} 종료`); 
+        alert(`타이머 ${idx+1} 종료`); 
         send({type:'reset'}); 
         saveState({status:'idle'}); 
+        clearTimerStorage(idx);
         return; 
       } 
       raf=requestAnimationFrame(tick); 
@@ -2702,7 +2767,7 @@ function openTimerWidgetPopup(index){
         raf=requestAnimationFrame(tick);
         if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
         saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
-        persistTimer(true,dur,Date.now());
+        persistTimer(idx,true,dur,Date.now());
       }else if(msg.type==='pause'){
         if(raf){ cancelAnimationFrame(raf); raf=null; } 
         paused=true; 
@@ -2712,7 +2777,7 @@ function openTimerWidgetPopup(index){
         draw(remainMs);
         if(!remote) send({type:'pause',remainMs});
         saveState({status:'paused',totalMs,remainMs});
-        persistTimer(false,remainMs);
+        persistTimer(idx,false,remainMs);
       }else if(msg.type==='resume'){
         paused=false; 
         endPerf=performance.now()+msg.remainMs; 
@@ -2722,7 +2787,7 @@ function openTimerWidgetPopup(index){
         raf=requestAnimationFrame(tick);
         if(!remote) send({type:'resume',remainMs:msg.remainMs});
         saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
-        persistTimer(true,msg.remainMs,Date.now());
+        persistTimer(idx,true,msg.remainMs,Date.now());
       }else if(msg.type==='reset'){
         if(raf) cancelAnimationFrame(raf); 
         raf=null; 
@@ -2736,7 +2801,7 @@ function openTimerWidgetPopup(index){
         bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>`;
         if(!remote) send({type:'reset'});
         saveState({status:'idle'});
-        clearTimerStorage();
+        clearTimerStorage(idx);
       }
     }
 
@@ -2744,7 +2809,7 @@ function openTimerWidgetPopup(index){
       saveSettings();
       const hh=+ih.value||0, mm=+im.value||0, ss=+is.value||0; 
       totalMs=((hh*3600)+(mm*60)+ss)*1000; 
-      if(totalMs<=0) return;
+      if(totalMs<=0) totalMs=ensureTimerPreset(idx);
       const duration=remainMs>0?remainMs:totalMs; 
       apply({type:'start',totalMs,endEpoch:Date.now()+duration}); 
     };
@@ -2770,9 +2835,9 @@ function openTimerWidgetPopup(index){
       if(msg.src===selfId) return; 
       apply(msg,true); 
     });
-    const onTimerLsSync=()=>{ if(raf) return; restoreTimerFromLs(apply); };
+    const onTimerLsSync=(e)=>{ if(e?.detail?.index!=null&&e.detail.index!==idx) return; if(raf) return; restoreTimerFromLs(idx,apply); };
     targetWin.addEventListener('jcal-timer-sync',onTimerLsSync);
-    targetWin.addEventListener('storage',(e)=>{ if(TM_LS_KEYS.includes(e.key)) onTimerLsSync(); });
+    targetWin.addEventListener('storage',(e)=>{ if(isTimerLsKeyForIndex(e.key,idx)) onTimerLsSync(); });
 
     // 복원
     try{
@@ -2785,14 +2850,14 @@ function openTimerWidgetPopup(index){
           totalMs=snap.totalMs||0; 
           apply({type:'pause',remainMs:snap.remainMs},true); 
         }
-      } else restoreTimerFromLs(apply);
-    }catch{ restoreTimerFromLs(apply); }
+      } else restoreTimerFromLs(idx,apply);
+    }catch{ restoreTimerFromLs(idx,apply); }
 
     wrap.append(ring,eta,inputs,row);
     return wrap;
   }
   
-  openWidgetPopup(`타이머 ${index}`, build);
+  openWidgetPopup(`타이머 ${displayNum}`, build, {timerIndex});
 }
 
 function openTimerWidget(index){
