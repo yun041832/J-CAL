@@ -165,6 +165,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'timer') showTimerPage();
   else showHomeIntro();
 
+  initTimerSettingModal?.();
+
   // ...existing code...
 });
 
@@ -2024,26 +2026,6 @@ const TIME_STYLE=`
         .timer__eta{display:block;text-align:center;font-size:12px;color:#6b7280;background:#eef2ff;border-radius:999px;width:max-content;margin:0 auto 6px;padding:4px 10px}
         .timer__inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 auto 6px;max-width:220px}
         .timer__inputs input{width:100%;box-sizing:border-box;padding:6px 6px;font-size:14px}
-        .timer__footer{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:220px;margin:0 auto 6px}
-        .timer__label-btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 18px;border-radius:999px;background:#f0f4ff;color:#3b82f6;border:1px solid #dbeafe;font-size:14px;font-weight:600;cursor:pointer;min-width:88px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .timer__label-btn:hover{background:#e0eaff}
-        .timer__footer .timer__controls{margin:0}
-        [data-theme="dark"] .timer__label-btn{background:#1e293b;color:#60a5fa;border-color:#334155}
-        [data-theme="dark"] .timer__label-btn:hover{background:#334155}
-        .timer-edit-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
-        .timer-edit-panel{background:#fff;border-radius:16px;padding:20px;width:min(320px,100%);box-shadow:0 12px 40px rgba(0,0,0,.15);box-sizing:border-box}
-        .timer-edit-panel__title{font-size:16px;font-weight:700;margin:0 0 12px;color:#0f172a}
-        .timer-edit-panel__field{margin-bottom:10px}
-        .timer-edit-panel__field label{display:block;font-size:12px;color:#64748b;margin-bottom:4px}
-        .timer-edit-panel__field input{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px}
-        .timer-edit-panel__actions{display:flex;gap:8px;margin-top:14px}
-        .timer-edit-panel__actions .btn{flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#f6f8ff;cursor:pointer;font-size:14px}
-        .timer-edit-panel__actions .btn--primary{background:#3b82f6;color:#fff;border-color:#3b82f6}
-        [data-theme="dark"] .timer-edit-panel{background:#1e293b}
-        [data-theme="dark"] .timer-edit-panel__title{color:#f1f5f9}
-        [data-theme="dark"] .timer-edit-panel__field input{background:#0f172a;border-color:#334155;color:#f1f5f9}
-        [data-theme="dark"] .timer-edit-panel__actions .btn{background:#334155;border-color:#475569;color:#e2e8f0}
-        [data-theme="dark"] .timer-edit-panel__actions .btn--primary{background:#3b82f6;color:#fff}
         /* 알람 & 스탑워치 공통 */
         .time-card{width:100%;max-width:260px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;box-sizing:border-box}
         .widget--stopwatch .time-card{max-width:520px}
@@ -2197,65 +2179,74 @@ function getTimerButtonLabel(i){
   if(preset&&ms===preset.ms) return preset.label;
   return formatTimerLabelFromMs(ms);
 }
-function openTimerEditModal(timerIndex,onSaved,rootDoc){
-  const doc=rootDoc||document;
-  const presetMs=ensureTimerPreset(timerIndex);
-  const hms=msToHms(presetMs);
-  const settingsKey=`memo2.timer.settings.multi.${timerIndex}`;
-  const overlay=doc.createElement('div');
-  overlay.className='timer-edit-overlay';
-  const panel=doc.createElement('div');
-  panel.className='timer-edit-panel';
-  const title=doc.createElement('div');
-  title.className='timer-edit-panel__title';
-  title.textContent=`타이머 ${timerIndex+1} 설정`;
-  const nameField=doc.createElement('div');
-  nameField.className='timer-edit-panel__field';
-  nameField.innerHTML='<label>라벨(이름)</label>';
-  const nameInp=doc.createElement('input');
-  nameInp.type='text';
-  nameInp.placeholder='예: 15분, 집중 시간';
-  nameInp.value=localStorage.getItem(timerLsKey(timerIndex,'label'))||'';
-  nameField.appendChild(nameInp);
-  const timeField=doc.createElement('div');
-  timeField.className='timer-edit-panel__field';
-  timeField.innerHTML='<label>시간</label>';
-  const inputs=doc.createElement('div');
-  inputs.className='timer__inputs';
-  const ih=doc.createElement('input'); ih.type='number'; ih.min=0; ih.placeholder='시'; ih.value=hms.h||'';
-  const im=doc.createElement('input'); im.type='number'; im.min=0; im.placeholder='분'; im.value=hms.m||'';
-  const is=doc.createElement('input'); is.type='number'; is.min=0; is.placeholder='초'; is.value=hms.s||'';
-  inputs.append(ih,im,is);
-  timeField.appendChild(inputs);
-  const actions=doc.createElement('div');
-  actions.className='timer-edit-panel__actions';
-  const cancelBtn=doc.createElement('button');
-  cancelBtn.type='button'; cancelBtn.className='btn'; cancelBtn.textContent='취소';
-  const saveBtn=doc.createElement('button');
-  saveBtn.type='button'; saveBtn.className='btn btn--primary'; saveBtn.textContent='저장';
-  actions.append(cancelBtn,saveBtn);
-  panel.append(title,nameField,timeField,actions);
-  overlay.appendChild(panel);
-  const close=()=>overlay.remove();
-  cancelBtn.onclick=close;
-  overlay.addEventListener('click',(e)=>{ if(e.target===overlay) close(); });
-  saveBtn.onclick=()=>{
-    const hh=+ih.value||0,mm=+im.value||0,ss=+is.value||0;
+let timerSettingActiveIndex=null;
+let timerSettingOnSaved=null;
+
+function closeTimerSettingModal(){
+  const modal=document.getElementById('timerSettingModal');
+  if(!modal) return;
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden','true');
+  timerSettingActiveIndex=null;
+  timerSettingOnSaved=null;
+}
+
+function initTimerSettingModal(){
+  const modal=document.getElementById('timerSettingModal');
+  if(!modal||modal.dataset.bound==='true') return;
+  modal.dataset.bound='true';
+  const overlay=modal.querySelector('.timer-setting-modal__overlay');
+  const closeBtn=document.getElementById('timerSettingModalClose');
+  const cancelBtn=document.getElementById('timerSettingCancel');
+  const saveBtn=document.getElementById('timerSettingSave');
+  overlay?.addEventListener('click',closeTimerSettingModal);
+  closeBtn?.addEventListener('click',closeTimerSettingModal);
+  cancelBtn?.addEventListener('click',closeTimerSettingModal);
+  saveBtn?.addEventListener('click',()=>{
+    const i=timerSettingActiveIndex;
+    if(i==null) return;
+    const hh=+(document.getElementById('timerSettingH')?.value)||0;
+    const mm=+(document.getElementById('timerSettingM')?.value)||0;
+    const ss=+(document.getElementById('timerSettingS')?.value)||0;
     const ms=((hh*3600)+(mm*60)+ss)*1000;
     if(ms<=0){ alert('시간을 입력해 주세요.'); return; }
-    localStorage.setItem(timerLsKey(timerIndex,'preset_ms'),String(ms));
+    const settingsKey=`memo2.timer.settings.multi.${i}`;
+    localStorage.setItem(timerLsKey(i,'preset_ms'),String(ms));
     localStorage.setItem(settingsKey,JSON.stringify({h:hh,m:mm,s:ss}));
-    const name=nameInp.value.trim();
-    if(name) localStorage.setItem(timerLsKey(timerIndex,'label'),name);
-    else localStorage.removeItem(timerLsKey(timerIndex,'label'));
-    try{ window.dispatchEvent(new CustomEvent('jcal-timer-label',{detail:{index:timerIndex}})); }catch{}
-    try{ if(window.opener) window.opener.dispatchEvent(new CustomEvent('jcal-timer-label',{detail:{index:timerIndex}})); }catch{}
-    onSaved?.();
-    close();
-  };
-  doc.body.appendChild(overlay);
-  nameInp.focus();
+    const name=(document.getElementById('timerSettingLabel')?.value||'').trim();
+    if(name) localStorage.setItem(timerLsKey(i,'label'),name);
+    else localStorage.removeItem(timerLsKey(i,'label'));
+    try{ window.dispatchEvent(new CustomEvent('jcal-timer-label',{detail:{index:i}})); }catch{}
+    timerSettingOnSaved?.();
+    closeTimerSettingModal();
+  });
 }
+
+function openTimerSettingModal(timerIndex,onSaved,contextWin){
+  if(contextWin?.opener?.openTimerSettingModal){
+    contextWin.opener.openTimerSettingModal(timerIndex,onSaved);
+    return;
+  }
+  initTimerSettingModal();
+  const modal=document.getElementById('timerSettingModal');
+  if(!modal) return;
+  const presetMs=ensureTimerPreset(timerIndex);
+  const hms=msToHms(presetMs);
+  const labelInp=document.getElementById('timerSettingLabel');
+  const hInp=document.getElementById('timerSettingH');
+  const mInp=document.getElementById('timerSettingM');
+  const sInp=document.getElementById('timerSettingS');
+  if(labelInp) labelInp.value=localStorage.getItem(timerLsKey(timerIndex,'label'))||'';
+  if(hInp) hInp.value=hms.h||'';
+  if(mInp) mInp.value=hms.m||'';
+  if(sInp) sInp.value=hms.s||'';
+  timerSettingActiveIndex=timerIndex;
+  timerSettingOnSaved=onSaved||null;
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden','false');
+  labelInp?.focus();
+}
+window.openTimerSettingModal=openTimerSettingModal;
 function isTimerLsKeyForIndex(key,i){
   return key===timerLsKey(i,'start_time')||key===timerLsKey(i,'is_running')||key===timerLsKey(i,'remaining_ms');
 }
@@ -2514,10 +2505,10 @@ function createTimerBox(timerIndex){
   const footer=el('div','timer__footer');
   const labelBtn=document.createElement('button');
   labelBtn.type='button';
-  labelBtn.className='timer__label-btn';
+  labelBtn.className='timer-label-btn';
   const refreshLabelBtn=()=>{ labelBtn.textContent=getTimerButtonLabel(timerIndex); };
   refreshLabelBtn();
-  labelBtn.onclick=()=>openTimerEditModal(timerIndex,()=>{
+  labelBtn.onclick=()=>openTimerSettingModal(timerIndex,()=>{
     refreshLabelBtn();
     if(!raf&&!paused){
       totalMs=ensureTimerPreset(timerIndex);
@@ -2760,16 +2751,16 @@ function openTimerWidgetPopup(timerIndex){
     const footer=el('div','timer__footer');
     const labelBtn=document.createElement('button');
     labelBtn.type='button';
-    labelBtn.className='timer__label-btn';
+    labelBtn.className='timer-label-btn';
     const refreshLabelBtn=()=>{ labelBtn.textContent=getTimerButtonLabel(idx); };
     refreshLabelBtn();
-    labelBtn.onclick=()=>openTimerEditModal(idx,()=>{
+    labelBtn.onclick=()=>openTimerSettingModal(idx,()=>{
       refreshLabelBtn();
       if(!raf&&!paused){
         totalMs=ensureTimerPreset(idx);
         draw(totalMs);
       }
-    },targetWin.document);
+    },targetWin);
     const row=el('div','timer__controls');
     const bStart=document.createElement('button');
     bStart.className='timer-btn timer-btn-start';
