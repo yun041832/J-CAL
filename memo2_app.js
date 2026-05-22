@@ -15,6 +15,7 @@ const rightPane=document.querySelector('.right');
 function showHomeIntro(){
   localStorage.setItem('memo2.lastPage', 'home');
   homeIntroSection?.classList.remove('hidden');
+  homeIntroSection?.style && (homeIntroSection.style.display = '');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
   memoWritePage?.classList.add('hidden');
