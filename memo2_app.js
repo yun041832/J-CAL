@@ -185,6 +185,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   // 메뉴 버튼 설정
   document.querySelectorAll('.menu-btn').forEach(b=>{
     b.onclick=()=>{
+      document.querySelectorAll('.menu-btn').forEach(m=>m.classList.remove('is-active'));
+      b.classList.add('is-active');
       const t=b.dataset.widget;
       trackMenuPV(`menu:${t||'unknown'}`);
       showUsage(t);
@@ -205,6 +207,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(homeBtn) {
     homeBtn.addEventListener('click', function(e) {
       e.preventDefault();
+      document.querySelectorAll('.menu-btn').forEach(m=>m.classList.remove('is-active'));
+      homeBtn.classList.add('is-active');
       showHomeIntro();
       trackMenuPV('menu:home');
     });
@@ -2813,6 +2817,74 @@ function widgetTimer(){
   return makeWidget('타이머', build, 'widget--timer');
 }
 
+/* ── 타이머 / 스탑워치 원형 크기 ── */
+function isMobileViewport(){
+  return window.innerWidth<=768;
+}
+function getCircleSize(desktopSize=180){
+  if(!isMobileViewport()) return desktopSize;
+  return Math.min(Math.floor(window.innerWidth*0.6),160);
+}
+function buildProgressRing(doc,size,displayClass){
+  const sw=10;
+  let ringSize=size;
+  let r=(ringSize-sw)/2;
+  let C=2*Math.PI*r;
+  const NS='http://www.w3.org/2000/svg';
+  const svg=doc.createElementNS(NS,'svg');
+  const bg=doc.createElementNS(NS,'circle');
+  const fg=doc.createElementNS(NS,'circle');
+  const disp=doc.createElement('div');
+  disp.className=displayClass||'timer__display';
+  const ring=doc.createElement('div');
+  ring.className='timer__ring stopwatch__ring';
+
+  const paint=()=>{
+    svg.setAttribute('width',String(ringSize));
+    svg.setAttribute('height',String(ringSize));
+    svg.style.display='block';
+    svg.style.margin='0 auto';
+    [bg,fg].forEach(c=>{
+      c.setAttribute('cx',String(ringSize/2));
+      c.setAttribute('cy',String(ringSize/2));
+      c.setAttribute('r',String(r));
+      c.setAttribute('fill','none');
+      c.setAttribute('stroke-width',String(sw));
+    });
+    bg.setAttribute('stroke','#e9ecf2');
+    fg.setAttribute('stroke','#5c8dff');
+    fg.setAttribute('stroke-linecap','round');
+    fg.setAttribute('transform',`rotate(-90 ${ringSize/2} ${ringSize/2})`);
+    fg.setAttribute('stroke-dasharray',String(C));
+  };
+
+  paint();
+  ring.style.width=`${ringSize}px`;
+  ring.style.height=`${ringSize}px`;
+  ring.style.margin='0 auto';
+  ring.style.display='block';
+  ring.style.overflow='hidden';
+  ring.append(svg,disp);
+  svg.append(bg,fg);
+
+  const resize=(newSize)=>{
+    ringSize=newSize;
+    r=(ringSize-sw)/2;
+    C=2*Math.PI*r;
+    paint();
+    ring.style.width=`${ringSize}px`;
+    ring.style.height=`${ringSize}px`;
+    return C;
+  };
+
+  const setProgress=(ratio)=>{
+    const p=Math.min(1,Math.max(0,ratio));
+    fg.setAttribute('stroke-dashoffset',String(C*(1-p)));
+  };
+
+  return {ring,svg,bg,fg,disp,get C(){return C;},resize,setProgress};
+}
+
 /* ── 타이머 페이지 (6개 타이머) ── */
 function initTimersPage(){
   const grid=document.getElementById('timerGrid');
@@ -2828,6 +2900,14 @@ function initTimersPage(){
     const box=createTimerBox(i);
     grid.appendChild(box);
   }
+  if(!window._jcalTimerResizeBound){
+    window._jcalTimerResizeBound=true;
+    window.addEventListener('resize',()=>{
+      document.querySelectorAll('.timer-box[data-timer-index]').forEach(box=>{
+        if(typeof box._resizeTimerRing==='function') box._resizeTimerRing();
+      });
+    });
+  }
 }
 
 function createTimerBox(timerIndex){
@@ -2840,6 +2920,9 @@ function createTimerBox(timerIndex){
   
   const box=el('div','timer-box');
   box.dataset.timerIndex=String(timerIndex);
+  box.style.overflow='hidden';
+  box.style.width='100%';
+  box.style.boxSizing='border-box';
   
   // 헤더 (화살표, X 버튼)
   const header=el('div','timer-box__header');
@@ -2848,34 +2931,11 @@ function createTimerBox(timerIndex){
   popoutBtn.onclick=()=> openTimerWidgetPopup(timerIndex);
   header.appendChild(popoutBtn);
   
-  // SVG 원형 프로그레스
-  const size=180, sw=10, r=(size-sw)/2, C=2*Math.PI*r, NS='http://www.w3.org/2000/svg';
-  const svg=document.createElementNS(NS,'svg'); 
-  svg.setAttribute('width',size); 
-  svg.setAttribute('height',size);
-  const bg=document.createElementNS(NS,'circle'); 
-  bg.setAttribute('cx',size/2); 
-  bg.setAttribute('cy',size/2); 
-  bg.setAttribute('r',r);
-  bg.setAttribute('fill','none'); 
-  bg.setAttribute('stroke','#e9ecf2'); 
-  bg.setAttribute('stroke-width',sw);
-  const fg=document.createElementNS(NS,'circle'); 
-  fg.setAttribute('cx',size/2); 
-  fg.setAttribute('cy',size/2); 
-  fg.setAttribute('r',r);
-  fg.setAttribute('fill','none'); 
-  fg.setAttribute('stroke','#5c8dff'); 
-  fg.setAttribute('stroke-width',sw); 
-  fg.setAttribute('stroke-linecap','round');
-  fg.setAttribute('transform',`rotate(-90 ${size/2} ${size/2})`);
-  fg.setAttribute('stroke-dasharray',String(C)); 
-  fg.setAttribute('stroke-dashoffset',String(C));
-  
-  const disp=el('div','timer__display','00:00:00');
-  const ring=el('div','timer__ring'); 
-  ring.append(svg,disp); 
-  svg.append(bg,fg);
+  const ringParts=buildProgressRing(document,getCircleSize(),'timer__display');
+  const {ring,disp,fg,setProgress}=ringParts;
+  let C=ringParts.C;
+  disp.textContent='00:00:00';
+  setProgress(0);
   
   const eta=el('div','timer__eta','—');
   
@@ -2912,6 +2972,12 @@ function createTimerBox(timerIndex){
   // 타이머 로직
   let totalMs=0,endPerf=0,raf=null,paused=false,remainMs=0;
   const selfId=Math.random().toString(36).slice(2);
+  box._resizeTimerRing=()=>{
+    C=ringParts.resize(getCircleSize());
+    const left=paused?remainMs:Math.max(0,endPerf-performance.now());
+    if(totalMs>0) setProgress(Math.min(1,Math.max(0,1-left/totalMs)));
+    else setProgress(0);
+  };
   
   const fmt=(ms)=>{
     const s=Math.max(0,Math.ceil(ms/1000));
@@ -2930,7 +2996,7 @@ function createTimerBox(timerIndex){
   
   const draw=(left)=>{ 
     const p=totalMs>0?Math.min(1,Math.max(0,1-left/totalMs)):0; 
-    fg.setAttribute('stroke-dashoffset',String(C*(1-p))); 
+    setProgress(p);
     disp.textContent=fmt(left); 
   };
   
@@ -3002,7 +3068,7 @@ function createTimerBox(timerIndex){
       totalMs=0; 
       endPerf=0; 
       remainMs=0;
-      fg.setAttribute('stroke-dashoffset',String(C)); 
+      setProgress(0);
       disp.textContent='00:00:00'; 
       eta.textContent='—'; 
       setStartIcon(false);
@@ -5365,9 +5431,15 @@ function buildStopwatchCard(win,isPopup){
   const doc=win.document;
   const card=doc.createElement('div');
   card.className='stopwatch-card'+(isPopup?' stopwatch-card--popup':' stopwatch-card--inline');
-  const label=doc.createElement('div');
-  label.className='stopwatch-time';
-  label.textContent='00:00.00';
+  card.style.overflow='hidden';
+  card.style.width='100%';
+  card.style.boxSizing='border-box';
+
+  const ringParts=buildProgressRing(doc,getCircleSize(),'stopwatch-time timer__display');
+  const {ring,disp,setProgress}=ringParts;
+  disp.textContent='00:00.00';
+  setProgress(0);
+
   const sub=doc.createElement('div');
   sub.className='stopwatch-status';
   sub.textContent='대기';
@@ -5388,7 +5460,7 @@ function buildStopwatchCard(win,isPopup){
   resetBtn.textContent='리셋';
   actions.append(startBtn,pauseBtn,resetBtn);
 
-  card.append(label,sub,actions);
+  card.append(ring,sub,actions);
 
   let segmentStart=0, accMs=0, raf=null, running=false;
   const fmt=(ms)=>{
@@ -5396,9 +5468,17 @@ function buildStopwatchCard(win,isPopup){
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
   };
   const currentMs=()=> running ? accMs+(Date.now()-segmentStart) : accMs;
+  const updateDisplay=(ms)=>{
+    disp.textContent=fmt(ms);
+    setProgress((ms%60000)/60000);
+  };
+  card._resizeStopwatchRing=()=>{
+    ringParts.resize(getCircleSize());
+    updateDisplay(currentMs());
+  };
   const tick=()=>{
     if(!running) return;
-    label.textContent=fmt(currentMs());
+    updateDisplay(currentMs());
     raf=win.requestAnimationFrame(tick);
   };
   const applyFromStorage=()=>{
@@ -5409,10 +5489,10 @@ function buildStopwatchCard(win,isPopup){
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
     if(isRunning&&start){
       running=true; accMs=base; segmentStart=start; sub.textContent='측정 중';
-      label.textContent=fmt(ms); raf=win.requestAnimationFrame(tick);
+      updateDisplay(ms); raf=win.requestAnimationFrame(tick);
     }else{
       running=false; accMs=ms; segmentStart=0;
-      label.textContent=fmt(ms); sub.textContent=ms>0?'일시정지':'대기';
+      updateDisplay(ms); sub.textContent=ms>0?'일시정지':'대기';
     }
   };
 
@@ -5431,10 +5511,11 @@ function buildStopwatchCard(win,isPopup){
     }
     running=false; accMs=currentMs(); segmentStart=0; sub.textContent='일시정지';
     persistStopwatch(false,accMs);
+    updateDisplay(accMs);
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
   };
   resetBtn.onclick=()=>{
-    running=false; accMs=0; segmentStart=0; label.textContent='00:00.00'; sub.textContent='대기';
+    running=false; accMs=0; segmentStart=0; updateDisplay(0); sub.textContent='대기';
     clearStopwatchStorage();
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
   };
@@ -5453,6 +5534,13 @@ function initStopwatchPage(){
   host.dataset.initialized='true';
   host.innerHTML='';
   host.appendChild(buildStopwatchCard(window,false));
+  if(!window._jcalStopwatchResizeBound){
+    window._jcalStopwatchResizeBound=true;
+    window.addEventListener('resize',()=>{
+      const card=document.querySelector('#stopwatchPageContent .stopwatch-card');
+      if(card&&typeof card._resizeStopwatchRing==='function') card._resizeStopwatchRing();
+    });
+  }
 }
 
 function widgetStopwatch(){
