@@ -12,11 +12,15 @@ const insightWritePage=document.getElementById('insightWritePage');
 const routinePage=document.getElementById('routinePage');
 const dailyPage=document.getElementById('dailyPage');
 const timerPage=document.getElementById('timerPage');
+const stopwatchPage=document.getElementById('stopwatchPage');
 const rightPane=document.querySelector('.right');
 
 function hideInsightPages(){
   insightPage?.classList.add('hidden');
   insightWritePage?.classList.add('hidden');
+}
+function hideStopwatchPage(){
+  stopwatchPage?.classList.add('hidden');
 }
 
 function showHomeIntro(){
@@ -29,6 +33,7 @@ function showHomeIntro(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
 }
@@ -41,6 +46,7 @@ function showCalendarPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.remove('hidden');
   renderCalendar?.();
@@ -56,6 +62,7 @@ function showMemoPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   getJayMemoList();
@@ -69,6 +76,7 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initMemoWritePage?.(editMode,itemId,idx,dstr);
@@ -82,6 +90,7 @@ function showRoutinePage(){
   routinePage?.classList.remove('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initRoutinePage?.();
@@ -94,6 +103,7 @@ function showDailyPage(){
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   dailyPage?.classList.remove('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
@@ -108,9 +118,25 @@ function showTimerPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.remove('hidden');
+  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initTimersPage?.();
+}
+function showStopwatchPage(){
+  localStorage.setItem('memo2.lastPage', 'stopwatch');
+  homeIntroSection?.classList.add('hidden');
+  calendarPage?.classList.add('hidden');
+  memoPage?.classList.add('hidden');
+  memoWritePage?.classList.add('hidden');
+  routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
+  timerPage?.classList.add('hidden');
+  hideInsightPages();
+  stopwatchPage?.classList.remove('hidden');
+  rightPane?.classList.add('hidden');
+  hideUsage?.();
+  initStopwatchPage?.();
 }
 function showInsightPage(){
   localStorage.setItem('memo2.lastPage', 'insight');
@@ -121,6 +147,7 @@ function showInsightPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   insightWritePage?.classList.add('hidden');
   insightPage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -135,6 +162,7 @@ function showInsightWritePage(editMode=false,editItemId=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  hideStopwatchPage();
   insightPage?.classList.add('hidden');
   insightWritePage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -167,7 +195,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(t==='todo') widgetTodo?.();
       if(t==='timer') showTimerPage();
       if(t==='alarm') widgetAlarm?.();
-      if(t==='stopwatch') widgetStopwatch?.();
+      if(t==='stopwatch') showStopwatchPage();
       if(t==='insight') showInsightPage();
     };
   });
@@ -210,6 +238,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'routine') showRoutinePage();
   else if(lastPage === 'daily') showDailyPage();
   else if(lastPage === 'timer') showTimerPage();
+  else if(lastPage === 'stopwatch') showStopwatchPage();
   else if(lastPage === 'insight') showInsightPage();
   else showHomeIntro();
 
@@ -5331,93 +5360,103 @@ function widgetAlarm(){
   }, 'widget--alarm');
 }
 
-function widgetStopwatch(){
-  return makeWidget('스탑워치',(isPopup, win)=>{
-    ensureTimeStyles(win);
-    const doc=win.document;
-    const card=doc.createElement('div');
-    card.className='stopwatch-card'+(isPopup?' stopwatch-card--popup':'');
-    const label=doc.createElement('div');
-    label.className='stopwatch-time';
-    label.textContent='00:00.00';
-    const sub=doc.createElement('div');
-    sub.className='stopwatch-status';
-    sub.textContent='대기';
+function buildStopwatchCard(win,isPopup){
+  ensureTimeStyles(win);
+  const doc=win.document;
+  const card=doc.createElement('div');
+  card.className='stopwatch-card'+(isPopup?' stopwatch-card--popup':' stopwatch-card--inline');
+  const label=doc.createElement('div');
+  label.className='stopwatch-time';
+  label.textContent='00:00.00';
+  const sub=doc.createElement('div');
+  sub.className='stopwatch-status';
+  sub.textContent='대기';
 
-    const actions=doc.createElement('div');
-    actions.className='stopwatch-actions';
-    const startBtn=doc.createElement('button');
-    startBtn.type='button';
-    startBtn.className='stopwatch-btn stopwatch-btn--primary';
-    startBtn.textContent='시작';
-    const pauseBtn=doc.createElement('button');
-    pauseBtn.type='button';
-    pauseBtn.className='stopwatch-btn stopwatch-btn--primary';
-    pauseBtn.textContent='일시정지';
-    const resetBtn=doc.createElement('button');
-    resetBtn.type='button';
-    resetBtn.className='stopwatch-btn stopwatch-btn--reset';
-    resetBtn.textContent='리셋';
-    actions.append(startBtn,pauseBtn,resetBtn);
+  const actions=doc.createElement('div');
+  actions.className='stopwatch-actions';
+  const startBtn=doc.createElement('button');
+  startBtn.type='button';
+  startBtn.className='stopwatch-btn stopwatch-btn--primary';
+  startBtn.textContent='시작';
+  const pauseBtn=doc.createElement('button');
+  pauseBtn.type='button';
+  pauseBtn.className='stopwatch-btn stopwatch-btn--primary';
+  pauseBtn.textContent='일시정지';
+  const resetBtn=doc.createElement('button');
+  resetBtn.type='button';
+  resetBtn.className='stopwatch-btn stopwatch-btn--reset';
+  resetBtn.textContent='리셋';
+  actions.append(startBtn,pauseBtn,resetBtn);
 
-    card.append(label,sub,actions);
+  card.append(label,sub,actions);
 
-    let segmentStart=0, accMs=0, raf=null, running=false;
-    const fmt=(ms)=>{
-      const cs=Math.floor(ms/10)%100; const s=Math.floor(ms/1000)%60; const m=Math.floor(ms/60000);
-      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
-    };
-    const currentMs=()=> running ? accMs+(Date.now()-segmentStart) : accMs;
-    const tick=()=>{
-      if(!running) return;
-      label.textContent=fmt(currentMs());
-      raf=win.requestAnimationFrame(tick);
-    };
-    const applyFromStorage=()=>{
-      const ms=readStopwatchMs();
-      const isRunning=localStorage.getItem('stopwatch_is_running')==='true';
-      const base=parseInt(localStorage.getItem('stopwatch_elapsed_ms')||'0',10)||0;
-      const start=parseInt(localStorage.getItem('stopwatch_start_time')||'0',10)||0;
-      if(raf){ win.cancelAnimationFrame(raf); raf=null; }
-      if(isRunning&&start){
-        running=true; accMs=base; segmentStart=start; sub.textContent='측정 중';
-        label.textContent=fmt(ms); raf=win.requestAnimationFrame(tick);
-      }else{
-        running=false; accMs=ms; segmentStart=0;
-        label.textContent=fmt(ms); sub.textContent=ms>0?'일시정지':'대기';
-      }
-    };
+  let segmentStart=0, accMs=0, raf=null, running=false;
+  const fmt=(ms)=>{
+    const cs=Math.floor(ms/10)%100; const s=Math.floor(ms/1000)%60; const m=Math.floor(ms/60000);
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+  };
+  const currentMs=()=> running ? accMs+(Date.now()-segmentStart) : accMs;
+  const tick=()=>{
+    if(!running) return;
+    label.textContent=fmt(currentMs());
+    raf=win.requestAnimationFrame(tick);
+  };
+  const applyFromStorage=()=>{
+    const ms=readStopwatchMs();
+    const isRunning=localStorage.getItem('stopwatch_is_running')==='true';
+    const base=parseInt(localStorage.getItem('stopwatch_elapsed_ms')||'0',10)||0;
+    const start=parseInt(localStorage.getItem('stopwatch_start_time')||'0',10)||0;
+    if(raf){ win.cancelAnimationFrame(raf); raf=null; }
+    if(isRunning&&start){
+      running=true; accMs=base; segmentStart=start; sub.textContent='측정 중';
+      label.textContent=fmt(ms); raf=win.requestAnimationFrame(tick);
+    }else{
+      running=false; accMs=ms; segmentStart=0;
+      label.textContent=fmt(ms); sub.textContent=ms>0?'일시정지':'대기';
+    }
+  };
 
-    startBtn.onclick=()=>{
-      if(running) return;
+  startBtn.onclick=()=>{
+    if(running) return;
+    segmentStart=Date.now(); running=true; sub.textContent='측정 중';
+    persistStopwatch(true,accMs,segmentStart);
+    raf=win.requestAnimationFrame(tick);
+  };
+  pauseBtn.onclick=()=>{
+    if(!running){
       segmentStart=Date.now(); running=true; sub.textContent='측정 중';
       persistStopwatch(true,accMs,segmentStart);
       raf=win.requestAnimationFrame(tick);
-    };
-    pauseBtn.onclick=()=>{
-      if(!running){
-        segmentStart=Date.now(); running=true; sub.textContent='측정 중';
-        persistStopwatch(true,accMs,segmentStart);
-        raf=win.requestAnimationFrame(tick);
-        return;
-      }
-      running=false; accMs=currentMs(); segmentStart=0; sub.textContent='일시정지';
-      persistStopwatch(false,accMs);
-      if(raf){ win.cancelAnimationFrame(raf); raf=null; }
-    };
-    resetBtn.onclick=()=>{
-      running=false; accMs=0; segmentStart=0; label.textContent='00:00.00'; sub.textContent='대기';
-      clearStopwatchStorage();
-      if(raf){ win.cancelAnimationFrame(raf); raf=null; }
-    };
+      return;
+    }
+    running=false; accMs=currentMs(); segmentStart=0; sub.textContent='일시정지';
+    persistStopwatch(false,accMs);
+    if(raf){ win.cancelAnimationFrame(raf); raf=null; }
+  };
+  resetBtn.onclick=()=>{
+    running=false; accMs=0; segmentStart=0; label.textContent='00:00.00'; sub.textContent='대기';
+    clearStopwatchStorage();
+    if(raf){ win.cancelAnimationFrame(raf); raf=null; }
+  };
 
-    const onSwSync=()=> applyFromStorage();
-    win.addEventListener('jcal-stopwatch-sync',onSwSync);
-    win.addEventListener('storage',(e)=>{ if(SW_LS_KEYS.includes(e.key)) onSwSync(); });
-    applyFromStorage();
+  const onSwSync=()=> applyFromStorage();
+  win.addEventListener('jcal-stopwatch-sync',onSwSync);
+  win.addEventListener('storage',(e)=>{ if(SW_LS_KEYS.includes(e.key)) onSwSync(); });
+  applyFromStorage();
 
-    return card;
-  }, 'widget--stopwatch');
+  return card;
+}
+
+function initStopwatchPage(){
+  const host=document.getElementById('stopwatchPageContent');
+  if(!host||host.dataset.initialized==='true') return;
+  host.dataset.initialized='true';
+  host.innerHTML='';
+  host.appendChild(buildStopwatchCard(window,false));
+}
+
+function widgetStopwatch(){
+  return makeWidget('스탑워치',(isPopup, win)=> buildStopwatchCard(win,!!isPopup), 'widget--stopwatch');
 }
 
 /* ── 동기화 미니 달력/메모/투두 위젯 ── */

@@ -2870,8 +2870,8 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   position: relative;
 }
 
-.menu-btn[title]:hover::after {
-  content: attr(title);
+.menu-btn[data-tip]:hover::after {
+  content: attr(data-tip);
   position: absolute;
   left: 100%;
   top: 50%;
