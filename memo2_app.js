@@ -181,6 +181,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       trackMenuPV('nav:widgetCalendar');
     };
   }
+
+  const openStopwatchWidgetBtn=document.getElementById('openStopwatchWidgetBtn');
+  if(openStopwatchWidgetBtn){
+    openStopwatchWidgetBtn.onclick=()=>{
+      widgetStopwatch?.();
+      trackMenuPV('nav:widgetStopwatch');
+    };
+  }
   
   // 메뉴 버튼 설정
   document.querySelectorAll('.menu-btn').forEach(b=>{
