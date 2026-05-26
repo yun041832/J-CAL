@@ -86,22 +86,26 @@
   .mobile-subbar-row{
     display:flex;
     align-items:center;
+    justify-content:flex-end;
     gap:8px;
     padding:8px 12px;
   }
-  .mobile-justdoc-link{
-    flex:1;
-    min-width:0;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    background:#fff;
-    border:1px solid #ddd;
-    border-radius:8px;
-    text-decoration:none;
-    box-shadow:0 1px 4px rgba(0,0,0,0.08);
-    box-sizing:border-box;
+  @media (max-width:1024px){
+    aside.sidebar{
+      flex-wrap:nowrap !important;
+      overflow-x:hidden !important;
+    }
+    aside.sidebar .menu-btn{
+      flex:1 !important;
+      min-width:0 !important;
+      max-width:none !important;
+      font-size:22px !important;
+      line-height:1 !important;
+      padding:8px 4px !important;
+      justify-content:center !important;
+      text-align:center !important;
+    }
+    .menu-btn-pc-label{display:none !important;}
   }
   .mobile-auth-compact{
     display:flex;
@@ -157,13 +161,13 @@
     <div class="sidebar-stack">
     <aside class="sidebar">
       <button class="menu-btn" id="homeBtn" title="홈">🏠 Home</button>
-      <button class="menu-btn" data-widget="calendar" title="달력">📅 Calendar</button>
-      <button class="menu-btn" data-widget="routine" title="루틴">✅ Routine</button>
-      <button class="menu-btn" data-widget="daily" title="데일리">📋 Daily</button>
+      <button class="menu-btn" data-widget="calendar" title="달력" aria-label="달력">📅<span class="menu-btn-pc-label"> Calendar</span></button>
+      <button class="menu-btn" data-widget="routine" title="루틴" aria-label="루틴">✅<span class="menu-btn-pc-label"> Routine</span></button>
+      <button class="menu-btn" data-widget="daily" title="데일리" aria-label="데일리">📋<span class="menu-btn-pc-label"> Daily</span></button>
       <button class="menu-btn" data-widget="todo" style="display:none;">✅ 투두</button>
-      <button class="menu-btn" data-widget="timer" title="타이머">⏲️ Timer</button>
-      <button class="menu-btn" data-widget="stopwatch" title="스탑워치">⏱️ Stopwatch</button>
-      <button class="menu-btn" data-widget="memo" title="메모">📝 Memo</button>
+      <button class="menu-btn" data-widget="timer" title="타이머" aria-label="타이머">⏲️<span class="menu-btn-pc-label"> Timer</span></button>
+      <button class="menu-btn" data-widget="stopwatch" title="스탑워치" aria-label="스탑워치">⏱️<span class="menu-btn-pc-label"> Stopwatch</span></button>
+      <button class="menu-btn" data-widget="memo" title="메모" aria-label="메모">📝<span class="menu-btn-pc-label"> Memo</span></button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
       <p class="sidebar__hint">
@@ -240,10 +244,6 @@
     </div>
     <div id="mobile-subbar" style="display:none;width:100%;background:#f8f9fa;border-bottom:1px solid #eee;">
       <div class="mobile-subbar-row">
-        <a href="https://justdoc.net" target="_blank" class="mobile-justdoc-link">
-          <img src="images/j-metal.jpg" alt="JustDoc" style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">
-          <span style="font-size:12px;font-weight:700;color:#3355cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">JustDoc<span style="font-size:10px;font-weight:400;color:#aaa;">ument</span></span>
-        </a>
         <button type="button" id="login-btn-mobile" class="mobile-auth-compact" aria-label="Google 로그인">
           <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -258,8 +258,6 @@
           <span id="user-avatar-fallback-mobile" class="mobile-auth-user-fallback">J</span>
         </button>
       </div>
-      <!-- 글쓰기노트 숨김 처리 2026-05-26 -->
-      <a href="#" target="_blank" hidden style="display:none;">글쓰기노트</a>
     </div>
     </div>
 
