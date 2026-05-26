@@ -67,6 +67,8 @@ function showMemoPage(){
   rightPane?.classList.add('hidden');
   getJayMemoList();
   initMemoPage?.();
+  const savedView=localStorage.getItem('memoViewMode')||'grid';
+  setTimeout(()=>{ if(typeof setMemoView==='function') setMemoView(savedView); },50);
 }
 function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   homeIntroSection?.classList.add('hidden');
