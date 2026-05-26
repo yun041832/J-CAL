@@ -3599,6 +3599,7 @@ function initMemoPage(){
   }
   
   renderMemoPageList();
+  if(typeof initMemoView==='function') initMemoView();
 }
 
 function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=null){
@@ -3703,11 +3704,13 @@ function renderMemoPageList(){
   }
   
   const grid=el('div','memo-page-grid');
+  grid.id='memo-cards-container';
   list.forEach((item,idx)=>{
     grid.appendChild(createMemoCard(item,idx,list));
   });
   
   content.appendChild(grid);
+  if(typeof initMemoView==='function') initMemoView();
 }
 
 function createMemoCard(item,idx,ref){
