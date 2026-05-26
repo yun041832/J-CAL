@@ -665,14 +665,38 @@
       })
     }
 
+    const LAST_PAGE_KEY = 'memo2.lastPage'
+
+    function setHomeTabVisible(visible) {
+      const homeBtn = document.getElementById('homeBtn')
+      if (homeBtn) homeBtn.style.display = visible ? '' : 'none'
+    }
+
+    function applyPostLoginPage() {
+      const last = localStorage.getItem(LAST_PAGE_KEY)
+      if (!last || last === 'home') {
+        localStorage.setItem(LAST_PAGE_KEY, 'calendar')
+        if (typeof showCalendarPage === 'function') showCalendarPage()
+      }
+    }
+
+    function applyPostLogoutPage() {
+      localStorage.setItem(LAST_PAGE_KEY, 'home')
+      setHomeTabVisible(true)
+      if (typeof showHomeIntro === 'function') showHomeIntro()
+    }
+
     // 로그아웃
     async function signOut() {
       await supabase.auth.signOut()
       updateAuthUI(null)
+      applyPostLogoutPage()
     }
 
     // UI 업데이트 (PC 사이드바 + 모바일 서브바)
     async function updateAuthUI(session) {
+      setHomeTabVisible(!session)
+      if (session) applyPostLoginPage()
       const loginBtn = document.getElementById('login-btn')
       const userInfo = document.getElementById('user-info')
       if (loginBtn && userInfo) {
