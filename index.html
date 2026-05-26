@@ -203,7 +203,7 @@
     margin:0 auto;
   }
   @media (max-width:768px){
-    #memo-cards-container[data-memo-view="grid"]{
+    #memo-cards-container{
       grid-template-columns:repeat(2,1fr) !important;
     }
   }
@@ -900,33 +900,21 @@
 
     function setMemoView(mode) {
       const container = document.getElementById('memo-cards-container')
+      if (!container) return
+
       const btnGrid = document.getElementById('btn-grid-view')
       const btnList = document.getElementById('btn-list-view')
-      if (!container || !btnGrid || !btnList) return
 
       if (mode === 'grid') {
-        container.style.display = 'grid'
-        container.style.gridTemplateColumns = 'repeat(4, 1fr)'
-        container.style.gap = '16px'
-        container.style.flexDirection = ''
-        container.setAttribute('data-memo-view', 'grid')
-        btnGrid.style.background = '#1a56db'
-        btnGrid.style.color = '#fff'
-        btnList.style.background = '#fff'
-        btnList.style.color = '#666'
-        localStorage.setItem('memoViewMode', 'grid')
+        container.style.cssText = 'display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:16px !important;flex-direction:unset !important;'
+        if (btnGrid) { btnGrid.style.background = '#1a56db'; btnGrid.style.color = '#fff' }
+        if (btnList) { btnList.style.background = '#fff'; btnList.style.color = '#666' }
       } else {
-        container.style.display = 'flex'
-        container.style.flexDirection = 'column'
-        container.style.gap = '12px'
-        container.style.gridTemplateColumns = ''
-        container.setAttribute('data-memo-view', 'list')
-        btnGrid.style.background = '#fff'
-        btnGrid.style.color = '#666'
-        btnList.style.background = '#1a56db'
-        btnList.style.color = '#fff'
-        localStorage.setItem('memoViewMode', 'list')
+        container.style.cssText = 'display:flex !important;flex-direction:column !important;grid-template-columns:unset !important;gap:12px !important;'
+        if (btnGrid) { btnGrid.style.background = '#fff'; btnGrid.style.color = '#666' }
+        if (btnList) { btnList.style.background = '#1a56db'; btnList.style.color = '#fff' }
       }
+      localStorage.setItem('memoViewMode', mode)
     }
 
     function initMemoView() {
