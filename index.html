@@ -80,75 +80,26 @@
   @media (min-width:1025px){
     .sidebar-footer-pc{display:block;}
   }
-  @media (max-width:768px){
-    #mobile-subbar{display:block !important;}
-  }
-  .mobile-subbar-row{
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:8px;
-    padding:8px 12px;
-  }
   @media (max-width:1024px){
     aside.sidebar{
       flex-wrap:nowrap !important;
-      overflow-x:hidden !important;
+      overflow:hidden !important;
+      height:48px !important;
+      min-height:48px !important;
+      max-height:48px !important;
+      box-sizing:border-box !important;
     }
     aside.sidebar .menu-btn{
       flex:1 !important;
       min-width:0 !important;
       max-width:none !important;
-      font-size:22px !important;
+      font-size:18px !important;
       line-height:1 !important;
-      padding:8px 4px !important;
+      padding:4px 2px !important;
       justify-content:center !important;
       text-align:center !important;
     }
     .menu-btn-pc-label{display:none !important;}
-  }
-  .mobile-auth-compact{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:4px;
-    flex-shrink:0;
-    background:transparent;
-    border:1px solid #e0e0e0;
-    border-radius:8px;
-    padding:4px 8px;
-    font-size:12px;
-    font-weight:600;
-    color:#555;
-    cursor:pointer;
-    font-family:inherit;
-    line-height:1;
-    box-sizing:border-box;
-  }
-  .mobile-auth-user{
-    padding:2px;
-    width:32px;
-    height:32px;
-    overflow:hidden;
-  }
-  .mobile-auth-user img{
-    width:28px;
-    height:28px;
-    border-radius:50%;
-    object-fit:cover;
-    display:block;
-  }
-  .mobile-auth-user-fallback{
-    display:none;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    border-radius:50%;
-    background:var(--primary,#5c8dff);
-    color:#fff;
-    font-size:14px;
-    font-weight:700;
   }
 </style>
 
@@ -240,23 +191,6 @@
           <span id="user-name" style="flex:1;font-size:12px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           <button type="button" id="logout-btn" style="background:none;border:none;font-size:12px;color:#666;cursor:pointer;padding:0;flex-shrink:0;font-family:inherit;">로그아웃</button>
         </div>
-      </div>
-    </div>
-    <div id="mobile-subbar" style="display:none;width:100%;background:#f8f9fa;border-bottom:1px solid #eee;">
-      <div class="mobile-subbar-row">
-        <button type="button" id="login-btn-mobile" class="mobile-auth-compact" aria-label="Google 로그인">
-          <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.24 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          </svg>
-          <span>로그인</span>
-        </button>
-        <button type="button" id="user-btn-mobile" class="mobile-auth-compact mobile-auth-user" style="display:none;" aria-label="로그아웃">
-          <img id="user-avatar-mobile" src="" alt="">
-          <span id="user-avatar-fallback-mobile" class="mobile-auth-user-fallback">J</span>
-        </button>
       </div>
     </div>
     </div>
@@ -463,6 +397,21 @@
             <img src="images/j-metal.jpg" alt="" style="width:13px;height:13px;border-radius:3px;vertical-align:middle;">
             JustDoc
           </a>
+
+          <button type="button" id="brand-header-login-btn" style="
+    font-size:11px; color:#1a56db; background:none;
+    border:0.5px solid #bfdbfe; border-radius:20px;
+    padding:3px 10px; cursor:pointer; margin-left:auto;
+    font-family:inherit;
+  ">로그인</button>
+
+          <div id="brand-header-user" style="margin-left:auto; display:none; align-items:center; gap:6px; cursor:pointer;" role="button" tabindex="0" aria-label="로그아웃">
+            <div id="brand-header-avatar" style="
+    width:24px; height:24px; border-radius:50%;
+    background:#e8f0fe; display:flex; align-items:center;
+    justify-content:center; font-size:11px; font-weight:600; color:#1a56db;
+  ">J</div>
+          </div>
         </div>
         <div class="card__header-unified">
           <div class="goal-bar">
@@ -654,6 +603,7 @@
         options: { redirectTo: 'https://jaycalendar.com' }
       })
     }
+    window.signInWithGoogle = signInWithGoogle
 
     const LAST_PAGE_KEY = 'memo2.lastPage'
 
@@ -682,11 +632,18 @@
       updateAuthUI(null)
       applyPostLogoutPage()
     }
+    window.signOut = signOut
 
-    // UI 업데이트 (PC 사이드바 + 모바일 서브바)
+    function getEmailInitial(session) {
+      const email = session?.user?.email || ''
+      return (email.charAt(0) || 'J').toUpperCase()
+    }
+
+    // UI 업데이트 (PC 사이드바 + 브랜드 헤더)
     async function updateAuthUI(session) {
       setHomeTabVisible(!session)
       if (session) applyPostLoginPage()
+
       const loginBtn = document.getElementById('login-btn')
       const userInfo = document.getElementById('user-info')
       if (loginBtn && userInfo) {
@@ -703,33 +660,26 @@
         }
       }
 
-      const mobileLogin = document.getElementById('login-btn-mobile')
-      const mobileUser = document.getElementById('user-btn-mobile')
-      const mobileAvatar = document.getElementById('user-avatar-mobile')
-      const mobileFallback = document.getElementById('user-avatar-fallback-mobile')
-      if (mobileLogin && mobileUser) {
+      const brandLogin = document.getElementById('brand-header-login-btn')
+      const brandUser = document.getElementById('brand-header-user')
+      const brandAvatar = document.getElementById('brand-header-avatar')
+      if (brandLogin && brandUser) {
         if (session) {
-          mobileLogin.style.display = 'none'
-          mobileUser.style.display = 'flex'
-          const avatarUrl = session.user.user_metadata.avatar_url
-          if (avatarUrl && mobileAvatar) {
-            mobileAvatar.src = avatarUrl
-            mobileAvatar.style.display = 'block'
-            if (mobileFallback) mobileFallback.style.display = 'none'
-          } else {
-            if (mobileAvatar) mobileAvatar.style.display = 'none'
-            if (mobileFallback) mobileFallback.style.display = 'flex'
-          }
+          brandLogin.style.display = 'none'
+          brandUser.style.display = 'flex'
+          if (brandAvatar) brandAvatar.textContent = getEmailInitial(session)
         } else {
-          mobileLogin.style.display = 'flex'
-          mobileUser.style.display = 'none'
+          brandLogin.style.display = ''
+          brandUser.style.display = 'none'
         }
       }
     }
 
     document.getElementById('login-btn')?.addEventListener('click', signInWithGoogle)
-    document.getElementById('login-btn-mobile')?.addEventListener('click', signInWithGoogle)
-    document.getElementById('user-btn-mobile')?.addEventListener('click', signOut)
+    document.getElementById('brand-header-login-btn')?.addEventListener('click', signInWithGoogle)
+    document.getElementById('brand-header-user')?.addEventListener('click', () => {
+      if (confirm('로그아웃 하시겠습니까?')) signOut()
+    })
     document.getElementById('logout-btn')?.addEventListener('click', signOut)
 
     // 초기 세션 확인
