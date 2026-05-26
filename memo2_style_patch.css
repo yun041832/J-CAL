@@ -2550,15 +2550,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
     gap: 12px;
     padding: 12px;
   }
-  
-  .timer__ring {
-    width: 160px;
-    height: 160px;
-  }
-  
-  .timer__display {
-    font-size: 20px;
-  }
 }
 /* 메모 페이지 스타일 */
 .memo-page-content {

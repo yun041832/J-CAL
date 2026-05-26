@@ -80,26 +80,33 @@
   @media (min-width:1025px){
     .sidebar-footer-pc{display:block;}
   }
-  @media (max-width:1024px){
-    aside.sidebar{
+  @media (max-width:768px){
+    html body aside.sidebar,
+    html body .sidebar{
       flex-wrap:nowrap !important;
       overflow:hidden !important;
-      height:48px !important;
-      min-height:48px !important;
-      max-height:48px !important;
+      height:44px !important;
+      min-height:44px !important;
+      max-height:44px !important;
       box-sizing:border-box !important;
+      padding:0 4px !important;
+      gap:0 !important;
     }
-    aside.sidebar .menu-btn{
+    html body aside.sidebar .menu-btn,
+    html body .sidebar .menu-btn{
       flex:1 !important;
       min-width:0 !important;
       max-width:none !important;
-      font-size:18px !important;
+      width:auto !important;
+      font-size:20px !important;
       line-height:1 !important;
-      padding:4px 2px !important;
+      padding:6px 0 !important;
       justify-content:center !important;
       text-align:center !important;
+      white-space:nowrap !important;
     }
     .menu-btn-pc-label{display:none !important;}
+    html body .sidebar__hint{display:none !important;}
   }
 </style>
 
@@ -111,7 +118,7 @@
   <div class="app">
     <div class="sidebar-stack">
     <aside class="sidebar">
-      <button class="menu-btn" id="homeBtn" title="홈">🏠 Home</button>
+      <button class="menu-btn" id="homeBtn" title="홈" aria-label="홈">🏠<span class="menu-btn-pc-label"> Home</span></button>
       <button class="menu-btn" data-widget="calendar" title="달력" aria-label="달력">📅<span class="menu-btn-pc-label"> Calendar</span></button>
       <button class="menu-btn" data-widget="routine" title="루틴" aria-label="루틴">✅<span class="menu-btn-pc-label"> Routine</span></button>
       <button class="menu-btn" data-widget="daily" title="데일리" aria-label="데일리">📋<span class="menu-btn-pc-label"> Daily</span></button>
@@ -727,6 +734,53 @@
       </div>
     </div>
   </div>
+
+  <style>
+    @media (max-width:768px){
+      .timer-box{
+        padding:16px !important;
+      }
+      .timer__ring{
+        width:120px !important;
+        height:120px !important;
+        margin:4px auto 6px !important;
+      }
+      .timer__ring svg{
+        width:120px !important;
+        height:120px !important;
+      }
+      .timer__display{
+        font-size:24px !important;
+      }
+      .timer-btn{
+        width:40px !important;
+        height:40px !important;
+      }
+      .timer-box__btn,
+      .widget-open-btn{
+        display:none !important;
+      }
+      .widget--stopwatch .stopwatch-card{
+        max-height:200px !important;
+        padding:16px !important;
+        box-sizing:border-box !important;
+        overflow:hidden !important;
+      }
+      .widget--stopwatch .stopwatch-time{
+        font-size:32px !important;
+        margin-bottom:4px !important;
+      }
+      .widget--stopwatch .stopwatch-status{
+        margin-bottom:8px !important;
+      }
+      .widget--stopwatch .stopwatch-btn{
+        height:36px !important;
+        font-size:13px !important;
+        padding:0 14px !important;
+        box-sizing:border-box !important;
+      }
+    }
+  </style>
 
 </body>
 </html>
