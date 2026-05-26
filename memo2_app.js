@@ -2818,9 +2818,6 @@ function widgetTimer(){
 }
 
 /* ── 타이머 / 스탑워치 원형 크기 ── */
-function isMobileViewport(){
-  return window.innerWidth<=768;
-}
 function getCircleSize(desktopSize=180){
   if(!isMobileViewport()) return desktopSize;
   return Math.min(Math.floor(window.innerWidth*0.6),160);
