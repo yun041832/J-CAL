@@ -1165,7 +1165,9 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border-bottom:1px solid var(--line);
 }
 .monthly-goal-input-unified{
-  flex:1.8;
+  flex:1 1 auto;
+  width:100%;
+  max-width:none;
   padding:6px 10px;
   border:1px solid #e5e7eb;
   background:#f8f9fb;
@@ -1182,7 +1184,10 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   display:flex;
   align-items:center;
   gap:6px;
-  flex:1;
+  flex:1 1 auto;
+  width:100%;
+  max-width:none;
+  min-width:0;
 }
 .goal-style-btn{
   width:32px;
@@ -1197,6 +1202,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   place-items:center;
   color:#111827;
   transition:background .15s ease, box-shadow .15s ease;
+  flex-shrink:0;
 }
 .goal-style-btn:hover{background:#f4f6fb; box-shadow:0 4px 12px rgba(0,0,0,0.08);}
 .goal-style-btn:active{transform:translateY(1px);}
