@@ -3007,7 +3007,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
 }
 #dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar {
-  width: 4px;
+  width: 2px;
 }
 #dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar-track {
   background: transparent;
