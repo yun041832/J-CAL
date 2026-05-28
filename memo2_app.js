@@ -4093,6 +4093,15 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
 /* ── Daily 페이지 ── */
 let dailyViewMode = 'week';
 let dailySelectedDate = new Date();
+function setDailyItemDone(dstr, idx, checked){
+  const list = get(kDaily(dstr), []);
+  if(!Array.isArray(list) || !list[idx]) return;
+  list[idx].done = checked;
+  set(kDaily(dstr), list);
+  renderDailyList();
+  if(dailyViewMode==='week') renderDailyWeekCalendar();
+  else renderDailyMonthCalendar();
+}
 
 function initDailyPage(){
   if(document.getElementById('dailyPage').dataset.initialized === 'true'){
@@ -4221,7 +4230,7 @@ function renderDailyWeekCalendar(){
 
     dayHeader.append(dayName, dayNum, dot);
 
-    const itemList = el('div');
+    const itemList = el('div', 'weekly-day-card-scroll');
     itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
 
     items.forEach((item, idx)=>{
@@ -4238,10 +4247,7 @@ function renderDailyWeekCalendar(){
 
       cb.addEventListener('change', (e)=>{
         e.stopPropagation();
-        const list = get(kDaily(dstr), []);
-        list[idx].done = cb.checked;
-        set(kDaily(dstr), list);
-        renderDailyWeekCalendar();
+        setDailyItemDone(dstr, idx, cb.checked);
       });
 
       row.append(cb, text);
@@ -4399,11 +4405,7 @@ function renderDailyList(){
     });
 
     cb.addEventListener('change', ()=>{
-      list[idx].done = cb.checked;
-      set(kDaily(dstr), list);
-      renderDailyList();
-      if(dailyViewMode==='week') renderDailyWeekCalendar();
-      else renderDailyMonthCalendar();
+      setDailyItemDone(dstr, idx, cb.checked);
     });
 
     delBtn.addEventListener('click', ()=>{
