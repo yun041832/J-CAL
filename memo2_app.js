@@ -110,6 +110,7 @@ function showDailyPage(){
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initDailyPage?.();
+  applyDailyView?.();
 }
 function showTimerPage(){
   localStorage.setItem('memo2.lastPage', 'timer');
@@ -4093,6 +4094,39 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
 /* ── Daily 페이지 ── */
 let dailyViewMode = 'day';
 let dailySelectedDate = new Date();
+let dailyViewButtonsBound = false;
+function loadDailyViewMode(){
+  const saved = localStorage.getItem('memo2.dailyViewMode');
+  if(saved === 'day' || saved === 'week' || saved === 'month') dailyViewMode = saved;
+}
+function saveDailyViewMode(){
+  localStorage.setItem('memo2.dailyViewMode', dailyViewMode);
+}
+function applyDailyView(){
+  setDailyModeLayout();
+  renderDailyWeekGoal();
+  if(dailyViewMode === 'day'){
+    renderDailyDayWorkspace();
+  }else if(dailyViewMode === 'week'){
+    renderDailyWeekCalendar();
+    renderDailyList();
+  }else if(dailyViewMode === 'month'){
+    renderDailyMonthCalendar();
+  }
+}
+function setDailyViewMode(mode){
+  if(mode !== 'day' && mode !== 'week' && mode !== 'month') return;
+  dailyViewMode = mode;
+  saveDailyViewMode();
+  applyDailyView();
+}
+function bindDailyViewButtons(){
+  if(dailyViewButtonsBound) return;
+  dailyViewButtonsBound = true;
+  document.getElementById('dailyDayViewBtn')?.addEventListener('click', ()=> setDailyViewMode('day'));
+  document.getElementById('dailyWeekViewBtn')?.addEventListener('click', ()=> setDailyViewMode('week'));
+  document.getElementById('dailyMonthViewBtn')?.addEventListener('click', ()=> setDailyViewMode('month'));
+}
 function kDailySections(d){ return `memo2.daily.sections.${d}`; }
 function createDailySectionId(){ return `daily_section_${Date.now()}_${Math.random().toString(36).slice(2,7)}`; }
 function getDailySections(dstr){
@@ -4129,18 +4163,22 @@ function updateDailyViewButtons(){
   });
 }
 function setDailyModeLayout(){
+  const mode=dailyViewMode;
   const dayWrap=document.getElementById('dailyDayWorkspace');
   const weekWrap=document.getElementById('dailyWeekCalendar');
   const monthWrap=document.getElementById('dailyMonthCalendar');
   const inputSection=document.getElementById('dailyInputSection');
   const listSection=document.getElementById('dailyList');
-  const isDay=dailyViewMode==='day';
-  const isWeek=dailyViewMode==='week';
-  if(dayWrap) dayWrap.style.display=isDay?'':'none';
-  if(weekWrap) weekWrap.style.display=isWeek?'':'none';
-  if(monthWrap) monthWrap.style.display=dailyViewMode==='month'?'':'none';
-  if(inputSection) inputSection.style.display=isWeek?'':'none';
-  if(listSection) listSection.style.display=isWeek?'':'none';
+  const show=(el,visible)=>{
+    if(!el) return;
+    if(visible) el.style.removeProperty('display');
+    else el.style.display='none';
+  };
+  show(dayWrap, mode==='day');
+  show(weekWrap, mode==='week');
+  show(monthWrap, mode==='month');
+  show(inputSection, mode==='week');
+  show(listSection, mode==='week');
   updateDailyViewButtons();
 }
 function setDailyItemDone(dstr, idx, checked){
@@ -4158,46 +4196,16 @@ function setDailyItemDone(dstr, idx, checked){
 }
 
 function initDailyPage(){
-  if(document.getElementById('dailyPage').dataset.initialized === 'true'){
-    setDailyModeLayout();
-    renderDailyWeekGoal();
-    if(dailyViewMode==='day'){
-      renderDailyDayWorkspace();
-    }else if(dailyViewMode==='week'){
-      renderDailyWeekCalendar();
-      renderDailyList();
-    }else{
-      renderDailyMonthCalendar();
-    }
-    return;
-  }
-  document.getElementById('dailyPage').dataset.initialized = 'true';
+  const dailyPageEl=document.getElementById('dailyPage');
+  if(!dailyPageEl) return;
+  loadDailyViewMode();
+  bindDailyViewButtons();
+  if(dailyPageEl.dataset.initialized === 'true') return;
+  dailyPageEl.dataset.initialized = 'true';
 
-  const dayViewBtn = document.getElementById('dailyDayViewBtn');
-  const weekViewBtn = document.getElementById('dailyWeekViewBtn');
-  const monthViewBtn = document.getElementById('dailyMonthViewBtn');
   const addBtn = document.getElementById('dailyAddBtn');
   const input = document.getElementById('dailyInput');
   const openWidgetBtn = document.getElementById('openDailyWidgetBtn');
-
-  dayViewBtn?.addEventListener('click', ()=>{
-    dailyViewMode = 'day';
-    setDailyModeLayout();
-    renderDailyDayWorkspace();
-  });
-
-  weekViewBtn?.addEventListener('click', ()=>{
-    dailyViewMode = 'week';
-    setDailyModeLayout();
-    renderDailyWeekCalendar();
-    renderDailyList();
-  });
-
-  monthViewBtn?.addEventListener('click', ()=>{
-    dailyViewMode = 'month';
-    setDailyModeLayout();
-    renderDailyMonthCalendar();
-  });
 
   const addDaily = ()=>{
     const text = input.value.trim();
@@ -4218,17 +4226,6 @@ function initDailyPage(){
   input?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addDaily(); } });
 
   openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
-
-  setDailyModeLayout();
-  renderDailyWeekGoal();
-  if(dailyViewMode==='day'){
-    renderDailyDayWorkspace();
-  }else if(dailyViewMode==='week'){
-    renderDailyWeekCalendar();
-    renderDailyList();
-  }else{
-    renderDailyMonthCalendar();
-  }
 }
 
 function renderDailyDayWorkspace(){
