@@ -3004,18 +3004,18 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 /* Daily 주간 카드 내부 task list 스크롤바 슬림화 */
 .weekly-day-card-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.10) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.06) transparent;
 }
 .weekly-day-card-scroll::-webkit-scrollbar {
-  width: 2px;
+  width: 1px;
 }
 .weekly-day-card-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 .weekly-day-card-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.10);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 999px;
 }
 .weekly-day-card-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.14);
 }
