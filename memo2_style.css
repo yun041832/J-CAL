@@ -6,7 +6,9 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:"Noto Sans","Noto Sans KR",sans-serif}
-.app{display:grid;grid-template-columns:200px minmax(400px,1fr) minmax(300px,360px);gap:10px;padding:6px;flex:1}
+.app{display:grid;grid-template-columns:168px minmax(0,1fr);gap:10px;padding:6px;flex:1;width:100%;max-width:none}
+.app:has(> .right:not(.hidden)){grid-template-columns:168px minmax(0,1fr) minmax(300px,360px)}
+.main{min-width:0;width:100%}
 .sidebar .menu-btn{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;margin:4px 0;font-size:14px;font-weight:600;font-family:"Noto Sans","Noto Sans KR",sans-serif}
 .sidebar__title{font-weight:700;margin-bottom:8px;font-size:14px;font-family:"Noto Sans","Noto Sans KR",sans-serif}
 .sidebar__hint{font-size:18px; text-align: center; color:var(--text-muted);line-height:1.5;margin-top:20px;font-family:"Noto Sans","Noto Sans KR",sans-serif}
@@ -32,6 +34,12 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .todo__add{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 12px}
 .todo__list,.memo__list{list-style:none;margin:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .split{border:none;border-top:1px solid var(--line);margin:8px 12px}
+@media (max-width:1024px){
+  .app,
+  .app:has(> .right:not(.hidden)){
+    grid-template-columns:1fr;
+  }
+}
 
 .open-app-inline{ text-decoration: none !important; }
 .open-app-inline:hover{ text-decoration: none !important; }
