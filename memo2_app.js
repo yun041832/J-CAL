@@ -4213,6 +4213,28 @@ function updateDailySectionTitleById(dstr,sectionId,title){
   dailyEditingSectionTitle='';
   renderDailyDayWorkspace();
 }
+function isDailySectionDeletable(section){
+  if(!section||section.id==='__none__') return false;
+  const title=(section.title||'').trim();
+  if(title==='기본 섹션'||title==='미분류') return false;
+  return true;
+}
+function deleteDailySection(dstr,sectionId){
+  const sections=getDailySections(dstr);
+  const target=sections.find(s=>s.id===sectionId);
+  if(!target||!isDailySectionDeletable(target)) return;
+  setDailySections(dstr,sections.filter(s=>s.id!==sectionId));
+  saveDailyTasks(dstr,getDailyTasks(dstr).filter(t=>t.sectionId!==sectionId));
+  if(dailyEditingSectionId===sectionId){
+    dailyEditingSectionId=null;
+    dailyEditingSectionTitle='';
+  }
+  if(dailySectionTaskInputSectionId===sectionId){
+    dailySectionTaskInputSectionId=null;
+    dailySectionTaskInputText='';
+  }
+  renderDailyDayWorkspace();
+}
 function appendDailySectionTitleInput(host,opts){
   const inp=document.createElement('input');
   inp.type='text';
@@ -4508,6 +4530,14 @@ function renderDailyDayWorkspace(){
         renderDailyDayWorkspace();
       };
       rightHead.appendChild(editBtn);
+    }
+    if(isDailySectionDeletable(section) && dailyEditingSectionId!==section.id){
+      const delSectionBtn=el('button','daily-day-section-btn daily-day-section-delete','삭제');
+      delSectionBtn.type='button';
+      delSectionBtn.title='섹션 삭제';
+      delSectionBtn.setAttribute('aria-label','섹션 삭제');
+      delSectionBtn.onclick=()=> deleteDailySection(dstr,section.id);
+      rightHead.appendChild(delSectionBtn);
     }
     const addTaskBtn=el('button','daily-day-section-btn primary','+ 작업 추가');
     addTaskBtn.type='button';

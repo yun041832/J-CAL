@@ -3253,6 +3253,14 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   color:#fff;
   border-color:#3b82f6;
 }
+.daily-day-section-delete{
+  color:#dc2626;
+  border-color:#fecaca;
+  background:#fff;
+}
+.daily-day-section-delete:hover{
+  background:#fef2f2;
+}
 .daily-day-section-body{
   display:flex;
   flex-direction:column;
