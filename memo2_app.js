@@ -4095,6 +4095,55 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
 let dailyViewMode = 'day';
 let dailySelectedDate = new Date();
 let dailyViewButtonsBound = false;
+let dailySectionTaskInputSectionId = null;
+let dailySectionTaskInputText = '';
+function addTaskToDailySection(dstr, sectionId, text){
+  const value=(text||'').trim();
+  if(!value) return;
+  const next=get(kDaily(dstr),[]);
+  next.push({
+    id:Date.now(),
+    text:value,
+    done:false,
+    sectionId:sectionId==='__none__'?undefined:sectionId,
+  });
+  set(kDaily(dstr),next);
+  dailySectionTaskInputSectionId=null;
+  dailySectionTaskInputText='';
+  renderDailyDayWorkspace();
+}
+function appendDailySectionTaskInput(body, dstr, sectionId){
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.className='daily-section-task-input';
+  inp.placeholder='작업을 입력하고 Enter';
+  inp.value=dailySectionTaskInputText;
+  inp.addEventListener('input',()=>{ dailySectionTaskInputText=inp.value; });
+  inp.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const value=inp.value.trim();
+      if(!value) return;
+      addTaskToDailySection(dstr, sectionId, value);
+    }
+    if(e.key==='Escape'){
+      e.preventDefault();
+      dailySectionTaskInputSectionId=null;
+      dailySectionTaskInputText='';
+      renderDailyDayWorkspace();
+    }
+  });
+  inp.addEventListener('blur',()=>{
+    setTimeout(()=>{
+      if(!dailySectionTaskInputText.trim()){
+        dailySectionTaskInputSectionId=null;
+        renderDailyDayWorkspace();
+      }
+    },0);
+  });
+  body.appendChild(inp);
+  requestAnimationFrame(()=> inp.focus());
+}
 function loadDailyViewMode(){
   const saved = localStorage.getItem('memo2.dailyViewMode');
   if(saved === 'day' || saved === 'week' || saved === 'month') dailyViewMode = saved;
@@ -4285,16 +4334,8 @@ function renderDailyDayWorkspace(){
     const addTaskBtn=el('button','daily-day-section-btn primary','+ 작업 추가');
     addTaskBtn.type='button';
     addTaskBtn.onclick=()=>{
-      const text=prompt('작업 내용을 입력하세요.');
-      if(!text||!text.trim()) return;
-      const next=get(kDaily(dstr),[]);
-      next.push({
-        id:Date.now(),
-        text:text.trim(),
-        done:false,
-        sectionId:section.id==='__none__'?undefined:section.id,
-      });
-      set(kDaily(dstr),next);
+      dailySectionTaskInputSectionId=section.id;
+      dailySectionTaskInputText='';
       renderDailyDayWorkspace();
     };
     rightHead.appendChild(addTaskBtn);
@@ -4305,7 +4346,8 @@ function renderDailyDayWorkspace(){
       .map((t,idx)=>({task:t,idx}))
       .filter(({task})=> section.id==='__none__' ? !task.sectionId : task.sectionId===section.id);
 
-    if(!items.length){
+    const showTaskInput=dailySectionTaskInputSectionId===section.id;
+    if(!items.length && !showTaskInput){
       body.appendChild(el('div','daily-day-empty','작업이 없습니다.'));
     }else{
       items.forEach(({task,idx})=>{
@@ -4320,6 +4362,7 @@ function renderDailyDayWorkspace(){
         body.appendChild(row);
       });
     }
+    if(showTaskInput) appendDailySectionTaskInput(body, dstr, section.id);
     sec.append(secHead,body);
     listWrap.appendChild(sec);
   });
