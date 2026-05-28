@@ -4097,19 +4097,161 @@ let dailySelectedDate = new Date();
 let dailyViewButtonsBound = false;
 let dailySectionTaskInputSectionId = null;
 let dailySectionTaskInputText = '';
+let dailyIsAddingSection = false;
+let dailyNewSectionTitle = '';
+let dailyEditingSectionId = null;
+let dailyEditingSectionTitle = '';
+const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+function getDailyTasks(dstr){
+  const list=get(kDaily(dstr),[]);
+  return Array.isArray(list)?list:[];
+}
+function saveDailyTasks(dstr,list){
+  set(kDaily(dstr),Array.isArray(list)?list:[]);
+}
+function refreshDailyTaskViews(){
+  if(dailyViewMode==='day') renderDailyDayWorkspace();
+  else if(dailyViewMode==='week'){
+    renderDailyList();
+    renderDailyWeekCalendar();
+  }else{
+    renderDailyMonthCalendar();
+  }
+}
+function updateDailyTaskText(dstr,idx,newText){
+  const list=getDailyTasks(dstr);
+  if(!list[idx]) return;
+  const value=(newText||'').trim();
+  if(!value) return;
+  list[idx].text=value;
+  saveDailyTasks(dstr,list);
+  refreshDailyTaskViews();
+}
+function deleteDailyTaskAt(dstr,idx){
+  const list=getDailyTasks(dstr);
+  if(!list[idx]) return;
+  list.splice(idx,1);
+  saveDailyTasks(dstr,list);
+  refreshDailyTaskViews();
+}
+function addDailyTask(dstr,{text,sectionId,done=false}){
+  const value=(text||'').trim();
+  if(!value) return;
+  const list=getDailyTasks(dstr);
+  list.push({
+    id:Date.now(),
+    text:value,
+    done:!!done,
+    sectionId:sectionId||undefined,
+  });
+  saveDailyTasks(dstr,list);
+  refreshDailyTaskViews();
+}
+function startDailyTaskInlineEdit(dstr,idx,textEl,options={}){
+  const list=getDailyTasks(dstr);
+  if(!list[idx]) return;
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.className=options.inputClass||'daily-section-task-input';
+  if(options.inputStyle) inp.style.cssText=options.inputStyle;
+  inp.value=list[idx].text||'';
+  const save=()=> updateDailyTaskText(dstr,idx,inp.value);
+  inp.addEventListener('keydown',(ev)=>{
+    if(ev.key==='Enter'){ ev.preventDefault(); save(); }
+    if(ev.key==='Escape'){ ev.preventDefault(); refreshDailyTaskViews(); }
+  });
+  inp.addEventListener('blur',save);
+  textEl.replaceWith(inp);
+  inp.focus();
+  inp.select();
+}
+function appendDailyDayTaskRow(body,dstr,idx,task){
+  const row=el('div','daily-day-task-item');
+  const cb=document.createElement('input');
+  cb.type='checkbox';
+  cb.checked=!!task.done;
+  cb.addEventListener('change',()=> setDailyItemDone(dstr,idx,cb.checked));
+  const txt=el('span','daily-day-task-text',task.text||'');
+  if(task.done) txt.classList.add('is-done');
+  const actions=el('div','daily-day-task-actions');
+  const editBtn=el('button','daily-day-task-icon-btn');
+  editBtn.type='button';
+  editBtn.title='수정';
+  editBtn.innerHTML=DAILY_TASK_EDIT_SVG;
+  editBtn.addEventListener('click',(e)=>{
+    e.preventDefault();
+    startDailyTaskInlineEdit(dstr,idx,txt);
+  });
+  const delBtn=el('button','daily-day-task-icon-btn daily-day-task-delete','✕');
+  delBtn.type='button';
+  delBtn.setAttribute('aria-label','작업 삭제');
+  delBtn.addEventListener('click',(e)=>{
+    e.preventDefault();
+    deleteDailyTaskAt(dstr,idx);
+  });
+  actions.append(editBtn,delBtn);
+  row.append(cb,txt,actions);
+  body.appendChild(row);
+}
+function addDailySection(dstr,title){
+  const value=(title||'').trim();
+  if(!value) return;
+  const sections=getDailySections(dstr);
+  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:'',order:sections.length}]);
+  setDailySections(dstr,next);
+  dailyIsAddingSection=false;
+  dailyNewSectionTitle='';
+  renderDailyDayWorkspace();
+}
+function updateDailySectionTitleById(dstr,sectionId,title){
+  const value=(title||'').trim();
+  if(!value) return;
+  const sections=getDailySections(dstr);
+  const next=sections.map(s=>s.id===sectionId?{...s,title:value}:s);
+  setDailySections(dstr,next);
+  dailyEditingSectionId=null;
+  dailyEditingSectionTitle='';
+  renderDailyDayWorkspace();
+}
+function appendDailySectionTitleInput(host,opts){
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.className='daily-section-title-input';
+  inp.placeholder=opts.placeholder||'';
+  inp.value=opts.value||'';
+  inp.addEventListener('input',()=>{ opts.onInput(inp.value); });
+  inp.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const value=inp.value.trim();
+      if(!value) return;
+      opts.onSubmit(value);
+    }
+    if(e.key==='Escape'){
+      e.preventDefault();
+      opts.onCancel();
+    }
+  });
+  inp.addEventListener('blur',()=>{
+    if(opts.onBlur) opts.onBlur(inp.value);
+    else if(!inp.value.trim()) opts.onCancel();
+  });
+  host.appendChild(inp);
+  requestAnimationFrame(()=> inp.focus());
+}
 function addTaskToDailySection(dstr, sectionId, text){
   const value=(text||'').trim();
   if(!value) return;
-  const next=get(kDaily(dstr),[]);
-  next.push({
+  dailySectionTaskInputSectionId=null;
+  dailySectionTaskInputText='';
+  const list=getDailyTasks(dstr);
+  list.push({
     id:Date.now(),
     text:value,
     done:false,
     sectionId:sectionId==='__none__'?undefined:sectionId,
   });
-  set(kDaily(dstr),next);
-  dailySectionTaskInputSectionId=null;
-  dailySectionTaskInputText='';
+  saveDailyTasks(dstr,list);
   renderDailyDayWorkspace();
 }
 function appendDailySectionTaskInput(body, dstr, sectionId){
@@ -4231,17 +4373,11 @@ function setDailyModeLayout(){
   updateDailyViewButtons();
 }
 function setDailyItemDone(dstr, idx, checked){
-  const list = get(kDaily(dstr), []);
-  if(!Array.isArray(list) || !list[idx]) return;
-  list[idx].done = checked;
-  set(kDaily(dstr), list);
-  if(dailyViewMode==='day') renderDailyDayWorkspace();
-  else if(dailyViewMode==='week'){
-    renderDailyList();
-    renderDailyWeekCalendar();
-  }else{
-    renderDailyMonthCalendar();
-  }
+  const list=getDailyTasks(dstr);
+  if(!list[idx]) return;
+  list[idx].done=checked;
+  saveDailyTasks(dstr,list);
+  refreshDailyTaskViews();
 }
 
 function initDailyPage(){
@@ -4260,15 +4396,8 @@ function initDailyPage(){
     const text = input.value.trim();
     if(!text) return;
     const dstr = fmtLocalDate(dailySelectedDate);
-    const list = get(kDaily(dstr), []);
-    list.push({ id: Date.now(), text, done: false });
-    set(kDaily(dstr), list);
+    addDailyTask(dstr,{text,done:false});
     input.value = '';
-    if(dailyViewMode==='day') renderDailyDayWorkspace();
-    else if(dailyViewMode==='week'){
-      renderDailyList();
-      renderDailyWeekCalendar();
-    }else renderDailyMonthCalendar();
   };
 
   addBtn?.addEventListener('click', addDaily);
@@ -4295,14 +4424,36 @@ function renderDailyDayWorkspace(){
   const addSectionBtn=el('button','daily-day-add-section-btn','+ 섹션 추가');
   addSectionBtn.type='button';
   addSectionBtn.onclick=()=>{
-    const title=prompt('새 섹션 이름을 입력하세요.');
-    if(!title||!title.trim()) return;
-    const next=sections.concat([{id:createDailySectionId(),title:title.trim(),emoji:'📌',color:'',order:sections.length}]);
-    setDailySections(dstr,next);
+    dailyIsAddingSection=true;
+    dailyNewSectionTitle='';
     renderDailyDayWorkspace();
   };
   sectionHead.append(sectionTitle,addSectionBtn);
   left.appendChild(sectionHead);
+  if(dailyIsAddingSection){
+    const addWrap=el('div','daily-section-add-wrap');
+    appendDailySectionTitleInput(addWrap,{
+      placeholder:'섹션 이름을 입력하고 Enter',
+      value:dailyNewSectionTitle,
+      onInput:(v)=>{ dailyNewSectionTitle=v; },
+      onSubmit:(v)=> addDailySection(dstr,v),
+      onCancel:()=>{
+        dailyIsAddingSection=false;
+        dailyNewSectionTitle='';
+        renderDailyDayWorkspace();
+      },
+      onBlur:(v)=>{
+        const value=(v||'').trim();
+        if(value) addDailySection(dstr,value);
+        else{
+          dailyIsAddingSection=false;
+          dailyNewSectionTitle='';
+          renderDailyDayWorkspace();
+        }
+      },
+    });
+    left.appendChild(addWrap);
+  }
 
   const listWrap=el('div','daily-day-sections-list');
   const unsectioned=allTasks
@@ -4315,18 +4466,39 @@ function renderDailyDayWorkspace(){
     const secHead=el('div','daily-day-section-head');
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',section.emoji||'📌');
-    const ttl=el('span','daily-day-section-title',section.title||'섹션');
-    leftHead.append(emo,ttl);
+    leftHead.appendChild(emo);
+    if(section.id!=='__none__' && dailyEditingSectionId===section.id){
+      appendDailySectionTitleInput(leftHead,{
+        placeholder:'섹션 이름',
+        value:dailyEditingSectionTitle,
+        onInput:(v)=>{ dailyEditingSectionTitle=v; },
+        onSubmit:(v)=> updateDailySectionTitleById(dstr,section.id,v),
+        onCancel:()=>{
+          dailyEditingSectionId=null;
+          dailyEditingSectionTitle='';
+          renderDailyDayWorkspace();
+        },
+        onBlur:(v)=>{
+          const value=(v||'').trim();
+          if(value) updateDailySectionTitleById(dstr,section.id,value);
+          else{
+            dailyEditingSectionId=null;
+            dailyEditingSectionTitle='';
+            renderDailyDayWorkspace();
+          }
+        },
+      });
+    }else{
+      leftHead.appendChild(el('span','daily-day-section-title',section.title||'섹션'));
+    }
 
     const rightHead=el('div','daily-day-section-actions');
-    if(section.id!=='__none__'){
+    if(section.id!=='__none__' && dailyEditingSectionId!==section.id){
       const editBtn=el('button','daily-day-section-btn','수정');
       editBtn.type='button';
       editBtn.onclick=()=>{
-        const title=prompt('섹션 이름 수정',section.title||'');
-        if(!title||!title.trim()) return;
-        const next=sections.map(s=>s.id===section.id?{...s,title:title.trim()}:s);
-        setDailySections(dstr,next);
+        dailyEditingSectionId=section.id;
+        dailyEditingSectionTitle=section.title||'';
         renderDailyDayWorkspace();
       };
       rightHead.appendChild(editBtn);
@@ -4351,15 +4523,7 @@ function renderDailyDayWorkspace(){
       body.appendChild(el('div','daily-day-empty','작업이 없습니다.'));
     }else{
       items.forEach(({task,idx})=>{
-        const row=el('label','daily-day-task-item');
-        const cb=document.createElement('input');
-        cb.type='checkbox';
-        cb.checked=!!task.done;
-        cb.addEventListener('change',()=> setDailyItemDone(dstr, idx, cb.checked));
-        const txt=el('span','daily-day-task-text',task.text||'');
-        if(task.done) txt.classList.add('is-done');
-        row.append(cb,txt);
-        body.appendChild(row);
+        appendDailyDayTaskRow(body,dstr,idx,task);
       });
     }
     if(showTaskInput) appendDailySectionTaskInput(body, dstr, section.id);
@@ -4648,7 +4812,7 @@ function renderDailyList(){
   const container = document.getElementById('dailyList');
   if(!container) return;
   const dstr = fmtLocalDate(dailySelectedDate);
-  const list = get(kDaily(dstr), []);
+  const list = getDailyTasks(dstr);
   container.innerHTML = '';
 
   if(!list.length){
@@ -4672,9 +4836,8 @@ function renderDailyList(){
     const text = el('span', null, item.text);
     text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
 
-    const EDIT_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
     const editBtn = el('button');
-    editBtn.innerHTML = EDIT_SVG;
+    editBtn.innerHTML = DAILY_TASK_EDIT_SVG;
     editBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;opacity:0.6;';
     editBtn.title = '수정';
 
@@ -4683,24 +4846,10 @@ function renderDailyList(){
 
     editBtn.addEventListener('click', (e)=>{
       e.stopPropagation();
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.value = item.text;
-      inp.style.cssText = 'flex:1;font-size:14px;border:none;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;';
-      const save = ()=>{
-        const newText = inp.value.trim();
-        if(newText) list[idx].text = newText;
-        set(kDaily(dstr), list);
-        renderDailyList();
-      };
-      inp.onkeydown = (ev)=>{
-        if(ev.key==='Enter'){ ev.preventDefault(); save(); }
-        if(ev.key==='Escape'){ renderDailyList(); }
-      };
-      inp.onblur = save;
-      row.replaceChild(inp, text);
-      inp.focus();
-      inp.select();
+      startDailyTaskInlineEdit(dstr, idx, text, {
+        inputClass:'',
+        inputStyle:'flex:1;font-size:14px;border:none;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;box-sizing:border-box;',
+      });
     });
 
     cb.addEventListener('change', ()=>{
@@ -4708,11 +4857,7 @@ function renderDailyList(){
     });
 
     delBtn.addEventListener('click', ()=>{
-      list.splice(idx, 1);
-      set(kDaily(dstr), list);
-      renderDailyList();
-      if(dailyViewMode==='week') renderDailyWeekCalendar();
-      else renderDailyMonthCalendar();
+      deleteDailyTaskAt(dstr, idx);
     });
 
     row.addEventListener('dragstart', (e)=>{

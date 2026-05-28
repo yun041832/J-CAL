@@ -3271,6 +3271,8 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   accent-color:#3b82f6;
 }
 .daily-day-task-text{
+  flex:1;
+  min-width:0;
   font-size:13px;
   line-height:1.4;
   color:#334155;
@@ -3299,6 +3301,54 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-section-task-input:focus{
   border-color:#3b82f6;
   box-shadow:0 0 0 2px rgba(59,130,246,0.12);
+}
+.daily-section-title-input{
+  width:100%;
+  height:36px;
+  padding:0 10px;
+  border:1px solid #dce5f2;
+  border-radius:8px;
+  font-size:13px;
+  outline:none;
+  background:#fff;
+  box-sizing:border-box;
+  font-family:inherit;
+}
+.daily-section-title-input:focus{
+  border-color:#3b82f6;
+  box-shadow:0 0 0 2px rgba(59,130,246,0.12);
+}
+.daily-section-add-wrap{
+  margin:0 0 10px;
+}
+.daily-day-section-left .daily-section-title-input{
+  flex:1;
+  min-width:0;
+  height:32px;
+}
+.daily-day-task-actions{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-left:auto;
+  flex-shrink:0;
+}
+.daily-day-task-icon-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:2px;
+  display:flex;
+  align-items:center;
+  opacity:0.65;
+  line-height:1;
+}
+.daily-day-task-icon-btn:hover{
+  opacity:1;
+}
+.daily-day-task-delete{
+  color:#cbd5e1;
+  font-size:14px;
 }
 .daily-memo-head{
   margin-bottom:8px;
