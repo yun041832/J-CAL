@@ -1181,16 +1181,17 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 }
 .goal-bar{
   position:relative;
-  display:flex;
+  display:flex !important;
   align-items:center;
-  gap:6px;
-  flex:1 1 auto;
-  width:100%;
-  max-width:none;
+  gap:8px;
+  width:100% !important;
+  max-width:none !important;
   min-width:0;
+  flex:1 1 auto;
+  align-self:stretch;
 }
 .goal-style-btn{
-  width:32px;
+  width:34px;
   height:32px;
   border:1px solid #d5d9e2;
   border-radius:8px;
@@ -1202,7 +1203,8 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   place-items:center;
   color:#111827;
   transition:background .15s ease, box-shadow .15s ease;
-  flex-shrink:0;
+  flex:0 0 auto;
+  min-width:34px;
 }
 .goal-style-btn:hover{background:#f4f6fb; box-shadow:0 4px 12px rgba(0,0,0,0.08);}
 .goal-style-btn:active{transform:translateY(1px);}
@@ -1215,6 +1217,11 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 }
 .goal-bar .monthly-goal-input-unified{
   padding-left:28px;
+}
+.card__header-unified .goal-bar{
+  width:100%;
+  max-width:none;
+  min-width:0;
 }
 .goal-style-menu{
   position:absolute;
@@ -1804,10 +1811,16 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   }
   .card__header-unified{
     flex-direction:column;
+    align-items:stretch;
+    justify-content:flex-start;
     gap:8px;
     padding:8px;
   }
   .monthly-goal-input-unified{
+    flex:1 1 auto !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0;
     font-size:13px;
     padding:6px 8px;
   }
