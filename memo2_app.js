@@ -4219,20 +4219,26 @@ function appendDailySectionTitleInput(host,opts){
   inp.className='daily-section-title-input';
   inp.placeholder=opts.placeholder||'';
   inp.value=opts.value||'';
+  let committed=false;
   inp.addEventListener('input',()=>{ opts.onInput(inp.value); });
   inp.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){
       e.preventDefault();
       const value=inp.value.trim();
-      if(!value) return;
+      if(!value||committed) return;
+      committed=true;
       opts.onSubmit(value);
     }
     if(e.key==='Escape'){
       e.preventDefault();
+      if(committed) return;
+      committed=true;
       opts.onCancel();
     }
   });
   inp.addEventListener('blur',()=>{
+    if(committed) return;
+    committed=true;
     if(opts.onBlur) opts.onBlur(inp.value);
     else if(!inp.value.trim()) opts.onCancel();
   });
