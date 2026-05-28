@@ -229,13 +229,6 @@
       <button class="menu-btn" data-widget="stopwatch" title="스탑워치">⏱️ Stopwatch</button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
-      <p class="sidebar__hint">
-        ※ 메뉴 선택 후 상단의<br>
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor" style="vertical-align:middle">
-          <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"/>
-        </svg>
-        버튼을 클릭하면<br>위젯이 활성화 됩니다.
-      </p>
     </aside>
     <div class="sidebar-footer-pc">
       <hr style="margin: 12px 8px; border-color: #eee;">
@@ -459,9 +452,13 @@
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
           <div class="card__title">📋 Daily</div>
           <div style="display:flex;gap:6px;">
-            <button id="dailyWeekViewBtn" class="icon-btn" style="padding:6px 10px;font-size:12px;border:1px solid #e2e8f0;border-radius:8px;background:#3b82f6;color:#fff;">주간</button>
-            <button id="dailyMonthViewBtn" class="icon-btn" style="padding:6px 10px;font-size:12px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);color:#64748b;">월간</button>
-            <button id="openDailyWidgetBtn" class="icon-btn" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);">↗</button>
+            <button id="dailyWeekViewBtn" class="icon-btn" title="주간 보기" aria-label="주간 보기" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M80-80v-560h800v560H80Zm80-80h120v-160H160v160Zm200 0h120v-160H360v160Zm200 0h120v-160H560v160Zm200 0h40v-160H760v160ZM160-400h120v-160H160v160Zm200 0h120v-160H360v160Zm200 0h120v-160H560v160Zm200 0h40v-160H760v160Z"/></svg>
+            </button>
+            <button id="dailyMonthViewBtn" class="icon-btn" title="월간 보기" aria-label="월간 보기" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);color:#64748b;display:flex;align-items:center;justify-content:center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M120-120v-640h720v640H120Zm80-80h560v-360H200v360Zm0-440h560v-40H200v40Z"/></svg>
+            </button>
+            <button id="openDailyWidgetBtn" class="icon-btn" title="위젯" aria-label="위젯" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);font-size:12px;">위젯</button>
           </div>
         </div>
         <div id="dailyWeekCalendar"></div>
@@ -554,7 +551,7 @@
       <div id="stopwatchPage" class="card hidden">
         <div class="card__header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div class="card__title">⏱️ 스탑워치</div>
-          <button type="button" id="openStopwatchWidgetBtn" class="icon-btn-ghost widget-open-btn" title="스탑워치 위젯 열기">↗</button>
+          <button type="button" id="openStopwatchWidgetBtn" class="icon-btn-ghost widget-open-btn" title="위젯" aria-label="위젯">위젯</button>
         </div>
         <div id="stopwatchPageContent" class="stopwatch-page-content"></div>
       </div>
@@ -594,7 +591,7 @@
             <button id="prevMonth" class="icon-btn">◀</button>
             <div id="headerYmLabel" class="header-ym-compact">🗓</div>
             <button id="nextMonth" class="icon-btn">▶</button>
-            <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="달력 위젯 열기">↗</button>
+            <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="위젯" aria-label="위젯">위젯</button>
           </div>
         </div>
 

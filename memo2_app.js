@@ -2490,7 +2490,7 @@ function makeWidget(title, bodyBuilder, rootClass){
   const w=el('section','widget'+(rootClass?` ${rootClass}`:'')); w.style.zIndex=++z; w.style.fontFamily='"Noto Sans KR","Noto Sans",sans-serif';
   const head=el('div','widget__head'); head.style.cursor='grab';
   const t=el('div','widget__title',title);
-  const btns=el('div'); const pop=el('button','widget__btn widget-open-btn','↗'); const x=el('button','widget__btn','✕');
+  const btns=el('div'); const pop=el('button','widget__btn widget-open-btn','위젯'); const x=el('button','widget__btn','✕');
   btns.append(pop,x); head.append(t,btns);
   const body=el('div','widget__body'); body.appendChild(bodyBuilder(false, window));
 
@@ -2933,7 +2933,7 @@ function createTimerBox(timerIndex){
   
   // 헤더 (화살표, X 버튼)
   const header=el('div','timer-box__header');
-  const popoutBtn=el('button','timer-box__btn widget-open-btn','↗');
+  const popoutBtn=el('button','timer-box__btn widget-open-btn','위젯');
   popoutBtn.title='위젯으로 열기';
   popoutBtn.onclick=()=> openTimerWidgetPopup(timerIndex);
   header.appendChild(popoutBtn);
@@ -3746,7 +3746,7 @@ function createMemoCard(item,idx,ref){
   btnGroup.style.display='flex';
   btnGroup.style.gap='4px';
   
-  const widgetBtn=el('button','memo-card__btn','↗');
+  const widgetBtn=el('button','memo-card__btn','위젯');
   widgetBtn.title='위젯으로 열기';
   widgetBtn.onclick=(e)=>{
     e.stopPropagation();
