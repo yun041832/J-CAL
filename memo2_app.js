@@ -4105,6 +4105,7 @@ function setDailyItemDone(dstr, idx, checked){
 
 function initDailyPage(){
   if(document.getElementById('dailyPage').dataset.initialized === 'true'){
+    renderDailyWeekGoal();
     renderDailyWeekCalendar();
     renderDailyList();
     return;
@@ -4157,6 +4158,7 @@ function initDailyPage(){
 
   openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
 
+  renderDailyWeekGoal();
   renderDailyWeekCalendar();
   renderDailyList();
 }
@@ -4164,6 +4166,7 @@ function initDailyPage(){
 function renderDailyWeekCalendar(){
   const container = document.getElementById('dailyWeekCalendar');
   if(!container) return;
+  renderDailyWeekGoal();
   container.innerHTML = '';
 
   const today = dailySelectedDate;
@@ -4291,6 +4294,7 @@ function renderDailyWeekCalendar(){
 function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
+  renderDailyWeekGoal();
   container.innerHTML = '';
 
   const y = dailySelectedDate.getFullYear();
@@ -6360,18 +6364,25 @@ if(calWrapper && resizeHandle){
 
 /* ── 이달의 목표 (1줄 형태) ── */
 const kMonthlyGoal=(y,m)=>`memo2.monthlyGoal.${y}-${m}`;
-const kMonthlyGoalStyle='memo2.monthlyGoal.style';
-
-function getGoalStyle(){
-  const def={color:'#1f2937',emoji:'',fontSize:'14',fontWeight:'600'};
-  try{ const v=JSON.parse(localStorage.getItem(kMonthlyGoalStyle)||'null'); return {...def,...v}; }catch{return def;}
+const kGoalStyle=(scope='monthly')=>`memo2.goalStyle.${scope}`;
+const kDailyWeekGoal=(weekStartDate)=>`memo2.dailyWeekGoal.${weekStartDate}`;
+function getWeekStartDateStr(date){
+  const d=new Date(date||new Date());
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-d.getDay());
+  return fmtLocalDate(d);
 }
-function saveGoalStyle(s){ try{ localStorage.setItem(kMonthlyGoalStyle, JSON.stringify(s)); }catch{} }
 
-function applyGoalStyle(input){
+function getGoalStyle(scope='monthly'){
+  const def={color:'#1f2937',emoji:'',fontSize:'14',fontWeight:'600'};
+  try{ const v=JSON.parse(localStorage.getItem(kGoalStyle(scope))||'null'); return {...def,...v}; }catch{return def;}
+}
+function saveGoalStyle(s,scope='monthly'){ try{ localStorage.setItem(kGoalStyle(scope), JSON.stringify(s)); }catch{} }
+
+function applyGoalStyle(input,badgeId='goalEmojiBadge',scope='monthly'){
   if(!input) return;
-  const badge=document.getElementById('goalEmojiBadge');
-  const st=getGoalStyle();
+  const badge=document.getElementById(badgeId);
+  const st=getGoalStyle(scope);
   input.style.color=st.color||'#1f2937';
   input.style.fontSize=(st.fontSize||'14')+'px';
   input.style.fontWeight=st.fontWeight||'600';
@@ -6379,11 +6390,14 @@ function applyGoalStyle(input){
   input.style.paddingLeft=st.emoji? '32px':'10px';
 }
 
-function showGoalStyleMenu(anchor){
+function showGoalStyleMenu(anchor,options={}){
   if(!anchor) return;
+  const scope=options.scope||'monthly';
+  const inputId=options.inputId||'monthlyGoalInput';
+  const badgeId=options.badgeId||'goalEmojiBadge';
   const existing=document.querySelector('.goal-style-menu');
   if(existing) existing.remove();
-  const st=getGoalStyle();
+  const st=getGoalStyle(scope);
   const menu=document.createElement('div'); menu.className='goal-style-menu';
 
   const rowColor=document.createElement('div'); rowColor.className='row';
@@ -6432,7 +6446,9 @@ function showGoalStyleMenu(anchor){
       fontSize:size.value||'14',
       fontWeight:weight.value||'700'
     };
-    saveGoalStyle(next); applyGoalStyle(document.getElementById('monthlyGoalInput')); close();
+    saveGoalStyle(next,scope);
+    applyGoalStyle(document.getElementById(inputId),badgeId,scope);
+    close();
   };
   setTimeout(()=>{
     const handler=(e)=>{
@@ -6451,7 +6467,7 @@ function renderMonthlyGoals(){
   const key=kMonthlyGoal(ST.viewYear,ST.viewMonth);
   const goalText=get(key,'');
   input.value=goalText;
-  applyGoalStyle(input);
+  applyGoalStyle(input,'goalEmojiBadge','monthly');
   
   input.onkeydown=(e)=>{
     if(e.key==='Enter'){
@@ -6466,6 +6482,23 @@ function renderMonthlyGoals(){
     const txt=input.value.trim();
     set(key,txt);
   };
+}
+
+function renderDailyWeekGoal(){
+  const input=document.getElementById('dailyWeekGoalInput');
+  if(!input) return;
+  const weekStart=getWeekStartDateStr(dailySelectedDate);
+  const key=kDailyWeekGoal(weekStart);
+  input.value=get(key,'');
+  applyGoalStyle(input,'dailyGoalEmojiBadge','daily-week');
+  input.onkeydown=(e)=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      set(key,input.value.trim());
+      input.blur();
+    }
+  };
+  input.onblur=()=> set(key,input.value.trim());
 }
 
 /* ── 테마 토글 기능 ── */
@@ -6494,7 +6527,11 @@ if(themeBtn){
 
 const goalStyleBtn=document.getElementById('goalStyleBtn');
 if(goalStyleBtn){
-  goalStyleBtn.addEventListener('click',(e)=>{ e.stopPropagation(); showGoalStyleMenu(goalStyleBtn); });
+  goalStyleBtn.addEventListener('click',(e)=>{ e.stopPropagation(); showGoalStyleMenu(goalStyleBtn,{scope:'monthly',inputId:'monthlyGoalInput',badgeId:'goalEmojiBadge'}); });
+}
+const dailyGoalStyleBtn=document.getElementById('dailyGoalStyleBtn');
+if(dailyGoalStyleBtn){
+  dailyGoalStyleBtn.addEventListener('click',(e)=>{ e.stopPropagation(); showGoalStyleMenu(dailyGoalStyleBtn,{scope:'daily-week',inputId:'dailyWeekGoalInput',badgeId:'dailyGoalEmojiBadge'}); });
 }
 
 /* ── (+) 버튼 클릭 이벤트 ── */
