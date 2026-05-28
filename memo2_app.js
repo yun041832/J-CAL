@@ -4093,6 +4093,17 @@ function showMemoCardMenu(anchor,item,idx,ref,dstr){
 /* ── Daily 페이지 ── */
 let dailyViewMode = 'week';
 let dailySelectedDate = new Date();
+function setDailyModeLayout(){
+  const weekWrap=document.getElementById('dailyWeekCalendar');
+  const monthWrap=document.getElementById('dailyMonthCalendar');
+  const inputSection=document.getElementById('dailyInputSection');
+  const listSection=document.getElementById('dailyList');
+  const isWeek=dailyViewMode==='week';
+  if(weekWrap) weekWrap.style.display=isWeek?'':'none';
+  if(monthWrap) monthWrap.style.display=isWeek?'none':'';
+  if(inputSection) inputSection.style.display=isWeek?'':'none';
+  if(listSection) listSection.style.display=isWeek?'':'none';
+}
 function setDailyItemDone(dstr, idx, checked){
   const list = get(kDaily(dstr), []);
   if(!Array.isArray(list) || !list[idx]) return;
@@ -4105,9 +4116,14 @@ function setDailyItemDone(dstr, idx, checked){
 
 function initDailyPage(){
   if(document.getElementById('dailyPage').dataset.initialized === 'true'){
+    setDailyModeLayout();
     renderDailyWeekGoal();
-    renderDailyWeekCalendar();
-    renderDailyList();
+    if(dailyViewMode==='week'){
+      renderDailyWeekCalendar();
+      renderDailyList();
+    }else{
+      renderDailyMonthCalendar();
+    }
     return;
   }
   document.getElementById('dailyPage').dataset.initialized = 'true';
@@ -4124,9 +4140,9 @@ function initDailyPage(){
     weekViewBtn.style.color = '#fff';
     monthViewBtn.style.background = 'var(--card)';
     monthViewBtn.style.color = '#64748b';
-    document.getElementById('dailyWeekCalendar').style.display = '';
-    document.getElementById('dailyMonthCalendar').style.display = 'none';
+    setDailyModeLayout();
     renderDailyWeekCalendar();
+    renderDailyList();
   });
 
   monthViewBtn?.addEventListener('click', ()=>{
@@ -4135,8 +4151,7 @@ function initDailyPage(){
     monthViewBtn.style.color = '#fff';
     weekViewBtn.style.background = 'var(--card)';
     weekViewBtn.style.color = '#64748b';
-    document.getElementById('dailyWeekCalendar').style.display = 'none';
-    document.getElementById('dailyMonthCalendar').style.display = '';
+    setDailyModeLayout();
     renderDailyMonthCalendar();
   });
 
@@ -4158,9 +4173,14 @@ function initDailyPage(){
 
   openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
 
+  setDailyModeLayout();
   renderDailyWeekGoal();
-  renderDailyWeekCalendar();
-  renderDailyList();
+  if(dailyViewMode==='week'){
+    renderDailyWeekCalendar();
+    renderDailyList();
+  }else{
+    renderDailyMonthCalendar();
+  }
 }
 
 function renderDailyWeekCalendar(){
@@ -4303,50 +4323,84 @@ function renderDailyMonthCalendar(){
   const startDay = first.getDay();
   const totalDays = new Date(y, m+1, 0).getDate();
 
-  const title = el('div', null, `${y}년 ${m+1}월`);
-  title.style.cssText = 'font-weight:500;font-size:14px;margin-bottom:12px;text-align:center;';
-  container.appendChild(title);
+  const monthHeader = el('div','daily-month-header');
+  const title = el('div','daily-month-title',`${y}년 ${m+1}월`);
+  const nav = el('div','daily-month-nav');
+  const prevBtn = el('button','daily-month-nav-btn','◀');
+  prevBtn.type='button';
+  prevBtn.onclick=()=>{
+    dailySelectedDate = new Date(y, m-1, 1);
+    renderDailyMonthCalendar();
+  };
+  const nextBtn = el('button','daily-month-nav-btn','▶');
+  nextBtn.type='button';
+  nextBtn.onclick=()=>{
+    dailySelectedDate = new Date(y, m+1, 1);
+    renderDailyMonthCalendar();
+  };
+  nav.append(prevBtn,nextBtn);
+  monthHeader.append(title,nav);
 
-  const grid = el('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:4px;';
+  const view = el('div','daily-month-record-view');
+  const weekdays=['일','월','화','수','목','금','토'];
+  const startDate = new Date(y,m,1-startDay);
+  const endBase = new Date(y,m,totalDays);
+  const endDate = new Date(endBase);
+  endDate.setDate(endBase.getDate()+(6-endBase.getDay()));
+  const totalCells=Math.round((endDate-startDate)/(24*60*60*1000))+1;
 
-  ['일','월','화','수','목','금','토'].forEach(d=>{
-    const cell = el('div', null, d);
-    cell.style.cssText = 'text-align:center;font-size:11px;color:#64748b;font-weight:500;padding:4px 0;';
-    grid.appendChild(cell);
-  });
+  for(let weekStart=0; weekStart<totalCells; weekStart+=7){
+    const row=el('div','daily-month-week-row');
+    for(let i=0;i<7;i++){
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate()+weekStart+i);
+      const dstr=fmtLocalDate(date);
+      const items=get(kDaily(dstr),[]);
+      const isCurrentMonth=date.getMonth()===m;
+      const isToday=dstr===fmtLocalDate(new Date());
+      const isSelected=dstr===fmtLocalDate(dailySelectedDate);
 
-  for(let i=0; i<startDay; i++){
-    grid.appendChild(el('div'));
+      const card=el('div','daily-month-day-card');
+      if(!isCurrentMonth) card.classList.add('is-outside-month');
+      if(isToday) card.classList.add('is-today');
+      if(isSelected) card.classList.add('is-selected');
+
+      const cardHeader=el('div','daily-month-day-card-header');
+      const dayName=el('div','daily-month-day-name',weekdays[i]);
+      const dayNum=el('div','daily-month-day-num',String(date.getDate()));
+      cardHeader.append(dayName,dayNum);
+
+      const body=el('div','daily-month-day-card-body');
+      if(!items.length){
+        const empty=el('div','daily-month-empty','기록 없음');
+        body.appendChild(empty);
+      }else{
+        items.forEach((item,idx)=>{
+          const rowItem=el('label','daily-month-task-item');
+          const cb=document.createElement('input');
+          cb.type='checkbox';
+          cb.checked=!!item.done;
+          cb.addEventListener('change',()=> setDailyItemDone(dstr, idx, cb.checked));
+          const txt=el('span','daily-month-task-text',item.text);
+          if(item.done) txt.classList.add('is-done');
+          rowItem.append(cb,txt);
+          body.appendChild(rowItem);
+        });
+      }
+
+      card.addEventListener('click',(e)=>{
+        if(e.target.closest('input')) return;
+        dailySelectedDate=new Date(date);
+        renderDailyMonthCalendar();
+      });
+
+      card.append(cardHeader,body);
+      row.appendChild(card);
+    }
+    view.appendChild(row);
   }
 
-  for(let d=1; d<=totalDays; d++){
-    const date = new Date(y, m, d);
-    const dstr = fmtLocalDate(date);
-    const items = get(kDaily(dstr), []);
-    const hasDone = items.some(it=>it.done);
-    const hasItems = items.length > 0;
-    const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
-    const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
-
-    const cell = el('div');
-    cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:8px;cursor:pointer;';
-
-    const num = el('div', null, String(d));
-    num.style.cssText = `font-size:13px;font-weight:500;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${isSelected?'#3b82f6':isToday?'#dbeafe':'transparent'};color:${isSelected?'#fff':isToday?'#1d4ed8':'inherit'};`;
-
-    const dot = el('div');
-    dot.style.cssText = `width:5px;height:5px;border-radius:50%;background:${hasItems?(hasDone?'#22c55e':'#3b82f6'):'transparent'};`;
-
-    cell.append(num, dot);
-    cell.addEventListener('click', ()=>{
-      dailySelectedDate = new Date(date);
-      renderDailyMonthCalendar();
-      renderDailyList();
-    });
-    grid.appendChild(cell);
-  }
-  container.appendChild(grid);
+  container.append(monthHeader,view);
 }
 
 function renderDailyList(){
