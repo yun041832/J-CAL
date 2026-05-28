@@ -3000,3 +3000,22 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background: var(--card);
   color: var(--text);
 }
+
+/* Daily 주간 카드 내부 task list 스크롤바 슬림화 */
+#dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+#dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar {
+  width: 4px;
+}
+#dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar-track {
+  background: transparent;
+}
+#dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+}
+#dailyWeekCalendar > div:nth-child(2) > div > div:nth-child(2)::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
