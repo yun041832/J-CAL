@@ -3163,6 +3163,72 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   }
 }
 
+/* Daily 상단 보기 전환 (segmented control) */
+#dailyPage .daily-page-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-shrink:0;
+  gap:12px;
+}
+#dailyPage .daily-view-segment{
+  display:flex;
+  align-items:center;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:100%;
+  background:#f6f2ea;
+  border-radius:12px;
+  padding:4px;
+  gap:2px;
+}
+#dailyPage .daily-view-btn{
+  flex:1 1 0;
+  min-width:0;
+  height:36px;
+  padding:0 16px;
+  border-radius:10px;
+  border:none;
+  background:transparent !important;
+  color:#666 !important;
+  font-size:14px;
+  font-weight:600;
+  font-family:inherit;
+  line-height:1;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:none !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:background 0.15s ease;
+}
+#dailyPage .daily-view-btn:hover{
+  background:rgba(255,255,255,0.5) !important;
+}
+#dailyPage .daily-view-btn[style*="3b82f6"],
+#dailyPage .daily-view-btn[style*="59, 130, 246"]{
+  background:#ffffff !important;
+  border:1px solid #d8d3ca !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.08) !important;
+  color:#111827 !important;
+  font-weight:700 !important;
+}
+@media (max-width:640px){
+  #dailyPage .daily-page-header{
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+  #dailyPage .daily-view-segment{
+    width:100%;
+    flex:1 1 100%;
+  }
+  #dailyPage .daily-view-btn{
+    padding:0 10px;
+    font-size:13px;
+  }
+}
+
 /* Daily 일간 워크스페이스 */
 .daily-workspace{
   flex:1;

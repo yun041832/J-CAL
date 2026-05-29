@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529daily-section-edit">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529daily-segment">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -449,19 +449,13 @@
       </div>
 
       <div id="dailyPage" class="card hidden" style="display:flex;flex-direction:column;height:100%;">
-        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div class="card__header daily-page-header">
           <div class="card__title">📋 Daily</div>
-          <div style="display:flex;gap:6px;">
-            <button id="dailyDayViewBtn" class="icon-btn" title="일간 보기" aria-label="일간 보기" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M120-120v-720h720v720H120Zm80-80h560v-520H200v520Zm0-560h560v-40H200v40Z"/></svg>
-            </button>
-            <button id="dailyWeekViewBtn" class="icon-btn" title="주간 보기" aria-label="주간 보기" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);color:#64748b;display:flex;align-items:center;justify-content:center;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M80-80v-560h800v560H80Zm80-80h120v-160H160v160Zm200 0h120v-160H360v160Zm200 0h120v-160H560v160Zm200 0h40v-160H760v160ZM160-400h120v-160H160v160Zm200 0h120v-160H360v160Zm200 0h120v-160H560v160Zm200 0h40v-160H760v160Z"/></svg>
-            </button>
-            <button id="dailyMonthViewBtn" class="icon-btn" title="월간 보기" aria-label="월간 보기" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);color:#64748b;display:flex;align-items:center;justify-content:center;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M120-120v-640h720v640H120Zm80-80h560v-360H200v360Zm0-440h560v-40H200v40Z"/></svg>
-            </button>
-            <button id="openDailyWidgetBtn" class="icon-btn" title="위젯" aria-label="위젯" style="padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;background:var(--card);font-size:12px;">위젯</button>
+          <div class="daily-view-segment" role="tablist" aria-label="Daily 보기 전환">
+            <button id="dailyDayViewBtn" type="button" class="daily-view-btn" role="tab" title="Today" aria-label="Today">Today</button>
+            <button id="dailyWeekViewBtn" type="button" class="daily-view-btn" role="tab" title="Week" aria-label="Week">Week</button>
+            <button id="dailyMonthViewBtn" type="button" class="daily-view-btn" role="tab" title="Month" aria-label="Month">Month</button>
+            <button id="openDailyWidgetBtn" type="button" class="daily-view-btn daily-view-btn--widget" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>
         <div class="card__header-unified" style="padding:8px 12px;">
