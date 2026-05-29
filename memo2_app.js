@@ -12,6 +12,7 @@ const insightWritePage=document.getElementById('insightWritePage');
 const routinePage=document.getElementById('routinePage');
 const dailyPage=document.getElementById('dailyPage');
 const timerPage=document.getElementById('timerPage');
+const logsPage=document.getElementById('logsPage');
 let timerSubView='timer';
 const rightPane=document.querySelector('.right');
 
@@ -60,6 +61,7 @@ function showHomeIntro(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
 }
@@ -72,6 +74,7 @@ function showCalendarPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.remove('hidden');
   renderCalendar?.();
@@ -87,6 +90,7 @@ function showMemoPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
   getJayMemoList();
@@ -102,6 +106,7 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initMemoWritePage?.(editMode,itemId,idx,dstr);
@@ -115,6 +120,7 @@ function showRoutinePage(){
   routinePage?.classList.remove('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initRoutinePage?.();
@@ -127,6 +133,7 @@ function showDailyPage(){
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   dailyPage?.classList.remove('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
@@ -146,12 +153,30 @@ function showTimerPage(subView){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.remove('hidden');
+  logsPage?.classList.add('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
   hideUsage?.();
   bindTimerSubTabs();
   initTimersPage?.();
   applyTimerSubView();
+}
+function showLogsPage(){
+  localStorage.setItem('memo2.lastPage', 'logs');
+  homeIntroSection?.classList.add('hidden');
+  calendarPage?.classList.add('hidden');
+  memoPage?.classList.add('hidden');
+  memoWritePage?.classList.add('hidden');
+  routinePage?.classList.add('hidden');
+  dailyPage?.classList.add('hidden');
+  timerPage?.classList.add('hidden');
+  hideInsightPages();
+  logsPage?.classList.remove('hidden');
+  rightPane?.classList.add('hidden');
+  hideUsage?.();
+  if(typeof window.showLogsList==='function') window.showLogsList();
+  if(typeof window.filterLogs==='function') window.filterLogs('all');
+  if(typeof window.loadLogs==='function') window.loadLogs();
 }
 function showStopwatchPage(){
   showTimerPage('stopwatch');
@@ -165,6 +190,7 @@ function showInsightPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   insightWritePage?.classList.add('hidden');
   insightPage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -179,6 +205,7 @@ function showInsightWritePage(editMode=false,editItemId=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
+  logsPage?.classList.add('hidden');
   insightPage?.classList.add('hidden');
   insightWritePage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -223,6 +250,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(t==='alarm') widgetAlarm?.();
       if(t==='stopwatch') showTimerPage('stopwatch');
       if(t==='insight') showInsightPage();
+      if(t==='logs') showLogsPage();
     };
   });
 
@@ -268,6 +296,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'timer') showTimerPage();
   else if(lastPage === 'stopwatch') showTimerPage('stopwatch');
   else if(lastPage === 'insight') showInsightPage();
+  else if(lastPage === 'logs') showLogsPage();
   else showHomeIntro();
 
   initTimerSettingModal?.();

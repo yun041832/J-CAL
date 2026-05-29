@@ -4260,3 +4260,121 @@ input[type="checkbox"],
   border-color:var(--color-primary) !important;
   color:var(--color-primary) !important;
 }
+
+/* Logs page */
+#logsPage.logs-page{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+}
+#logsPage .logs-page-body{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:16px 20px 24px;
+  box-sizing:border-box;
+}
+.logs-header{
+  padding:20px 0 8px;
+}
+.logs-header h2{
+  font-size:22px;
+  font-weight:500;
+  margin:0;
+  color:var(--text,#111827);
+}
+.logs-sub{
+  font-size:13px;
+  color:var(--text-muted,#9aa5b1);
+  margin:4px 0 0;
+}
+.logs-filter{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:16px;
+}
+.logs-filter .filter-btn{
+  padding:4px 12px;
+  font-size:12px;
+  border:0.5px solid var(--line,#e2e8f0);
+  border-radius:20px;
+  background:transparent;
+  color:var(--text-muted,#64748b);
+  cursor:pointer;
+  font-family:inherit;
+}
+.logs-filter .filter-btn:hover{
+  background:var(--color-primary-light,#EEF2FF);
+  color:var(--color-primary,#5C8DFF);
+  border-color:var(--color-primary-light,#EEF2FF);
+}
+.logs-filter .filter-btn.active{
+  background:#5C8DFF;
+  color:#fff;
+  border-color:#5C8DFF;
+}
+.logs-list{
+  display:block;
+}
+.log-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:0.5px solid var(--line,#e9ecf2);
+  cursor:pointer;
+}
+.log-item:hover .log-title{
+  color:#5C8DFF;
+}
+.log-title{
+  font-size:14px;
+  color:var(--text,#111827);
+}
+.log-date{
+  font-size:12px;
+  color:var(--text-muted,#9aa5b1);
+  flex-shrink:0;
+  margin-left:16px;
+}
+.logs-empty{
+  font-size:14px;
+  color:var(--text-muted,#9aa5b1);
+  padding:24px 0;
+}
+.log-back-btn{
+  font-size:13px;
+  color:#5C8DFF;
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:0 0 16px;
+  display:block;
+  font-family:inherit;
+}
+.log-detail-title{
+  font-size:20px;
+  font-weight:500;
+  margin:0 0 4px;
+}
+.log-detail-meta{
+  font-size:12px;
+  color:var(--text-muted,#9aa5b1);
+  margin:0 0 20px;
+}
+.log-content{
+  font-size:14px;
+  line-height:1.8;
+  color:var(--text,#111827);
+}
+.log-content h1,
+.log-content h2,
+.log-content h3{
+  font-weight:500;
+  margin:1.5rem 0 0.5rem;
+}
+.log-content p{
+  margin:0 0 1em;
+}

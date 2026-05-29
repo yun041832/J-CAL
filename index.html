@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530timer-tabs">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529logs">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -226,6 +226,7 @@
       <button class="menu-btn" data-widget="memo" title="Memo">📝 Memo</button>
       <button class="menu-btn" data-widget="todo" style="display:none;">✅ To-do</button>
       <button class="menu-btn" data-widget="timer" title="Timer">⏲️ Timer</button>
+      <button class="menu-btn" data-widget="logs" title="Logs">📓 Logs</button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
     </aside>
@@ -575,6 +576,24 @@
         </div>
       </div>
 
+      <!-- Logs -->
+      <div id="logsPage" class="card hidden logs-page">
+        <div class="logs-page-body">
+          <div class="logs-header">
+            <h2>Logs</h2>
+            <p class="logs-sub">Dev diary · Thoughts · Experiments</p>
+          </div>
+          <div class="logs-filter">
+            <button type="button" class="filter-btn active" data-filter="all">All</button>
+            <button type="button" class="filter-btn" data-filter="dev">Dev</button>
+            <button type="button" class="filter-btn" data-filter="think">Thoughts</button>
+            <button type="button" class="filter-btn" data-filter="exp">Experiments</button>
+          </div>
+          <div id="logs-list" class="logs-list"></div>
+          <div id="logs-detail" class="logs-detail" style="display:none;"></div>
+        </div>
+      </div>
+
       <!-- 달력 페이지 (기본 숨김) -->
       <div id="calendarPage" class="card hidden">
         <div id="brand-header" style="
@@ -768,7 +787,9 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260530timer-tabs" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="js/logs.js?v=20260529logs" defer></script>
+  <script src="memo2_app.js?v=20260529logs" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{
