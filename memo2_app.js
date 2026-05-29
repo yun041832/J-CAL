@@ -521,11 +521,30 @@ function sanitizeMemoHtml(html){
   });
   return template.innerHTML;
 }
+function getMemoContentHtml(content){
+  const raw=content||'';
+  return isHtmlContent(raw)?sanitizeMemoHtml(raw):plainTextToHtml(raw);
+}
+function renderMemoHtml(targetEl,content,emojiPrefix){
+  if(!targetEl) return;
+  let html=getMemoContentHtml(content);
+  if(emojiPrefix) html=escapeHtml(emojiPrefix)+' '+html;
+  targetEl.innerHTML=html;
+  targetEl.style.whiteSpace='normal';
+}
 function renderMemoCardContent(el,raw){
-  if(!el) return;
-  const content=raw||'';
-  el.innerHTML=sanitizeMemoHtml(isHtmlContent(content)?content:plainTextToHtml(content));
-  el.style.whiteSpace='normal';
+  renderMemoHtml(el,raw);
+}
+function ensureMemoWidgetPopupStyles(doc){
+  if(!doc||doc.getElementById('memo-widget-popup-style')) return;
+  const st=doc.createElement('style');
+  st.id='memo-widget-popup-style';
+  st.textContent=`
+.memo-widget img,.memo-widget-content img,.memo-popup-content img{max-width:100%;height:auto;display:block;margin:10px 0;border-radius:10px}
+.memo-widget ul,.memo-widget-content ul,.memo-popup-content ul{padding-left:22px}
+.memo-widget .memo-check-row,.memo-widget-content .memo-check-row{display:flex;align-items:center;gap:8px;margin:4px 0}
+`;
+  doc.head.appendChild(st);
 }
 function insertHtmlAtCursor(html){
   document.execCommand('insertHTML',false,html);
@@ -4147,10 +4166,11 @@ function openMemoWidget(item){
     title.textContent=item.title||'제목 없음';
     
     const content=doc.createElement('div');
+    content.className='memo-widget memo-widget-content';
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
-    content.style.whiteSpace='pre-wrap';
-    content.textContent=(item.emoji?item.emoji+' ':'')+(item.content||'');
+    if(isPopup) ensureMemoWidgetPopupStyles(doc);
+    renderMemoHtml(content,item.content||item.text||'',item.emoji||'');
     
     W.append(title,content);
     return W;
@@ -4162,6 +4182,7 @@ function openMemoWidgetPopup(item){
   // 개별 메모를 팝업 위젯으로 바로 여는 함수
   function build(isPopup, win){
     const doc=win.document;
+    if(isPopup) ensureMemoWidgetPopupStyles(doc);
     const W=doc.createElement('div');
     W.style.padding='12px';
     W.style.display='flex';
@@ -4177,10 +4198,10 @@ function openMemoWidgetPopup(item){
     title.textContent=item.title||'제목 없음';
     
     const content=doc.createElement('div');
+    content.className='memo-widget memo-widget-content memo-popup-content';
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
-    content.style.whiteSpace='pre-wrap';
-    content.textContent=(item.emoji?item.emoji+' ':'')+(item.content||'');
+    renderMemoHtml(content,item.content||item.text||'',item.emoji||'');
     
     W.append(title,content);
     return W;
@@ -4742,7 +4763,8 @@ function renderDailyDayWorkspace(){
     memos.forEach((m)=>{
       const item=el('div','daily-memo-item');
       const t=el('div','daily-memo-item-title',m.title||'제목 없음');
-      const c=el('div','daily-memo-item-content',(m.content||'').slice(0,80));
+      const c=el('div','daily-memo-item-content');
+      renderMemoHtml(c,m.content||m.text||'');
       item.append(t,c);
       memoList.appendChild(item);
     });

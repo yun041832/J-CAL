@@ -3477,6 +3477,28 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .memo-card__html{
   word-break:break-word;
 }
+.memo-card img,
+.memo-widget img,
+.memo-popup-content img,
+.daily-memo-panel img,
+.daily-memo-item-content img{
+  max-width:100%;
+  height:auto;
+  display:block;
+  margin:10px 0;
+  border-radius:10px;
+}
+.memo-card ul,
+.memo-widget ul,
+.memo-popup-content ul,
+.daily-memo-panel ul,
+.daily-memo-item-content ul{
+  padding-left:22px;
+}
+.daily-memo-item-content{
+  max-height:120px;
+  overflow:hidden;
+}
 @media (max-width:768px){
   .memo-mini-toolbar{
     gap:5px;
