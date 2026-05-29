@@ -277,8 +277,11 @@ const setEmojiIcon=(btn,val)=>{
 function fmtLocalDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function parseLocalDate(str){ if(!str) return new Date(); const [y,m,d]=str.split('-').map(Number); return new Date(y,(m||1)-1,d||1); }
 const normalizeDate=(d)=>{ const nd=new Date(d); nd.setHours(0,0,0,0); return nd; };
-function ymLabel(y,m){return `${y}년 ${m+1}월`;}
-function fmtAmPm(date){let h=date.getHours();const m=date.getMinutes();const ap=h>=12?'오후':'오전';const hh=(h%12)||12;return `${ap} ${hh}:${String(m).padStart(2,'0')}`;}
+const WEEKDAY_LABELS_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function formatYearMonth(y,m){return `${MONTHS_EN[m]} ${y}`;}
+function ymLabel(y,m){return formatYearMonth(y,m);}
+function fmtAmPm(date){let h=date.getHours();const m=date.getMinutes();const ap=h>=12?'PM':'AM';const hh=(h%12)||12;return `${ap} ${hh}:${String(m).padStart(2,'0')}`;}
 
 const ST={viewYear:new Date().getFullYear(),viewMonth:new Date().getMonth(),selected:new Date(),linesHint:4,cellHeight:120,eventEmoji:'',eventColor:'',todoEmoji:'',todoColor:'',reminderEmoji:'',reminderColor:''};
 const $={
@@ -1953,8 +1956,8 @@ function showEventDetailModal(item,ref,dstr){
   
   // 저장/취소 버튼
   const footer=el('div','repeat-modal-footer');
-  const cancelBtn=el('button','btn-cancel','취소');
-  const saveBtn=el('button','btn-confirm','저장');
+  const cancelBtn=el('button','btn-cancel','Cancel');
+  const saveBtn=el('button','btn-confirm','Save');
   
   cancelBtn.onclick=()=>overlay.remove();
   saveBtn.onclick=()=>{
@@ -2444,7 +2447,7 @@ function showEventConfigModal(anchor){
   repeatRow.append(repeatIcon,repeatLabel,repeatBtn);
 
   const footer=el('div','repeat-modal-footer');
-  const saveBtn=el('button','btn-confirm','저장');
+  const saveBtn=el('button','btn-confirm','Save');
   saveBtn.onclick=()=>{
     if($.eventStartDate) $.eventStartDate.value=startInput.value;
     if($.eventEndDate) $.eventEndDate.value=endInput.value;
@@ -2523,7 +2526,7 @@ function memoItemEl(item,idx,ref,dstr){
     ta.className='memo-edit'; 
     ta.rows=3; 
     ta.value=item.content??item.text??'';
-    const save=el('button','btn','저장'), cancel=el('button','btn','취소');
+    const save=el('button','btn','Save'), cancel=el('button','btn','Cancel');
     save.onclick=()=>{
       const val=ta.value.trim()||(item.content??item.text??'');
       if(item.id) updateJayMemoById(item.id,{content:val});
@@ -4573,7 +4576,7 @@ function appendDailyDayTaskRow(body,dstr,idx,task){
   const actions=el('div','daily-day-task-actions');
   const editBtn=el('button','daily-day-task-icon-btn');
   editBtn.type='button';
-  editBtn.title='수정';
+  editBtn.title='Edit';
   editBtn.innerHTML=DAILY_TASK_EDIT_SVG;
   editBtn.addEventListener('click',(e)=>{
     e.preventDefault();
@@ -4581,7 +4584,7 @@ function appendDailyDayTaskRow(body,dstr,idx,task){
   });
   const delBtn=el('button','daily-day-task-icon-btn daily-day-task-delete','✕');
   delBtn.type='button';
-  delBtn.setAttribute('aria-label','작업 삭제');
+  delBtn.setAttribute('aria-label','Delete task');
   delBtn.addEventListener('click',(e)=>{
     e.preventDefault();
     deleteDailyTaskAt(dstr,idx);
@@ -4620,7 +4623,7 @@ function saveDailySection(dstr,sectionId,{title,emoji,color}){
 function isDailySectionDeletable(section){
   if(!section||section.id==='__none__') return false;
   const title=(section.title||'').trim();
-  if(title==='미분류') return false;
+  if(title==='Uncategorized'||title==='미분류') return false;
   return true;
 }
 function deleteDailySection(dstr,sectionId){
@@ -4686,7 +4689,7 @@ function appendDailySectionTaskInput(body, dstr, sectionId){
   const inp=document.createElement('input');
   inp.type='text';
   inp.className='daily-section-task-input';
-  inp.placeholder='작업을 입력하고 Enter';
+  inp.placeholder='Enter task and press Enter';
   inp.value=dailySectionTaskInputText;
   inp.addEventListener('input',()=>{ dailySectionTaskInputText=inp.value; });
   inp.addEventListener('keydown',(e)=>{
@@ -4768,12 +4771,12 @@ function getDailySectionTheme(section){
   };
 }
 function formatDailyMemoSavedAt(ts){
-  if(!ts) return '저장 기록 없음';
+  if(!ts) return 'No save history';
   const d=new Date(ts);
-  if(Number.isNaN(d.getTime())) return '저장 기록 없음';
+  if(Number.isNaN(d.getTime())) return 'No save history';
   const hh=String(d.getHours()).padStart(2,'0');
   const mm=String(d.getMinutes()).padStart(2,'0');
-  return `${hh}:${mm} 저장됨`;
+  return `Saved ${hh}:${mm}`;
 }
 function showDailySectionMenu(anchor,dstr,section){
   const doc=anchor.ownerDocument||document;
@@ -4782,7 +4785,7 @@ function showDailySectionMenu(anchor,dstr,section){
   pop.className='event-menu-popup daily-section-menu-popup';
   const close=()=>{ pop.remove(); openPop=null; doc.removeEventListener('mousedown',onDocDown); };
   const onDocDown=(e)=>{ if(!pop.contains(e.target)&&e.target!==anchor) close(); };
-  const editBtn=el('button','menu-item','✏️ 수정');
+  const editBtn=el('button','menu-item','✏️ Edit');
   editBtn.type='button';
   editBtn.onclick=(e)=>{
     e.stopPropagation();
@@ -4791,7 +4794,7 @@ function showDailySectionMenu(anchor,dstr,section){
   };
   pop.appendChild(editBtn);
   if(isDailySectionDeletable(section)){
-    const delBtn=el('button','menu-item del','🗑️ 삭제');
+    const delBtn=el('button','menu-item del','🗑️ Delete');
     delBtn.type='button';
     delBtn.onclick=(e)=>{
       e.stopPropagation();
@@ -4822,15 +4825,15 @@ function showDailySectionEditPopup(anchor,dstr,section){
   const close=()=>{ pop.remove(); openPop=null; doc.removeEventListener('mousedown',onDocDown); };
   const onDocDown=(e)=>{ if(!pop.contains(e.target)&&e.target!==anchor) close(); };
 
-  const titleLabel=el('div','daily-section-edit-label','섹션 이름');
+  const titleLabel=el('div','daily-section-edit-label','Section name');
   const titleInp=document.createElement('input');
   titleInp.type='text';
   titleInp.className='daily-section-edit-title';
   titleInp.value=draft.title;
-  titleInp.placeholder='섹션 이름';
+  titleInp.placeholder='Section name';
   titleInp.addEventListener('input',()=>{ draft.title=titleInp.value; });
 
-  const emojiLabel=el('div','daily-section-edit-label','이모지 선택');
+  const emojiLabel=el('div','daily-section-edit-label','Choose emoji');
   const emojiGrid=el('div','daily-section-edit-emoji-grid');
   const emojiBtns=[];
   DAILY_SECTION_EMOJI_OPTIONS.forEach((emo)=>{
@@ -4846,7 +4849,7 @@ function showDailySectionEditPopup(anchor,dstr,section){
     emojiGrid.appendChild(btn);
   });
 
-  const colorLabel=el('div','daily-section-edit-label','색상 선택');
+  const colorLabel=el('div','daily-section-edit-label','Choose color');
   const colorGrid=el('div','daily-section-edit-color-grid');
   const colorBtns=[];
   SECTION_COLORS.forEach((opt,i)=>{
@@ -4865,10 +4868,10 @@ function showDailySectionEditPopup(anchor,dstr,section){
   });
 
   const actions=el('div','daily-section-edit-actions');
-  const cancelBtn=el('button','daily-section-edit-cancel','취소');
+  const cancelBtn=el('button','daily-section-edit-cancel','Cancel');
   cancelBtn.type='button';
   cancelBtn.onclick=(e)=>{ e.stopPropagation(); close(); };
-  const saveBtn=el('button','daily-section-edit-save','저장');
+  const saveBtn=el('button','daily-section-edit-save','Save');
   saveBtn.type='button';
   saveBtn.onclick=(e)=>{
     e.stopPropagation();
@@ -4981,8 +4984,8 @@ function renderDailyDayWorkspace(){
   const right=el('div','daily-day-memo-panel');
 
   const sectionHead=el('div','daily-day-sections-head');
-  const sectionTitle=el('div','daily-day-head-title','오늘 작업');
-  const addSectionBtn=el('button','daily-day-add-section-btn','+ 섹션 추가');
+  const sectionTitle=el('div','daily-day-head-title',"Today's tasks");
+  const addSectionBtn=el('button','daily-day-add-section-btn','+ Add section');
   addSectionBtn.type='button';
   addSectionBtn.onclick=()=>{
     dailyIsAddingSection=true;
@@ -4994,7 +4997,7 @@ function renderDailyDayWorkspace(){
   if(dailyIsAddingSection){
     const addWrap=el('div','daily-section-add-wrap');
     appendDailySectionTitleInput(addWrap,{
-      placeholder:'섹션 이름을 입력하고 Enter',
+      placeholder:'Enter section name and press Enter',
       value:dailyNewSectionTitle,
       onInput:(v)=>{ dailyNewSectionTitle=v; },
       onSubmit:(v)=> addDailySection(dstr,v),
@@ -5022,7 +5025,7 @@ function renderDailyDayWorkspace(){
     .filter(({task})=>!task.sectionId);
   const mergedSections=sections.concat(
     unsectioned.length
-      ? [{id:'__none__',title:'미분류',emoji:'🗒️',color:'',order:99999}]
+      ? [{id:'__none__',title:'Uncategorized',emoji:'🗒️',color:'',order:99999}]
       : []
   );
 
@@ -5040,21 +5043,21 @@ function renderDailyDayWorkspace(){
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',theme.emoji);
     leftHead.append(emo);
-    leftHead.appendChild(el('span','daily-day-section-title',section.title||'섹션'));
+    leftHead.appendChild(el('span','daily-day-section-title',section.title||'Section'));
 
     const rightHead=el('div','daily-day-section-actions');
     if(section.id!=='__none__'){
       const menuBtn=el('button','daily-day-section-menu-btn','⋯');
       menuBtn.type='button';
-      menuBtn.title='섹션 메뉴';
-      menuBtn.setAttribute('aria-label','섹션 메뉴');
+      menuBtn.title='Section menu';
+      menuBtn.setAttribute('aria-label','Section menu');
       menuBtn.onclick=(e)=>{
         e.stopPropagation();
         showDailySectionMenu(menuBtn,dstr,section);
       };
       rightHead.appendChild(menuBtn);
     }
-    const addTaskBtn=el('button','daily-day-section-btn daily-day-add-task-btn','+ 작업 추가');
+    const addTaskBtn=el('button','daily-day-section-btn daily-day-add-task-btn','+ Add task');
     addTaskBtn.type='button';
     if(isColoredHeader){
       addTaskBtn.style.background='rgba(0,0,0,0.08)';
@@ -5075,7 +5078,7 @@ function renderDailyDayWorkspace(){
 
     const showTaskInput=dailySectionTaskInputSectionId===section.id;
     if(!items.length && !showTaskInput){
-      body.appendChild(el('div','daily-day-empty','작업이 없습니다.'));
+      body.appendChild(el('div','daily-day-empty','No tasks yet'));
     }else{
       items.forEach(({task,idx})=>{
         appendDailyDayTaskRow(body,dstr,idx,task);
@@ -5091,29 +5094,29 @@ function renderDailyDayWorkspace(){
     .filter(m=>m.date===dstr)
     .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
   const memoHead=el('div','daily-memo-head');
-  const memoHeadLeft=el('div','daily-memo-head-title','📝 메모 쓰기');
+  const memoHeadLeft=el('div','daily-memo-head-title','📝 Write memo');
   const memoHeadActions=el('div','daily-memo-head-actions');
   const pinBtn=el('button','daily-memo-icon-btn','📌');
   pinBtn.type='button';
-  pinBtn.title='패널 고정';
+  pinBtn.title='Pin panel';
   pinBtn.onclick=()=> right.classList.toggle('is-pinned');
   const expandBtn=el('button','daily-memo-icon-btn','↗');
   expandBtn.type='button';
-  expandBtn.title='패널 확장';
+  expandBtn.title='Expand panel';
   expandBtn.onclick=()=> right.classList.toggle('is-expanded');
   memoHeadActions.append(pinBtn,expandBtn);
   memoHead.append(memoHeadLeft,memoHeadActions);
 
   const memoInput=document.createElement('textarea');
   memoInput.className='daily-memo-textarea';
-  memoInput.placeholder='오늘 메모를 입력하세요.';
+  memoInput.placeholder="Write today's memo...";
 
   const savedAtEl=el('div','daily-memo-saved-at',formatDailyMemoSavedAt(latestDailyMemo?.createdAt));
 
   const memoActions=el('div','daily-memo-actions');
-  const saveMemoBtn=el('button','daily-day-section-btn daily-memo-save-btn','저장');
+  const saveMemoBtn=el('button','daily-day-section-btn daily-memo-save-btn','Save');
   saveMemoBtn.type='button';
-  const goMemoBtn=el('button','daily-day-section-btn daily-memo-all-btn','메모 전체 보기');
+  const goMemoBtn=el('button','daily-day-section-btn daily-memo-all-btn','View all');
   goMemoBtn.type='button';
   goMemoBtn.onclick=()=>{ if(typeof showMemoPage==='function') showMemoPage(); };
   memoActions.append(saveMemoBtn,goMemoBtn);
@@ -5126,12 +5129,12 @@ function renderDailyDayWorkspace(){
       .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))
       .slice(0,6);
     if(!memos.length){
-      memoList.appendChild(el('div','daily-day-empty','연동된 메모가 없습니다.'));
+      memoList.appendChild(el('div','daily-day-empty','No linked memos'));
       return;
     }
     memos.forEach((m)=>{
       const item=el('div','daily-memo-item');
-      const t=el('div','daily-memo-item-title',m.title||'제목 없음');
+      const t=el('div','daily-memo-item-title',m.title||'Untitled');
       const c=el('div','daily-memo-item-content');
       renderMemoHtml(c,m.content||m.text||'');
       item.append(t,c);
@@ -5144,7 +5147,7 @@ function renderDailyDayWorkspace(){
     const list=getJayMemoList();
     list.push({
       id:createMemoId(),
-      title:`Daily 메모 ${dstr}`,
+      title:`Daily memo ${dstr}`,
       content:val,
       date:dstr,
       createdAt:Date.now(),
@@ -5177,7 +5180,7 @@ function renderDailyWeekCalendar(){
   const yearMonthRow = el('div');
   yearMonthRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px;';
 
-  const yearMonth = el('div', null, `${today.getFullYear()}년 ${today.getMonth()+1}월`);
+  const yearMonth = el('div', null, formatYearMonth(today.getFullYear(), today.getMonth()));
   yearMonth.style.cssText = 'font-weight:500;font-size:14px;';
 
   const navBtns = el('div');
@@ -5203,7 +5206,7 @@ function renderDailyWeekCalendar(){
   yearMonthRow.append(yearMonth, navBtns);
   container.appendChild(yearMonthRow);
 
-  const weekdays = ['일','월','화','수','목','금','토'];
+  const weekdays = WEEKDAY_LABELS_EN;
 
   const weekGrid = el('div');
   weekGrid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 12px 12px;flex:1;overflow:hidden;';
@@ -5304,7 +5307,7 @@ function renderDailyMonthCalendar(){
   const totalDays = new Date(y, m+1, 0).getDate();
 
   const monthHeader = el('div','daily-month-header');
-  const title = el('div','daily-month-title',`${y}년 ${m+1}월`);
+  const title = el('div','daily-month-title',formatYearMonth(y,m));
   const nav = el('div','daily-month-nav');
   const prevBtn = el('button','daily-month-nav-btn','◀');
   prevBtn.type='button';
@@ -5322,7 +5325,7 @@ function renderDailyMonthCalendar(){
   monthHeader.append(title,nav);
 
   const view = el('div','daily-month-record-view');
-  const weekdays=['일','월','화','수','목','금','토'];
+  const weekdays=WEEKDAY_LABELS_EN;
   const startDate = new Date(y,m,1-startDay);
   const endBase = new Date(y,m,totalDays);
   const endDate = new Date(endBase);
@@ -5352,7 +5355,7 @@ function renderDailyMonthCalendar(){
 
       const body=el('div','daily-month-day-card-body');
       if(!items.length){
-        const empty=el('div','daily-month-empty','기록 없음');
+        const empty=el('div','daily-month-empty','No records');
         body.appendChild(empty);
       }else{
         items.forEach((item,idx)=>{
@@ -5391,7 +5394,7 @@ function renderDailyList(){
   container.innerHTML = '';
 
   if(!list.length){
-    const empty = el('div', null, '오늘 작업을 입력해보세요.');
+    const empty = el('div', null, 'Add a task for today.');
     empty.style.cssText = 'color:#b0b8c1;font-size:14px;text-align:center;padding:24px 0;';
     container.appendChild(empty);
     return;
@@ -5487,7 +5490,7 @@ function widgetDaily(){
       listWrap.innerHTML='';
       if(!list.length){
         const empty=doc.createElement('div');
-        empty.textContent='오늘 작업이 없습니다.';
+        empty.textContent='No tasks for today.';
         empty.style.cssText='color:#b0b8c1;font-size:13px;text-align:center;padding:16px 0;';
         listWrap.append(empty);
         return;
@@ -5563,7 +5566,7 @@ function renderRoutineWeekCalendar(){
   yearMonthRow.style.marginBottom='12px';
   
   const yearMonth=el('div','routine-year-month');
-  yearMonth.textContent=`${today.getFullYear()}년 ${today.getMonth()+1}월`;
+  yearMonth.textContent=formatYearMonth(today.getFullYear(), today.getMonth());
   yearMonth.style.textAlign='left';
   yearMonth.style.flex='1';
   
@@ -5609,7 +5612,7 @@ function renderRoutineWeekCalendar(){
   
   // 일주일 그리드
   const weekGrid=el('div','routine-week-grid');
-  const weekdays=['일','월','화','수','목','금','토'];
+  const weekdays=WEEKDAY_LABELS_EN;
   
   for(let i=0;i<7;i++){
     const date=new Date(startOfWeek);
@@ -5833,7 +5836,7 @@ function renderRoutineList(){
       repeatInfo=el('div');
       repeatInfo.style.fontSize='12px';
       repeatInfo.style.color='#94a3b8';
-      const dayNames=['일','월','화','수','목','금','토'];
+      const dayNames=WEEKDAY_LABELS_EN;
       const selectedNames=routine.repeatDays.sort((a,b)=>a-b).map(d=>dayNames[d]);
       repeatInfo.textContent=`🔁 ${selectedNames.join(', ')}`;
       
@@ -5945,7 +5948,7 @@ function showRoutineModal(editMode=false,routine=null,idx=null){
       repeatBtn.style.background='#f8fafc';
       repeatBtn.style.color='#64748b';
     }else{
-      const dayNames=['일','월','화','수','목','금','토'];
+      const dayNames=WEEKDAY_LABELS_EN;
       const selectedNames=repeatDays.sort((a,b)=>a-b).map(d=>dayNames[d]);
       repeatBtn.textContent=`${selectedNames.join(', ')} 중 ${repeatDays.length}일`;
       repeatBtn.style.background='#e0ecff';
@@ -6001,7 +6004,7 @@ function showRoutineModal(editMode=false,routine=null,idx=null){
   const colorBtn=document.createElement('button');
   colorBtn.type='button';
   colorBtn.className='btn';
-  colorBtn.textContent='🎨 색상 선택';
+  colorBtn.textContent='🎨 Choose color';
   colorBtn.style.width='100%';
   colorBtn.style.padding='10px';
   if(selectedColor){
@@ -6026,10 +6029,10 @@ function showRoutineModal(editMode=false,routine=null,idx=null){
   footer.style.justifyContent='flex-end';
   footer.style.marginTop='20px';
   
-  const cancelBtn=el('button','btn','취소');
+  const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
-  const saveBtn=el('button','btn-confirm','저장');
+  const saveBtn=el('button','btn-confirm','Save');
   saveBtn.onclick=()=>{
     const text=nameInput.value.trim();
     if(!text){
@@ -6110,7 +6113,7 @@ function showRepeatDayModal(currentDays,onSave){
   dayButtons.style.justifyContent='center';
   dayButtons.style.flexWrap='nowrap';
   
-  const dayNames=['일','월','화','수','목','금','토'];
+  const dayNames=WEEKDAY_LABELS_EN;
   const selectedDays=[...currentDays];
   
   dayNames.forEach((name,idx)=>{
@@ -6179,7 +6182,7 @@ function showRepeatDayModal(currentDays,onSave){
   footer.style.justifyContent='flex-end';
   footer.style.marginTop='20px';
   
-  const cancelBtn=el('button','btn','취소');
+  const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
   const saveBtn=el('button','btn-confirm','확인');
@@ -6290,7 +6293,7 @@ function showEmojiModal(currentEmoji,onSave){
     modal.remove();
   };
   
-  const cancelBtn=el('button','btn','취소');
+  const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
   const saveBtn=el('button','btn-confirm','확인');
@@ -6317,7 +6320,7 @@ function showColorPickerModal(currentColor,onSave){
   box.style.maxWidth='360px';
   box.style.padding='20px';
   
-  const title=el('h3','modal-title','색상 선택');
+  const title=el('h3','modal-title','Choose color');
   title.style.fontSize='16px';
   title.style.marginBottom='16px';
   
@@ -6371,7 +6374,7 @@ function showColorPickerModal(currentColor,onSave){
   footer.style.gap='8px';
   footer.style.justifyContent='flex-end';
   
-  const cancelBtn=el('button','btn','취소');
+  const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
   const saveBtn=el('button','btn-confirm','확인');
@@ -6605,7 +6608,7 @@ function widgetCalendar(options){
     grid.style.minWidth='0';
     W.append(head,days,grid);
 
-    ['일','월','화','수','목','금','토'].forEach(k=>{const s=doc.createElement('span'); s.textContent=k; days.appendChild(s);});
+    WEEKDAY_LABELS_EN.forEach(k=>{const s=doc.createElement('span'); s.textContent=k; days.appendChild(s);});
 
     let view=new Date(localStorage.getItem('memo2.selected')||fmtLocalDate(new Date())); view.setDate(1);
     const rows=6; // always show full 6 weeks
@@ -7282,7 +7285,7 @@ function showDatePicker(){
   
   const header=document.createElement('div');
   header.className='date-picker-header';
-  header.innerHTML=`<div class="date-picker-title">${ST.viewYear}년 ${ST.viewMonth+1}월 ▲</div>`;
+  header.innerHTML=`<div class="date-picker-title">${formatYearMonth(ST.viewYear,ST.viewMonth)} ▲</div>`;
   
   const body=document.createElement('div');
   body.className='date-picker-body';

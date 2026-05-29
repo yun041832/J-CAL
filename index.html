@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530brand-blue">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530daily-i18n">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -219,14 +219,14 @@
   <div class="app">
     <div class="sidebar-stack">
     <aside class="sidebar">
-      <button class="menu-btn" id="homeBtn" title="홈">🏠 Home</button>
-      <button class="menu-btn" data-widget="calendar" title="달력">📅 Calendar</button>
-      <button class="menu-btn" data-widget="routine" title="루틴">✅ Routine</button>
-      <button class="menu-btn" data-widget="daily" title="데일리">📋 Daily</button>
-      <button class="menu-btn" data-widget="memo" title="메모">📝 Memo</button>
-      <button class="menu-btn" data-widget="todo" style="display:none;">✅ 투두</button>
-      <button class="menu-btn" data-widget="timer" title="타이머">⏲️ Timer</button>
-      <button class="menu-btn" data-widget="stopwatch" title="스탑워치">⏱️ Stopwatch</button>
+      <button class="menu-btn" id="homeBtn" title="Home">🏠 Home</button>
+      <button class="menu-btn" data-widget="calendar" title="Calendar">📅 Calendar</button>
+      <button class="menu-btn" data-widget="routine" title="Routine">✅ Routine</button>
+      <button class="menu-btn" data-widget="daily" title="Daily">📋 Daily</button>
+      <button class="menu-btn" data-widget="memo" title="Memo">📝 Memo</button>
+      <button class="menu-btn" data-widget="todo" style="display:none;">✅ To-do</button>
+      <button class="menu-btn" data-widget="timer" title="Timer">⏲️ Timer</button>
+      <button class="menu-btn" data-widget="stopwatch" title="Stopwatch">⏱️ Stopwatch</button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
     </aside>
@@ -274,7 +274,7 @@
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
-          구글로 로그인
+          Sign in with Google
         </button>
         <div id="user-info" style="
           display: none;
@@ -290,7 +290,7 @@
         ">
           <img id="user-avatar" src="" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
           <span id="user-name" style="flex:1;font-size:12px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-          <button type="button" id="logout-btn" style="background:none;border:none;font-size:12px;color:#666;cursor:pointer;padding:0;flex-shrink:0;font-family:inherit;">로그아웃</button>
+          <button type="button" id="logout-btn" style="background:none;border:none;font-size:12px;color:#666;cursor:pointer;padding:0;flex-shrink:0;font-family:inherit;">Log out</button>
         </div>
       </div>
     </div>
@@ -300,16 +300,16 @@
           <img src="images/j-metal.jpg" alt="JustDoc" style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">
           <span style="font-size:12px;font-weight:700;color:#3355cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">JustDoc<span style="font-size:10px;font-weight:400;color:#aaa;">ument</span></span>
         </a>
-        <button type="button" id="login-btn-mobile" class="mobile-auth-compact" aria-label="Google 로그인">
+        <button type="button" id="login-btn-mobile" class="mobile-auth-compact" aria-label="Sign in with Google">
           <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.24 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
-          <span>로그인</span>
+          <span>Sign in</span>
         </button>
-        <button type="button" id="user-btn-mobile" class="mobile-auth-compact mobile-auth-user" style="display:none;" aria-label="로그아웃">
+        <button type="button" id="user-btn-mobile" class="mobile-auth-compact mobile-auth-user" style="display:none;" aria-label="Log out">
           <img id="user-avatar-mobile" src="" alt="">
           <span id="user-avatar-fallback-mobile" class="mobile-auth-user-fallback">J</span>
         </button>
@@ -319,28 +319,28 @@
     </div>
     </div>
 
-    <nav id="mobile-tab-bar" aria-label="모바일 메뉴">
-      <button type="button" class="mobile-tab-btn" data-widget="calendar" aria-label="달력" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+    <nav id="mobile-tab-bar" aria-label="Mobile menu">
+      <button type="button" class="mobile-tab-btn" data-widget="calendar" aria-label="Calendar" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">📅</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Cal</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="routine" aria-label="루틴" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="routine" aria-label="Routine" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">✅</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Rout</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="daily" aria-label="데일리" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="daily" aria-label="Daily" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">📋</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Daily</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="memo" aria-label="메모" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="memo" aria-label="Memo" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">📝</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Memo</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="timer" aria-label="타이머" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="timer" aria-label="Timer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">⏲️</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Timer</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="stopwatch" aria-label="스탑워치" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="stopwatch" aria-label="Stopwatch" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">⏱️</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Stop</span>
       </button>
@@ -451,7 +451,7 @@
       <div id="dailyPage" class="card hidden" style="display:flex;flex-direction:column;height:100%;">
         <div class="card__header daily-page-header">
           <div class="card__title">📋 Daily</div>
-          <div class="daily-view-segment" role="tablist" aria-label="Daily 보기 전환">
+          <div class="daily-view-segment" role="tablist" aria-label="Daily view switcher">
             <button id="dailyDayViewBtn" type="button" class="daily-view-btn" role="tab" title="Today" aria-label="Today">Today</button>
             <button id="dailyWeekViewBtn" type="button" class="daily-view-btn" role="tab" title="Week" aria-label="Week">Week</button>
             <button id="dailyMonthViewBtn" type="button" class="daily-view-btn" role="tab" title="Month" aria-label="Month">Month</button>
@@ -461,14 +461,14 @@
         <div class="card__header-unified" style="padding:8px 12px;">
           <div class="goal-bar">
             <span class="goal-emoji" id="dailyGoalEmojiBadge"></span>
-            <input type="text" id="dailyWeekGoalInput" class="monthly-goal-input-unified" placeholder="이번 주 목표를 입력하고 Enter">
-            <button type="button" id="dailyGoalStyleBtn" class="goal-style-btn" aria-label="주간 목표 스타일">⋮</button>
+            <input type="text" id="dailyWeekGoalInput" class="monthly-goal-input-unified" placeholder="Enter this week's goal and press Enter">
+            <button type="button" id="dailyGoalStyleBtn" class="goal-style-btn" aria-label="Weekly goal style">⋮</button>
           </div>
         </div>
         <div id="dailyInputSection" class="daily-day-quick-input" style="display:none;padding:12px 16px;flex-shrink:0;">
           <div class="daily-day-quick-input-inner">
-            <input id="dailyInput" type="text" placeholder="오늘 작업 입력 후 Enter">
-            <button id="dailyAddBtn" type="button" aria-label="작업 추가">+</button>
+            <input id="dailyInput" type="text" placeholder="Add a task and press Enter">
+            <button id="dailyAddBtn" type="button" aria-label="Add task">+</button>
           </div>
         </div>
         <div id="dailyDayWorkspace" class="daily-workspace" style="display:none;"></div>
@@ -522,7 +522,7 @@
       <div id="insightWritePage" class="card hidden">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
           <div class="card__title" id="insightWriteTitle">새 인사이트</div>
-          <button id="saveInsightBtn" class="btn-confirm" style="padding: 8px 16px;">저장</button>
+          <button id="saveInsightBtn" class="btn-confirm" style="padding: 8px 16px;">Save</button>
         </div>
         <div class="insight-write-body">
           <div id="insightLangToggle" class="insight-lang-toggle"></div>
@@ -536,7 +536,7 @@
       <div id="memoWritePage" class="card hidden">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecf2; padding-bottom: 12px;">
           <div class="card__title" id="memoWriteTitle">새 메모 작성</div>
-          <button id="saveMemoBtn" class="btn-confirm" style="padding: 8px 16px;">저장</button>
+          <button id="saveMemoBtn" class="btn-confirm" style="padding: 8px 16px;">Save</button>
         </div>
         <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
           <input type="text" id="memoTitleInput" placeholder="제목" style="width: 100%; padding: 12px 16px; border: none; border-bottom: 2px solid #e9ecf2; font-size: 18px; font-weight: 600; font-family: inherit; box-sizing: border-box; outline: none;" />
@@ -557,7 +557,7 @@
               <input id="memoColorInput" type="color" title="글자색" />
               <input id="memoHighlightInput" type="color" title="하이라이트" value="#fff3a3" />
             </div>
-            <div id="memoRichEditor" class="memo-rich-editor" contenteditable="true" data-placeholder="내용"></div>
+            <div id="memoRichEditor" class="memo-rich-editor" contenteditable="true" data-placeholder="Content"></div>
           </div>
         </div>
       </div>
@@ -610,7 +610,7 @@
             <button type="button" id="goalStyleBtn" class="goal-style-btn" aria-label="목표 스타일">⋮</button>
           </div>
           <div class="nav-controls" style="align-items:center;gap:6px;">
-            <button id="todayBtn" class="btn-today">오늘</button>
+            <button id="todayBtn" class="btn-today">Today</button>
             <button id="prevMonth" class="icon-btn">◀</button>
             <div id="headerYmLabel" class="header-ym-compact">🗓</div>
             <button id="nextMonth" class="icon-btn">▶</button>
@@ -621,7 +621,7 @@
         <div class="calendar-wrapper" id="calendarWrapper">
           <div class="calendar" id="mainCalendar">
             <div class="calendar__weekdays">
-              <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
             </div>
             <div id="calendarGrid" class="calendar__grid"></div>
           </div>
@@ -741,8 +741,8 @@
             <label class="memo__datepick">날짜: <input id="memoDate" type="date"></label>
           </div>
           <div class="memo__add">
-            <textarea id="memoInput" rows="2" placeholder="메모를 입력하세요"></textarea>
-            <button id="memoAddBtn" class="btn">저장</button>
+            <textarea id="memoInput" rows="2" placeholder="Write a memo..."></textarea>
+            <button id="memoAddBtn" class="btn">Save</button>
           </div>
           <ul id="memoList" class="memo__list"></ul>
         </div>
@@ -772,7 +772,7 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260530brand-blue" defer></script>
+  <script src="memo2_app.js?v=20260530daily-i18n" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{
@@ -973,8 +973,8 @@
         </div>
       </div>
       <div class="timer-setting-modal__actions">
-        <button type="button" id="timerSettingCancel" class="timer-setting-modal__btn timer-setting-modal__btn--cancel">취소</button>
-        <button type="button" id="timerSettingSave" class="timer-setting-modal__btn timer-setting-modal__btn--save">저장</button>
+        <button type="button" id="timerSettingCancel" class="timer-setting-modal__btn timer-setting-modal__btn--cancel">Cancel</button>
+        <button type="button" id="timerSettingSave" class="timer-setting-modal__btn timer-setting-modal__btn--save">Save</button>
       </div>
     </div>
   </div>
