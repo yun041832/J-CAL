@@ -3499,7 +3499,61 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   max-height:120px;
   overflow:hidden;
 }
+.memo-image-block{
+  display:block;
+  margin:12px 0;
+  padding:4px;
+  border:1px solid transparent;
+  border-radius:12px;
+}
+.memo-image-block.is-selected{
+  border-color:#2563eb;
+  background:rgba(37,99,235,0.04);
+}
+.memo-image-block img{
+  max-width:100%;
+  height:auto;
+  border-radius:10px;
+  display:inline-block;
+  cursor:pointer;
+}
+.memo-image-toolbar{
+  position:absolute;
+  z-index:99999;
+  display:none;
+  align-items:center;
+  gap:4px;
+  padding:6px;
+  border:1px solid #dbe3ef;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(15,23,42,0.16);
+}
+.memo-image-toolbar.is-visible{
+  display:flex;
+}
+.memo-image-toolbar button{
+  height:28px;
+  padding:0 8px;
+  border:1px solid #dbe3ef;
+  border-radius:7px;
+  background:#f8fafc;
+  font-size:12px;
+  cursor:pointer;
+}
+.memo-image-toolbar button:hover{
+  background:#eef4ff;
+}
 @media (max-width:768px){
+  .memo-image-toolbar{
+    max-width:calc(100vw - 20px);
+    flex-wrap:wrap;
+  }
+  .memo-image-toolbar button{
+    height:27px;
+    font-size:11px;
+    padding:0 7px;
+  }
   .memo-mini-toolbar{
     gap:5px;
     padding:7px;

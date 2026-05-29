@@ -541,6 +541,8 @@ function ensureMemoWidgetPopupStyles(doc){
   st.id='memo-widget-popup-style';
   st.textContent=`
 .memo-widget img,.memo-widget-content img,.memo-popup-content img{max-width:100%;height:auto;display:block;margin:10px 0;border-radius:10px}
+.memo-image-block{display:block;margin:12px 0;text-align:left}
+.memo-image-block img{max-width:100%;height:auto;border-radius:10px;display:inline-block}
 .memo-widget ul,.memo-widget-content ul,.memo-popup-content ul{padding-left:22px}
 .memo-widget .memo-check-row,.memo-widget-content .memo-check-row{display:flex;align-items:center;gap:8px;margin:4px 0}
 `;
@@ -551,6 +553,122 @@ function insertHtmlAtCursor(html){
 }
 function triggerMemoWriteInput(){
   memoWriteOnInput?.();
+}
+let selectedMemoImageBlock=null;
+function ensureMemoImageToolbar(){
+  let toolbar=document.getElementById('memoImageToolbar');
+  if(toolbar) return toolbar;
+  toolbar=document.createElement('div');
+  toolbar.id='memoImageToolbar';
+  toolbar.className='memo-image-toolbar';
+  toolbar.innerHTML=`
+    <button type="button" data-img-action="small">작게</button>
+    <button type="button" data-img-action="medium">보통</button>
+    <button type="button" data-img-action="large">크게</button>
+    <button type="button" data-img-action="left">좌</button>
+    <button type="button" data-img-action="center">중앙</button>
+    <button type="button" data-img-action="right">우</button>
+    <button type="button" data-img-action="up">위</button>
+    <button type="button" data-img-action="down">아래</button>
+    <button type="button" data-img-action="delete">삭제</button>
+  `;
+  document.body.appendChild(toolbar);
+  return toolbar;
+}
+function normalizeMemoImages(editor){
+  if(!editor) return;
+  editor.querySelectorAll('img').forEach(img=>{
+    if(img.closest('.memo-image-block')) return;
+    const figure=document.createElement('figure');
+    figure.className='memo-image-block';
+    figure.contentEditable='false';
+    figure.style.textAlign='left';
+    img.classList.add('memo-pasted-image');
+    if(!img.style.width){
+      img.style.width='100%';
+      img.style.maxWidth='420px';
+    }
+    img.parentNode.insertBefore(figure,img);
+    figure.appendChild(img);
+  });
+}
+function setupMemoImageControls(editor){
+  if(!editor||editor.dataset.imageControlsReady==='1') return;
+  editor.dataset.imageControlsReady='1';
+  const toolbar=ensureMemoImageToolbar();
+  function clearSelection(){
+    if(selectedMemoImageBlock){
+      selectedMemoImageBlock.classList.remove('is-selected');
+    }
+    selectedMemoImageBlock=null;
+    toolbar.classList.remove('is-visible');
+  }
+  function positionToolbar(block){
+    const rect=block.getBoundingClientRect();
+    toolbar.style.left=`${Math.min(rect.left,window.innerWidth-360)}px`;
+    toolbar.style.top=`${Math.max(8,rect.top-42+window.scrollY)}px`;
+  }
+  function selectImageBlock(block){
+    clearSelection();
+    selectedMemoImageBlock=block;
+    block.classList.add('is-selected');
+    positionToolbar(block);
+    toolbar.classList.add('is-visible');
+  }
+  editor.addEventListener('click',(e)=>{
+    const block=e.target.closest('.memo-image-block');
+    if(block&&editor.contains(block)){
+      e.preventDefault();
+      selectImageBlock(block);
+      return;
+    }
+    clearSelection();
+  });
+  toolbar.addEventListener('click',(e)=>{
+    const btn=e.target.closest('button');
+    if(!btn||!selectedMemoImageBlock) return;
+    const action=btn.dataset.imgAction;
+    const img=selectedMemoImageBlock.querySelector('img');
+    if(!img) return;
+    if(action==='small'){
+      img.style.width='35%';
+      img.style.maxWidth='260px';
+    }
+    if(action==='medium'){
+      img.style.width='60%';
+      img.style.maxWidth='420px';
+    }
+    if(action==='large'){
+      img.style.width='100%';
+      img.style.maxWidth='100%';
+    }
+    if(action==='left') selectedMemoImageBlock.style.textAlign='left';
+    if(action==='center') selectedMemoImageBlock.style.textAlign='center';
+    if(action==='right') selectedMemoImageBlock.style.textAlign='right';
+    if(action==='up'){
+      const prev=selectedMemoImageBlock.previousElementSibling;
+      if(prev) selectedMemoImageBlock.parentNode.insertBefore(selectedMemoImageBlock,prev);
+    }
+    if(action==='down'){
+      const next=selectedMemoImageBlock.nextElementSibling;
+      if(next) selectedMemoImageBlock.parentNode.insertBefore(next,selectedMemoImageBlock);
+    }
+    if(action==='delete'){
+      selectedMemoImageBlock.remove();
+      selectedMemoImageBlock=null;
+      toolbar.classList.remove('is-visible');
+      triggerMemoWriteInput();
+      return;
+    }
+    positionToolbar(selectedMemoImageBlock);
+    triggerMemoWriteInput();
+  });
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='Escape') clearSelection();
+  });
+  window.addEventListener('scroll',()=>{
+    if(selectedMemoImageBlock) positionToolbar(selectedMemoImageBlock);
+  },true);
 }
 function setupMemoImagePaste(editor){
   if(!editor||editor.dataset.pasteReady==='1') return;
@@ -569,7 +687,12 @@ function setupMemoImagePaste(editor){
     const reader=new FileReader();
     reader.onload=()=>{
       const src=reader.result;
-      insertHtmlAtCursor(`<img src="${src}" class="memo-pasted-image" alt="pasted image">`);
+      insertHtmlAtCursor(`
+        <figure class="memo-image-block" contenteditable="false">
+          <img src="${src}" class="memo-pasted-image" alt="pasted image" style="width:100%;max-width:420px;">
+        </figure>
+        <p><br></p>
+      `);
       triggerMemoWriteInput();
     };
     reader.readAsDataURL(file);
@@ -3774,6 +3897,7 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   if(!titleInput||!textarea||!saveBtn||!richEditor) return;
   
   setupMemoImagePaste(richEditor);
+  setupMemoImageControls(richEditor);
   setupMemoToolbar(richEditor);
   
   if(titleEl) titleEl.textContent=editMode?'메모 수정':'새 메모 작성';
@@ -3786,11 +3910,13 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
     titleInput.value=editItem.title||'';
     const editContent=editItem.content||editItem.text||'';
     setMemoEditorHtml(richEditor,editContent);
-    textarea.value=editContent;
+    normalizeMemoImages(richEditor);
+    syncMemoTextarea(textarea,richEditor);
     if(dateInput) dateInput.value=editItem.date||fmtLocalDate(new Date(editItem.createdAt));
   }else{
     titleInput.value='';
     setMemoEditorHtml(richEditor,'');
+    normalizeMemoImages(richEditor);
     textarea.value='';
     if(dateInput) dateInput.value=fmtLocalDate(new Date());
   }
