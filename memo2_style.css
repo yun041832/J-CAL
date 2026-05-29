@@ -1,7 +1,14 @@
 /* memo2_style.css */
 /* 베이스 레이아웃만: 나머진 patch에서 덮어씀 */
 :root{
-  --bg:#f6f7fb; --card:#ffffff; --line:#e9ecf2; --text:#111827;
+  --color-primary:#5C8DFF;
+  --color-primary-hover:#4A7AEE;
+  --color-primary-light:#EEF2FF;
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --line:#e9ecf2;
+  --text:#111827;
+  --primary:var(--color-primary);
 }sidebar__hint
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -23,8 +30,8 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .calendar__weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 4px;text-align:center}
 .calendar__grid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(5,auto);gap:4px}
 .day{position:relative;min-height:135px;height:100%;border:1px solid var(--line);border-radius:8px;background:#fff;transition:border 0.2s}
-.day--selected{border:3px solid #3b82f6 !important}
-.day--today{background:#f0f9ff}
+.day--selected{border:3px solid var(--color-primary,#5C8DFF) !important}
+.day--today{background:var(--color-primary-light,#EEF2FF)}
 .day__num{position:absolute;top:6px;left:8px;font-size:10px;font-weight:600}
 .widget-host{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .widget-host .widget{position:absolute;left:300px;top:160px;width:380px;min-height:200px;background:#fff;border:2px solid #c5d0e4;border-radius:16px;pointer-events:auto;box-shadow:0 10px 30px rgba(15,23,42,.12)}

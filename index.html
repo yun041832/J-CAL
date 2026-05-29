@@ -30,7 +30,7 @@
   <!-- Critical CSS (inline) - 최소화된 버전 -->
   <style>
     
-    :root{--bg:#f6f7fb;--card:#fff;--line:#e9ecf2;--text:#111827;--primary:#5c8dff}
+    :root{--color-primary:#5C8DFF;--color-primary-hover:#4A7AEE;--color-primary-light:#EEF2FF;--bg:#f6f7fb;--card:#fff;--line:#e9ecf2;--text:#111827;--primary:var(--color-primary)}
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;margin:0}
     body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:"Noto Sans","Noto Sans KR",sans-serif}
@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529daily-section-pastel">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530brand-blue">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -161,7 +161,7 @@
     box-sizing:border-box;
   }
   #mobile-tab-bar .mobile-tab-btn.is-active{
-    color:#1a56db !important;
+    color:var(--color-primary,#5C8DFF) !important;
   }
   @media (max-width:768px){
     html body .app aside.sidebar,
@@ -772,7 +772,7 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260529daily-section-pastel" defer></script>
+  <script src="memo2_app.js?v=20260530brand-blue" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{

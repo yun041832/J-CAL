@@ -1379,7 +1379,7 @@ function showEventMenu(anchor,item,ref,dstr,applyStyle){
 }
 
 /* ── 팔레트 ── */
-const PALETTE_BASE=["#3b82f6","#ef4444","#ec4899","#f97316","#eab308","#22c55e",
+const PALETTE_BASE=["#5C8DFF","#ef4444","#ec4899","#f97316","#eab308","#22c55e",
                "#10b981","#14b8a6","#6366f1","#8b5cf6","#9ca3af","#64748b"];
 const PALETTE_EXTENDED=[
   "#fee2e2","#fecaca","#fca5a5","#f87171","#ef4444","#dc2626",
@@ -1388,7 +1388,7 @@ const PALETTE_EXTENDED=[
   "#d9f99d","#bef264","#a3e635","#84cc16","#65a30d","#4d7c0f",
   "#a7f3d0","#6ee7b7","#34d399","#10b981","#059669","#047857",
   "#a5f3fc","#67e8f9","#22d3ee","#06b6d4","#0891b2","#0e7490",
-  "#bfdbfe","#93c5fd","#60a5fa","#3b82f6","#2563eb","#1d4ed8",
+  "#EEF2FF","#93c5fd","#60a5fa","#5C8DFF","#4A7AEE","#5C8DFF",
   "#c7d2fe","#a5b4fc","#818cf8","#6366f1","#4f46e5","#4338ca",
   "#ddd6fe","#c4b5fd","#a78bfa","#8b5cf6","#7c3aed","#6d28d9",
   "#f0abfc","#e879f9","#d946ef","#c026d3","#a21caf","#86198f"
@@ -1788,7 +1788,7 @@ function updateRepeatButton(){
     inlineBtn.textContent=labels[ST.eventRepeat]||'반복 안 함';
     const active=ST.eventRepeat && ST.eventRepeat!=='none';
     inlineBtn.style.background=active?'#e0ecff':'#f8fafc';
-    inlineBtn.style.color=active?'#2563eb':'#334155';
+    inlineBtn.style.color=active?'#4A7AEE':'#334155';
   }
 }
 
@@ -2430,7 +2430,7 @@ function showEventConfigModal(anchor){
     repeatBtn.textContent=repeatLabels[ST.eventRepeat]||'반복 안 함';
     const active=ST.eventRepeat && ST.eventRepeat!=='none';
     repeatBtn.style.background=active?'#e0ecff':'#f8fafc';
-    repeatBtn.style.color=active?'#2563eb':'#334155';
+    repeatBtn.style.color=active?'#4A7AEE':'#334155';
   };
   applyRepeatLabel();
   repeatBtn.onclick=(e)=>{
@@ -2804,11 +2804,11 @@ ${WIDGET_STOPWATCH_STYLE}
         .mini-day:nth-last-child(-n+7){border-bottom:none}
         .mini-day__num{font-size:11px;font-weight:700;color:#0f172a;margin-bottom:0}
         .mini-day--out .mini-day__num{color:#cbd5e1}
-        .mini-day--sel{outline:2px solid #dbeafe}
+        .mini-day--sel{outline:2px solid #EEF2FF}
         .mini-labels{display:flex;flex-direction:column;gap:2px;flex:1;overflow:hidden}
         .mini-label{display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1f2937;padding:0;border-radius:0;background:transparent}
         .mini-label.done{color:#94a3b8;text-decoration:line-through;background:transparent}
-        .mini-more{margin-left:auto;font-size:10px;color:#2563eb;font-weight:600}
+        .mini-more{margin-left:auto;font-size:10px;color:#4A7AEE;font-weight:600}
       </style><div class="wrap"></div>`);
   const wrap=win.document.querySelector('.wrap');
   if(wrap) wrap.appendChild(bodyBuilder(true, win));
@@ -4446,7 +4446,7 @@ let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 const SECTION_COLORS=[
   {bg:'#dcfce7',text:'#166534'}, // Green
-  {bg:'#dbeafe',text:'#1e3a8a'}, // Blue
+  {bg:'#EEF2FF',text:'#5C8DFF'}, // Blue
   {bg:'#fef9c3',text:'#854d0e'}, // Amber
   {bg:'#ffedd5',text:'#9a3412'}, // Orange
   {bg:'#ede9fe',text:'#4c1d95'}, // Purple
@@ -4456,20 +4456,20 @@ const SECTION_COLOR_LABELS=['Green','Blue','Amber','Orange','Purple','Pink'];
 const LEGACY_DAILY_SECTION_COLOR_IDS={
   yellow:'#fef9c3',
   green:'#dcfce7',
-  blue:'#dbeafe',
+  blue:'#EEF2FF',
   purple:'#ede9fe',
   red:'#fce7f3',
   gray:'#f1f5f9',
 };
 const LEGACY_DAILY_SECTION_HEX={
   '#4ADE80':'#dcfce7',
-  '#60A5FA':'#dbeafe',
+  '#60A5FA':'#EEF2FF',
   '#FCD34D':'#fef9c3',
   '#FB923C':'#ffedd5',
   '#A78BFA':'#ede9fe',
   '#F472B6':'#fce7f3',
   '#10B981':'#dcfce7',
-  '#185FA5':'#dbeafe',
+  '#185FA5':'#EEF2FF',
   '#F59E0B':'#fef9c3',
   '#F97316':'#ffedd5',
   '#8B5CF6':'#ede9fe',
@@ -4901,11 +4901,15 @@ function updateDailyViewButtons(){
     const btn=document.getElementById(id);
     if(!btn) return;
     if(dailyViewMode===mode){
-      btn.style.background='#3b82f6';
-      btn.style.color='#fff';
+      btn.style.background='#EEF2FF';
+      btn.style.color='#5C8DFF';
+      btn.style.border='1px solid #5C8DFF';
+      btn.style.fontWeight='700';
     }else{
-      btn.style.background='var(--card)';
-      btn.style.color='#64748b';
+      btn.style.background='transparent';
+      btn.style.color='#666';
+      btn.style.border='none';
+      btn.style.fontWeight='600';
     }
   });
 }
@@ -5213,16 +5217,16 @@ function renderDailyWeekCalendar(){
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
     const col = el('div');
-    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#3b82f6':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
+    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#5C8DFF':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
 
     const dayHeader = el('div');
-    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#3b82f6':isToday?'#dbeafe':'#f8fafc'};`;
+    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};`;
 
     const dayName = el('div', null, weekdays[i]);
-    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#1d4ed8':'#64748b'};`;
+    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
 
     const dayNum = el('div', null, String(date.getDate()));
-    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#1d4ed8':'#111'};`;
+    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111'};`;
 
     const dot = el('div');
     dot.style.cssText = `width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
@@ -5239,7 +5243,7 @@ function renderDailyWeekCalendar(){
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = !!item.done;
-      cb.style.cssText = 'width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#3b82f6;';
+      cb.style.cssText = 'width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#5C8DFF;';
 
       const text = el('span', null, item.text);
       text.style.cssText = `font-size:11px;line-height:1.4;word-break:break-all;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
@@ -5402,7 +5406,7 @@ function renderDailyList(){
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = !!item.done;
-    cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#3b82f6;';
+    cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#5C8DFF;';
 
     const text = el('span', null, item.text);
     text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
@@ -5440,7 +5444,7 @@ function renderDailyList(){
     });
     row.addEventListener('dragover', (e)=>{
       e.preventDefault();
-      row.style.borderTop = '2px solid #3b82f6';
+      row.style.borderTop = '2px solid #5C8DFF';
     });
     row.addEventListener('dragleave', ()=>{
       row.style.borderTop = '';
@@ -5523,8 +5527,8 @@ function initRoutinePage(){
     toggleReorderBtn.onclick=()=>{
       isReorderMode=!isReorderMode;
       if(isReorderMode){
-        toggleReorderBtn.style.background='#3b82f6';
-        toggleReorderBtn.style.borderColor='#3b82f6';
+        toggleReorderBtn.style.background='#5C8DFF';
+        toggleReorderBtn.style.borderColor='#5C8DFF';
         toggleReorderBtn.querySelector('svg').setAttribute('fill','#ffffff');
       }else{
         toggleReorderBtn.style.background='var(--card)';
@@ -5672,7 +5676,7 @@ function renderRoutineList(){
   if(routines.length===0){
     routines=[
       {id:1,text:'루틴 1',checked:false,startDate:'2026-01-01',endDate:'2026-12-31',repeatDays:[1,3,5],color:'#10b981'},
-      {id:2,text:'루틴 2',checked:false,startDate:'2026-01-01',endDate:'2026-12-31',repeatDays:[0,2,4,6],color:'#3b82f6'},
+      {id:2,text:'루틴 2',checked:false,startDate:'2026-01-01',endDate:'2026-12-31',repeatDays:[0,2,4,6],color:'#5C8DFF'},
       {id:3,text:'루틴 3',checked:false,startDate:'2026-01-01',endDate:'2026-12-31',repeatDays:[1,2,3,4,5],color:'#f59e0b'}
     ];
     localStorage.setItem('memo2.routines',JSON.stringify(routines));
@@ -5728,7 +5732,7 @@ function renderRoutineList(){
       item.ondragover=(e)=>{
         e.preventDefault();
         if(draggedIdx===null||draggedIdx===idx) return;
-        item.style.borderTop='3px solid #3b82f6';
+        item.style.borderTop='3px solid #5C8DFF';
       };
       
       item.ondragleave=(e)=>{
@@ -5945,7 +5949,7 @@ function showRoutineModal(editMode=false,routine=null,idx=null){
       const selectedNames=repeatDays.sort((a,b)=>a-b).map(d=>dayNames[d]);
       repeatBtn.textContent=`${selectedNames.join(', ')} 중 ${repeatDays.length}일`;
       repeatBtn.style.background='#e0ecff';
-      repeatBtn.style.color='#2563eb';
+      repeatBtn.style.color='#4A7AEE';
     }
   };
   updateRepeatBtn();
@@ -6256,8 +6260,8 @@ function showEmojiModal(currentEmoji,onSave){
     btn.style.transition='all 0.2s';
     
     if(emoji===selectedEmoji){
-      btn.style.borderColor='#3b82f6';
-      btn.style.background='#dbeafe';
+      btn.style.borderColor='#5C8DFF';
+      btn.style.background='#EEF2FF';
     }
     
     btn.onclick=()=>{
@@ -6268,8 +6272,8 @@ function showEmojiModal(currentEmoji,onSave){
         b.style.background='var(--card)';
       });
       // 선택된 버튼 강조
-      btn.style.borderColor='#3b82f6';
-      btn.style.background='#dbeafe';
+      btn.style.borderColor='#5C8DFF';
+      btn.style.background='#EEF2FF';
     };
     
     emojiGrid.appendChild(btn);
@@ -6327,7 +6331,7 @@ function showColorPickerModal(currentColor,onSave){
   const colors=[
     '#10b981','#22c55e','#84cc16','#eab308','#f59e0b','#f97316',
     '#ef4444','#ec4899','#d946ef','#a855f7','#8b5cf6','#6366f1',
-    '#3b82f6','#0ea5e9','#06b6d4','#14b8a6','#64748b','#475569'
+    '#5C8DFF','#0ea5e9','#06b6d4','#14b8a6','#64748b','#475569'
   ];
   
   let selectedColor=currentColor||'#10b981';
@@ -6344,7 +6348,7 @@ function showColorPickerModal(currentColor,onSave){
     
     if(color===selectedColor){
       btn.style.borderColor='#fff';
-      btn.style.boxShadow='0 0 0 2px #3b82f6';
+      btn.style.boxShadow='0 0 0 2px #5C8DFF';
     }
     
     btn.onclick=()=>{
@@ -6356,7 +6360,7 @@ function showColorPickerModal(currentColor,onSave){
       });
       // 선택된 버튼 강조
       btn.style.borderColor='#fff';
-      btn.style.boxShadow='0 0 0 2px #3b82f6';
+      btn.style.boxShadow='0 0 0 2px #5C8DFF';
     };
     
     colorGrid.appendChild(btn);
@@ -6979,7 +6983,7 @@ function widgetTodo(){
           text.style.textDecoration='line-through';
         }else{
           if(it.color==='rainbow'){
-            text.style.color='#2563eb';
+            text.style.color='#4A7AEE';
           }else if(it.color){
             text.style.color=it.color;
           }else{
