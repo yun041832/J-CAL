@@ -3163,71 +3163,137 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   }
 }
 
-/* Daily 일간 섹션 워크스페이스 */
-.daily-day-layout{
+/* Daily 일간 워크스페이스 */
+.daily-workspace{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+}
+.daily-day-quick-input{
+  padding:10px 16px 0 !important;
+}
+.daily-day-quick-input.is-day-mode{
+  padding-bottom:4px !important;
+}
+.daily-day-quick-input-inner{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.daily-day-quick-input-inner input{
+  flex:1;
+  padding:11px 14px;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  font-size:14px;
+  font-family:inherit;
+  outline:none;
+  background:#fff;
+  box-sizing:border-box;
+}
+.daily-day-quick-input-inner input:focus{
+  border-color:#93c5fd;
+  box-shadow:0 0 0 3px rgba(59,130,246,0.12);
+}
+.daily-day-quick-input-inner button{
+  width:42px;
+  height:42px;
+  border:1px solid #dbe4f0;
+  border-radius:12px;
+  background:#f8fafc;
+  color:#334155;
+  font-size:20px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.daily-day-layout,
+.daily-main-grid{
   display:grid;
-  grid-template-columns:minmax(0,7fr) minmax(260px,3fr);
-  gap:12px;
-  padding:12px;
+  grid-template-columns:minmax(0,1fr) minmax(280px,340px);
+  gap:16px;
+  padding:12px 16px 16px;
+  align-items:start;
 }
 .daily-day-sections,
-.daily-day-memo-panel{
+.daily-sections{
   min-width:0;
-  border:1px solid #e6ebf3;
-  border-radius:10px;
-  background:var(--card);
-  padding:10px;
+  border:none;
+  border-radius:0;
+  background:transparent;
+  padding:0;
 }
 .daily-day-sections-head{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  margin-bottom:8px;
+  margin-bottom:12px;
 }
 .daily-day-head-title{
-  font-size:14px;
+  font-size:15px;
   font-weight:700;
-  color:#1f2937;
+  color:#0f172a;
 }
 .daily-day-add-section-btn{
-  border:1px solid #dbe4f0;
-  background:#f8fbff;
-  color:#334155;
-  border-radius:8px;
-  padding:6px 10px;
+  border:1px dashed #cbd5e1;
+  background:#fff;
+  color:#475569;
+  border-radius:10px;
+  padding:7px 12px;
   cursor:pointer;
   font-size:12px;
+  font-weight:600;
+}
+.daily-day-add-section-btn:hover{
+  background:#f8fafc;
+  border-color:#94a3b8;
 }
 .daily-day-sections-list{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:14px;
 }
-.daily-day-section-card{
-  border:1px solid #e6ebf3;
-  border-radius:8px;
+.daily-day-section-card,
+.daily-section-card{
+  border:1px solid #e5eaf2;
+  border-radius:14px;
   background:#fff;
+  overflow:hidden;
+  box-shadow:0 1px 3px rgba(15,23,42,0.04);
 }
-.daily-day-section-head{
+.daily-day-section-head,
+.daily-section-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:8px 10px;
-  border-bottom:1px solid #eef2f7;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(15,23,42,0.06);
+}
+.daily-section-header-yellow{
+  background:linear-gradient(90deg,#fff9db 0%,#fffef5 100%);
+}
+.daily-section-header-green{
+  background:linear-gradient(90deg,#ecfdf3 0%,#f7fef9 100%);
+}
+.daily-section-header-purple{
+  background:linear-gradient(90deg,#f3e8ff 0%,#faf5ff 100%);
+}
+.daily-section-header-neutral{
+  background:linear-gradient(90deg,#f8fafc 0%,#ffffff 100%);
 }
 .daily-day-section-left{
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:8px;
   min-width:0;
 }
 .daily-day-section-emoji{
-  font-size:16px;
+  font-size:18px;
+  line-height:1;
 }
 .daily-day-section-title{
-  font-size:13px;
+  font-size:14px;
   font-weight:700;
   color:#111827;
   overflow:hidden;
@@ -3238,61 +3304,86 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   display:flex;
   align-items:center;
   gap:6px;
+  flex-shrink:0;
+}
+.daily-day-section-menu-btn{
+  width:30px;
+  height:30px;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  color:#64748b;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+.daily-day-section-menu-btn:hover{
+  background:rgba(255,255,255,0.7);
+  border-color:rgba(15,23,42,0.08);
 }
 .daily-day-section-btn{
   border:1px solid #dbe4f0;
   background:#fff;
   color:#475569;
   border-radius:8px;
-  padding:5px 9px;
+  padding:5px 10px;
   cursor:pointer;
   font-size:12px;
+  font-weight:600;
 }
-.daily-day-section-btn.primary{
-  background:#3b82f6;
-  color:#fff;
-  border-color:#3b82f6;
+.daily-day-add-task-btn{
+  background:rgba(255,255,255,0.85);
+  border-color:#cbd5e1;
+  color:#1d4ed8;
 }
-.daily-day-section-delete{
-  color:#dc2626;
-  border-color:#fecaca;
+.daily-day-add-task-btn:hover{
   background:#fff;
-}
-.daily-day-section-delete:hover{
-  background:#fef2f2;
+  border-color:#93c5fd;
 }
 .daily-day-section-body{
   display:flex;
   flex-direction:column;
-  gap:6px;
-  padding:8px 10px 10px;
+  gap:0;
+  padding:4px 0 8px;
+  background:#fff;
+}
+.daily-task-row{
+  border-bottom:1px solid #f1f5f9;
+}
+.daily-task-row:last-child{
+  border-bottom:none;
 }
 .daily-day-task-item{
   display:flex;
   align-items:flex-start;
-  gap:7px;
+  gap:8px;
+  padding:8px 12px;
+  background:#fff;
 }
 .daily-day-task-item input[type="checkbox"]{
-  width:15px;
-  height:15px;
+  width:16px;
+  height:16px;
   margin-top:2px;
   accent-color:#3b82f6;
+  flex-shrink:0;
 }
 .daily-day-task-text{
   flex:1;
   min-width:0;
   font-size:13px;
-  line-height:1.4;
+  line-height:1.45;
   color:#334155;
-  word-break:break-all;
+  word-break:break-word;
 }
 .daily-day-task-text.is-done{
   text-decoration:line-through;
-  color:#9aa5b1;
+  color:#94a3b8;
 }
 .daily-day-empty{
   font-size:12px;
   color:#94a3b8;
+  padding:10px 12px 12px;
 }
 .daily-section-task-input{
   width:100%;
@@ -3337,18 +3428,24 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-day-task-actions{
   display:flex;
   align-items:center;
-  gap:4px;
+  gap:2px;
   margin-left:auto;
   flex-shrink:0;
+  opacity:0.35;
+  transition:opacity 0.15s ease;
+}
+.daily-task-row:hover .daily-day-task-actions,
+.daily-day-task-item:focus-within .daily-day-task-actions{
+  opacity:1;
 }
 .daily-day-task-icon-btn{
   background:none;
   border:none;
   cursor:pointer;
-  padding:2px;
+  padding:3px;
   display:flex;
   align-items:center;
-  opacity:0.65;
+  opacity:0.7;
   line-height:1;
 }
 .daily-day-task-icon-btn:hover{
@@ -3358,38 +3455,104 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   color:#cbd5e1;
   font-size:14px;
 }
+.daily-day-memo-panel,
+.daily-memo-panel{
+  min-width:0;
+  border:1px solid #e6ebf3;
+  border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
+  padding:14px;
+  box-shadow:0 1px 4px rgba(15,23,42,0.05);
+  position:sticky;
+  top:8px;
+}
+.daily-day-memo-panel.is-expanded{
+  grid-column:1 / -1;
+}
 .daily-memo-head{
-  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+}
+.daily-memo-head-title{
+  font-size:14px;
+  font-weight:700;
+  color:#0f172a;
+}
+.daily-memo-head-actions{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.daily-memo-icon-btn{
+  width:28px;
+  height:28px;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  background:#fff;
+  color:#64748b;
+  font-size:13px;
+  cursor:pointer;
+  padding:0;
+  line-height:1;
+}
+.daily-memo-icon-btn:hover{
+  background:#f1f5f9;
 }
 .daily-memo-textarea{
   width:100%;
-  min-height:120px;
+  min-height:140px;
   border:1px solid #e2e8f0;
-  border-radius:8px;
-  padding:10px;
+  border-radius:12px;
+  padding:12px;
   box-sizing:border-box;
   font-size:13px;
   font-family:inherit;
   outline:none;
   resize:vertical;
+  background:#fff;
+  line-height:1.55;
+}
+.daily-memo-textarea:focus{
+  border-color:#93c5fd;
+  box-shadow:0 0 0 3px rgba(59,130,246,0.1);
+}
+.daily-memo-saved-at{
+  margin-top:8px;
+  font-size:11px;
+  color:#94a3b8;
 }
 .daily-memo-actions{
   display:flex;
   gap:8px;
-  margin:8px 0;
+  margin:10px 0 8px;
+}
+.daily-memo-save-btn{
+  background:#3b82f6;
+  color:#fff;
+  border-color:#3b82f6;
+  flex:1;
+}
+.daily-memo-all-btn{
+  flex:1;
+  background:#fff;
 }
 .daily-memo-linked-list{
   display:flex;
   flex-direction:column;
-  gap:6px;
-  max-height:260px;
+  gap:8px;
+  max-height:220px;
   overflow-y:auto;
+  padding-top:4px;
+  border-top:1px solid #eef2f7;
 }
 .daily-memo-item{
   border:1px solid #e8edf4;
-  border-radius:8px;
+  border-radius:10px;
   background:#fff;
-  padding:8px;
+  padding:10px;
 }
 .daily-memo-item-title{
   font-size:12px;
@@ -3400,12 +3563,20 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-memo-item-content{
   font-size:12px;
   color:#64748b;
-  line-height:1.35;
-  word-break:break-all;
+  line-height:1.4;
+  word-break:break-word;
+}
+.daily-section-menu-popup{
+  min-width:120px;
 }
 @media (max-width:1024px){
-  .daily-day-layout{
+  .daily-day-layout,
+  .daily-main-grid{
     grid-template-columns:1fr;
+  }
+  .daily-day-memo-panel,
+  .daily-memo-panel{
+    position:static;
   }
 }
 

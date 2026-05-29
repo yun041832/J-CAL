@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260528memo4">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260528daily1">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -471,15 +471,15 @@
             <button type="button" id="dailyGoalStyleBtn" class="goal-style-btn" aria-label="주간 목표 스타일">⋮</button>
           </div>
         </div>
-        <div id="dailyDayWorkspace" style="display:none;"></div>
-        <div id="dailyWeekCalendar" style="display:none;"></div>
-        <div id="dailyMonthCalendar" style="display:none;padding:12px;"></div>
-        <div id="dailyInputSection" style="display:none;padding:12px 16px;flex-shrink:0;">
-          <div style="display:flex;gap:8px;">
-            <input id="dailyInput" type="text" placeholder="오늘 작업 입력 후 Enter" style="flex:1;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
-            <button id="dailyAddBtn" style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;background:var(--card);cursor:pointer;font-size:18px;">+</button>
+        <div id="dailyInputSection" class="daily-day-quick-input" style="display:none;padding:12px 16px;flex-shrink:0;">
+          <div class="daily-day-quick-input-inner">
+            <input id="dailyInput" type="text" placeholder="오늘 작업 입력 후 Enter">
+            <button id="dailyAddBtn" type="button" aria-label="작업 추가">+</button>
           </div>
         </div>
+        <div id="dailyDayWorkspace" class="daily-workspace" style="display:none;"></div>
+        <div id="dailyWeekCalendar" style="display:none;"></div>
+        <div id="dailyMonthCalendar" style="display:none;padding:12px;"></div>
         <div id="dailyList" style="display:none;flex:1;overflow-y:auto;padding:0 16px 16px;"></div>
       </div>
 
@@ -778,7 +778,7 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260528memo4" defer></script>
+  <script src="memo2_app.js?v=20260528daily1" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{
