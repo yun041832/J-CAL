@@ -4511,8 +4511,7 @@ function startDailyTaskInlineEdit(dstr,idx,textEl,options={}){
   inp.select();
 }
 function appendDailyDayTaskRow(body,dstr,idx,task){
-  const rowWrap=el('div','daily-task-row');
-  const row=el('div','daily-day-task-item');
+  const row=el('div','daily-task-row daily-day-task-row');
   const cb=document.createElement('input');
   cb.type='checkbox';
   cb.checked=!!task.done;
@@ -4537,8 +4536,7 @@ function appendDailyDayTaskRow(body,dstr,idx,task){
   });
   actions.append(editBtn,delBtn);
   row.append(cb,txt,actions);
-  rowWrap.appendChild(row);
-  body.appendChild(rowWrap);
+  body.appendChild(row);
 }
 function addDailySection(dstr,title){
   const value=(title||'').trim();
@@ -4552,7 +4550,7 @@ function addDailySection(dstr,title){
 }
 function updateDailySectionTitleById(dstr,sectionId,title){
   const value=(title||'').trim();
-  if(!value) return;
+  if(!value||DAILY_PRESET_SECTION_IDS.includes(sectionId)) return;
   const sections=getDailySections(dstr);
   const next=sections.map(s=>s.id===sectionId?{...s,title:value}:s);
   setDailySections(dstr,next);
@@ -4561,7 +4559,7 @@ function updateDailySectionTitleById(dstr,sectionId,title){
   renderDailyDayWorkspace();
 }
 function isDailySectionDeletable(section){
-  if(!section||section.id==='__none__') return false;
+  if(!section||section.id==='__none__'||isDailyPresetSection(section)) return false;
   const title=(section.title||'').trim();
   if(title==='기본 섹션'||title==='미분류') return false;
   return true;
@@ -4702,51 +4700,44 @@ function getDailySections(dstr){
 function setDailySections(dstr,list){
   set(kDailySections(dstr),Array.isArray(list)?list:[]);
 }
-const DAILY_PRESET_SECTIONS=[
-  {title:'오전',emoji:'☀️',color:'yellow',order:0},
-  {title:'오후',emoji:'🌤',color:'green',order:1},
-  {title:'저녁',emoji:'🌙',color:'purple',order:2},
-];
-function isLegacyDefaultDailySections(sections){
-  if(!sections.length) return true;
-  if(sections.length!==1) return false;
-  const title=(sections[0].title||'').trim();
-  return title==='기본 섹션'||title==='일간 섹션';
+const DAILY_PRESET_SECTION_IDS=['preset_morning','preset_afternoon','preset_evening'];
+function isDailyPresetSection(section){
+  return !!section && DAILY_PRESET_SECTION_IDS.includes(section.id);
+}
+function getDailyPresetSections(){
+  return [
+    {id:'preset_morning',title:'오전',emoji:'☀️',color:'yellow',order:10},
+    {id:'preset_afternoon',title:'오후',emoji:'🌤️',color:'green',order:20},
+    {id:'preset_evening',title:'저녁',emoji:'🌙',color:'purple',order:30},
+  ];
+}
+function normalizeDailySectionsForView(sections){
+  const presets=getDailyPresetSections();
+  const custom=Array.isArray(sections)
+    ? sections.filter(s=>!DAILY_PRESET_SECTION_IDS.includes(s.id))
+    : [];
+  return presets.concat(custom).map((s,idx)=>({
+    ...s,
+    order:typeof s.order==='number'?s.order:100+idx,
+  })).sort((a,b)=>(a.order||0)-(b.order||0));
 }
 function ensureDailySections(dstr){
-  let sections=getDailySections(dstr);
-  if(isLegacyDefaultDailySections(sections)){
-    const legacyId=sections[0]?.id;
-    sections=DAILY_PRESET_SECTIONS.map((preset,order)=>({
-      id:createDailySectionId(),
-      title:preset.title,
-      emoji:preset.emoji,
-      color:preset.color,
-      order,
-    }));
-    if(legacyId){
-      const tasks=getDailyTasks(dstr);
-      let changed=false;
-      tasks.forEach((task)=>{
-        if(task.sectionId===legacyId){
-          task.sectionId=sections[0].id;
-          changed=true;
-        }
-      });
-      if(changed) saveDailyTasks(dstr,tasks);
-    }
-    setDailySections(dstr,sections);
-  }
+  const sections=getDailySections(dstr);
   return sections.slice().sort((a,b)=>(a.order||0)-(b.order||0));
 }
 function getDailySectionTheme(section){
-  const title=(section?.title||'').trim();
-  const emoji=section?.emoji||'';
+  const title=section?.title||'';
   const color=section?.color||'';
-  if(color==='yellow'||title.includes('오전')||emoji==='☀️') return {headerClass:'daily-section-header-yellow',emoji:emoji||'☀️'};
-  if(color==='green'||title.includes('오후')||emoji==='🌤'||emoji==='🌥') return {headerClass:'daily-section-header-green',emoji:emoji||'🌤'};
-  if(color==='purple'||title.includes('저녁')||emoji==='🌙') return {headerClass:'daily-section-header-purple',emoji:emoji||'🌙'};
-  return {headerClass:'daily-section-header-neutral',emoji:emoji||'📌'};
+  if(section?.id==='preset_morning'||title.includes('오전')||color==='yellow'){
+    return {emoji:section?.emoji||'☀️',headerClass:'daily-section-header-yellow'};
+  }
+  if(section?.id==='preset_afternoon'||title.includes('오후')||color==='green'){
+    return {emoji:section?.emoji||'🌤️',headerClass:'daily-section-header-green'};
+  }
+  if(section?.id==='preset_evening'||title.includes('저녁')||color==='purple'){
+    return {emoji:section?.emoji||'🌙',headerClass:'daily-section-header-purple'};
+  }
+  return {emoji:section?.emoji||'📌',headerClass:'daily-section-header-neutral'};
 }
 function formatDailyMemoSavedAt(ts){
   if(!ts) return '저장 기록 없음';
@@ -4917,7 +4908,12 @@ function renderDailyDayWorkspace(){
   const unsectioned=allTasks
     .map((t,idx)=>({task:t,idx}))
     .filter(({task})=>!task.sectionId);
-  const mergedSections=sections.concat(unsectioned.length?[{id:'__none__',title:'미분류',emoji:'🗒️',color:'',order:99999}]:[]);
+  const viewSections=normalizeDailySectionsForView(sections);
+  const mergedSections=viewSections.concat(
+    unsectioned.length
+      ? [{id:'__none__',title:'미분류',emoji:'🗒️',color:'',order:99999}]
+      : []
+  );
 
   mergedSections.forEach((section)=>{
     const theme=getDailySectionTheme(section);
@@ -4926,7 +4922,7 @@ function renderDailyDayWorkspace(){
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',theme.emoji);
     leftHead.appendChild(emo);
-    if(section.id!=='__none__' && dailyEditingSectionId===section.id){
+    if(section.id!=='__none__' && !isDailyPresetSection(section) && dailyEditingSectionId===section.id){
       appendDailySectionTitleInput(leftHead,{
         placeholder:'섹션 이름',
         value:dailyEditingSectionTitle,
@@ -4952,7 +4948,7 @@ function renderDailyDayWorkspace(){
     }
 
     const rightHead=el('div','daily-day-section-actions');
-    if(section.id!=='__none__' && dailyEditingSectionId!==section.id){
+    if(section.id!=='__none__' && !isDailyPresetSection(section) && dailyEditingSectionId!==section.id){
       const menuBtn=el('button','daily-day-section-menu-btn','⋯');
       menuBtn.type='button';
       menuBtn.title='섹션 메뉴';

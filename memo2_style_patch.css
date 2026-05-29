@@ -3732,3 +3732,243 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
     padding:14px;
   }
 }
+
+/* Daily day restore 2026-05-29 */
+#dailyDayWorkspace.daily-workspace {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+}
+
+#dailyPage .daily-day-quick-input {
+  padding: 12px 16px 8px !important;
+}
+
+#dailyPage .daily-day-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 360px !important;
+  gap: 18px !important;
+  padding: 14px 16px 20px !important;
+  align-items: start !important;
+}
+
+#dailyPage .daily-day-sections {
+  min-width: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+#dailyPage .daily-day-sections-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin: 0 0 12px !important;
+}
+
+#dailyPage .daily-day-head-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+}
+
+#dailyPage .daily-day-add-section-btn {
+  border: 1px dashed #bfdbfe !important;
+  background: #ffffff !important;
+  color: #2563eb !important;
+  border-radius: 10px !important;
+  padding: 7px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+#dailyPage .daily-day-sections-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+}
+
+#dailyPage .daily-day-section-card {
+  border: 1px solid #e5eaf2 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
+}
+
+#dailyPage .daily-day-section-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 54px !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18) !important;
+}
+
+#dailyPage .daily-section-header-yellow {
+  background: #fff4d6 !important;
+}
+
+#dailyPage .daily-section-header-green {
+  background: #eaf8e4 !important;
+}
+
+#dailyPage .daily-section-header-purple {
+  background: #f1e8ff !important;
+}
+
+#dailyPage .daily-section-header-neutral {
+  background: #f8fafc !important;
+}
+
+#dailyPage .daily-day-section-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+#dailyPage .daily-day-section-emoji {
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+#dailyPage .daily-day-section-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+}
+
+#dailyPage .daily-day-section-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#dailyPage .daily-day-section-menu-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 8px !important;
+  color: #475569 !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+}
+
+#dailyPage .daily-day-section-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.65) !important;
+}
+
+#dailyPage .daily-day-add-task-btn {
+  height: 32px !important;
+  padding: 0 12px !important;
+  border: 1px solid #dbe4f0 !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+#dailyPage .daily-day-section-body {
+  background: #ffffff !important;
+}
+
+#dailyPage .daily-day-task-row {
+  min-height: 44px !important;
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 9px 14px !important;
+  border-bottom: 1px solid #eef2f7 !important;
+}
+
+#dailyPage .daily-day-task-row:last-child {
+  border-bottom: 0 !important;
+}
+
+#dailyPage .daily-day-task-row input[type="checkbox"] {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+#dailyPage .daily-day-task-text {
+  font-size: 14px !important;
+  color: #111827 !important;
+  line-height: 1.45 !important;
+}
+
+#dailyPage .daily-day-empty {
+  padding: 16px !important;
+  font-size: 13px !important;
+  color: #94a3b8 !important;
+}
+
+#dailyPage .daily-day-memo-panel {
+  position: sticky !important;
+  top: 12px !important;
+  border: 1px solid #f1dca8 !important;
+  border-radius: 14px !important;
+  background: #fffaf0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
+}
+
+#dailyPage .daily-memo-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 52px !important;
+  padding: 12px 14px !important;
+  border-bottom: 1px solid #f1dca8 !important;
+}
+
+#dailyPage .daily-memo-head-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+}
+
+#dailyPage .daily-memo-textarea {
+  width: calc(100% - 20px) !important;
+  min-height: 170px !important;
+  margin: 10px !important;
+  padding: 12px !important;
+  border: 1px solid #e6eaf0 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  resize: vertical !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+#dailyPage .daily-memo-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 10px 10px !important;
+}
+
+#dailyPage .daily-memo-actions button,
+#dailyPage .daily-memo-save-btn {
+  height: 34px !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+@media (max-width: 1024px) {
+  #dailyPage .daily-day-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  #dailyPage .daily-day-memo-panel {
+    position: static !important;
+  }
+}
