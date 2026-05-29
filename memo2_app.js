@@ -5014,6 +5014,108 @@ function initDailyPage(){
   openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
 }
 
+const MINI_CAL_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let miniCalYear=new Date().getFullYear();
+let miniCalMonth=new Date().getMonth();
+
+function formatDailyTasksTitle(date){
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const d=new Date(date);
+  d.setHours(0,0,0,0);
+  if(d.getTime()===today.getTime()) return "Today's tasks";
+  return `${d.toLocaleDateString('en-US',{month:'long',day:'numeric'})}'s tasks`;
+}
+
+function loadDailyByDate(date){
+  dailySelectedDate=new Date(date);
+  dailySelectedDate.setHours(0,0,0,0);
+  miniCalYear=dailySelectedDate.getFullYear();
+  miniCalMonth=dailySelectedDate.getMonth();
+  renderDailyDayWorkspace();
+}
+
+function buildDailyMiniCalendar(){
+  const panel=el('div','mini-cal-panel');
+  panel.id='daily-mini-calendar';
+
+  const header=el('div','mini-cal-header');
+  const prevBtn=el('button',null,'◀');
+  prevBtn.type='button';
+  prevBtn.setAttribute('aria-label','Previous month');
+  prevBtn.onclick=()=> miniCalPrev();
+  const label=el('span',null,'');
+  label.id='mini-cal-label';
+  const nextBtn=el('button',null,'▶');
+  nextBtn.type='button';
+  nextBtn.setAttribute('aria-label','Next month');
+  nextBtn.onclick=()=> miniCalNext();
+  const todayBtn=el('button',null,'Today');
+  todayBtn.type='button';
+  todayBtn.id='mini-cal-today-btn';
+  todayBtn.onclick=()=> miniCalToday();
+  header.append(prevBtn,label,nextBtn,todayBtn);
+
+  const grid=el('div','mini-cal-grid');
+  WEEKDAY_LABELS_EN.forEach((name)=>{
+    grid.appendChild(el('div','mini-cal-dow',name));
+  });
+
+  panel.append(header,grid);
+  return panel;
+}
+
+function renderMiniCal(){
+  const grid=document.querySelector('#daily-mini-calendar .mini-cal-grid');
+  const label=document.getElementById('mini-cal-label');
+  if(!grid||!label) return;
+
+  label.textContent=`${MINI_CAL_MONTHS[miniCalMonth]} ${miniCalYear}`;
+
+  grid.querySelectorAll('.mini-cal-cell').forEach((c)=> c.remove());
+
+  const firstDay=new Date(miniCalYear,miniCalMonth,1).getDay();
+  const daysInMonth=new Date(miniCalYear,miniCalMonth+1,0).getDate();
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const selectedStr=fmtLocalDate(dailySelectedDate);
+
+  for(let i=0;i<firstDay;i++){
+    grid.appendChild(el('div','mini-cal-cell empty'));
+  }
+
+  for(let d=1;d<=daysInMonth;d++){
+    const cell=el('div','mini-cal-cell',String(d));
+    const cellDate=new Date(miniCalYear,miniCalMonth,d);
+    cellDate.setHours(0,0,0,0);
+    const cellStr=fmtLocalDate(cellDate);
+
+    if(cellStr===fmtLocalDate(today)) cell.classList.add('mini-cal-today');
+    if(cellStr===selectedStr) cell.classList.add('mini-cal-selected');
+
+    cell.addEventListener('click',()=>{
+      loadDailyByDate(cellDate);
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function miniCalPrev(){
+  miniCalMonth--;
+  if(miniCalMonth<0){ miniCalMonth=11; miniCalYear--; }
+  renderMiniCal();
+}
+
+function miniCalNext(){
+  miniCalMonth++;
+  if(miniCalMonth>11){ miniCalMonth=0; miniCalYear++; }
+  renderMiniCal();
+}
+
+function miniCalToday(){
+  loadDailyByDate(new Date());
+}
+
 function renderDailyDayWorkspace(){
   const host=document.getElementById('dailyDayWorkspace');
   if(!host) return;
@@ -5028,7 +5130,8 @@ function renderDailyDayWorkspace(){
   const right=el('div','daily-day-memo-panel');
 
   const sectionHead=el('div','daily-day-sections-head');
-  const sectionTitle=el('div','daily-day-head-title',"Today's tasks");
+  const sectionTitle=el('div','daily-day-head-title',formatDailyTasksTitle(dailySelectedDate));
+  sectionTitle.id='daily-date-label';
   const addSectionBtn=el('button','daily-day-add-section-btn','+ Add section');
   addSectionBtn.type='button';
   addSectionBtn.onclick=()=>{
@@ -5205,9 +5308,17 @@ function renderDailyDayWorkspace(){
   };
   renderMemoList();
 
-  right.append(memoHead,memoInput,savedAtEl,memoActions,memoList);
+  const miniCal=buildDailyMiniCalendar();
+  const widgetRow=el('div','daily-panel-widget-row');
+  const dailyWidgetBtn=el('button','daily-day-section-btn daily-panel-widget-btn','Daily widget');
+  dailyWidgetBtn.type='button';
+  dailyWidgetBtn.onclick=()=>{ widgetDaily?.(); };
+  widgetRow.appendChild(dailyWidgetBtn);
+
+  right.append(miniCal,memoHead,memoInput,savedAtEl,memoActions,memoList,widgetRow);
   wrap.append(left,right);
   host.appendChild(wrap);
+  renderMiniCal();
 }
 
 function renderDailyWeekCalendar(){

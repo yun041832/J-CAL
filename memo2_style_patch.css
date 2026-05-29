@@ -3685,6 +3685,100 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   padding:10px;
   position:sticky;
   top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+/* Daily right panel — mini calendar */
+.mini-cal-panel{
+  background:var(--card,#fff);
+  border:0.5px solid var(--line,#e9ecf2);
+  border-radius:12px;
+  padding:10px 12px;
+  flex-shrink:0;
+}
+.mini-cal-header{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:8px;
+}
+.mini-cal-header span{
+  flex:1;
+  font-size:13px;
+  font-weight:500;
+  color:var(--text,#111827);
+  text-align:center;
+}
+.mini-cal-header button{
+  background:none;
+  border:none;
+  font-size:11px;
+  color:var(--text-muted,#64748b);
+  cursor:pointer;
+  padding:2px 4px;
+  font-family:inherit;
+}
+.mini-cal-header button:hover{
+  color:#5C8DFF;
+}
+#mini-cal-today-btn{
+  font-size:11px;
+  color:#5C8DFF;
+  font-weight:500;
+  flex-shrink:0;
+}
+.mini-cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:1px;
+}
+.mini-cal-dow{
+  font-size:10px;
+  color:var(--text-muted,#9aa5b1);
+  text-align:center;
+  padding:3px 0;
+  font-weight:500;
+}
+.mini-cal-cell{
+  font-size:11px;
+  text-align:center;
+  padding:4px 2px;
+  border-radius:4px;
+  cursor:pointer;
+  color:var(--text,#111827);
+  line-height:1.2;
+}
+.mini-cal-cell:hover:not(.empty){
+  background:#EEF2FF;
+  color:#5C8DFF;
+}
+.mini-cal-cell.empty{
+  cursor:default;
+  visibility:hidden;
+}
+.mini-cal-cell.mini-cal-today{
+  background:#5C8DFF;
+  color:#fff;
+  font-weight:500;
+}
+.mini-cal-cell.mini-cal-selected:not(.mini-cal-today){
+  background:#EEF2FF;
+  color:#5C8DFF;
+  font-weight:500;
+}
+.mini-cal-cell.mini-cal-today.mini-cal-selected{
+  background:#5C8DFF;
+  color:#fff;
+}
+.daily-panel-widget-row{
+  margin-top:4px;
+  padding-top:8px;
+  border-top:1px solid #eef2f7;
+}
+.daily-panel-widget-btn{
+  width:100%;
+  justify-content:center;
 }
 .daily-day-memo-panel.is-expanded{
   grid-column:1 / -1;
