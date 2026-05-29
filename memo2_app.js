@@ -4445,12 +4445,12 @@ let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 const SECTION_COLORS=[
-  '#10B981', // Green
-  '#185FA5', // Blue
-  '#F59E0B', // Amber
-  '#F97316', // Orange
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
+  '#4ADE80', // Green (밝은)
+  '#60A5FA', // Blue (밝은)
+  '#FCD34D', // Amber (밝은)
+  '#FB923C', // Orange (밝은)
+  '#A78BFA', // Purple (밝은)
+  '#F472B6', // Pink (밝은)
 ];
 const SECTION_COLOR_LABELS=['Green','Blue','Amber','Orange','Purple','Pink'];
 const LEGACY_DAILY_SECTION_COLORS={
@@ -5000,7 +5000,7 @@ function renderDailyDayWorkspace(){
     if(isColoredHeader){
       secHead.classList.add('daily-section-header--colored');
       secHead.style.backgroundColor=theme.headerColor;
-      secHead.style.color='#ffffff';
+      secHead.style.color='#1f2937';
     }
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',theme.emoji);

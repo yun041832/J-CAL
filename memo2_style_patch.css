@@ -3336,27 +3336,27 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background:#ffffff;
 }
 .daily-section-header--colored{
-  border-bottom-color:rgba(255,255,255,0.2);
+  border-bottom-color:rgba(0,0,0,0.08);
 }
 .daily-section-header--colored .daily-day-section-title,
 .daily-section-header--colored .daily-day-section-emoji{
-  color:#ffffff;
+  color:#1f2937;
 }
 .daily-section-header--colored .daily-day-section-menu-btn{
-  color:#ffffff;
+  color:#1f2937;
   border-color:transparent;
 }
 .daily-section-header--colored .daily-day-section-menu-btn:hover{
-  background:rgba(255,255,255,0.2);
+  background:rgba(0,0,0,0.08);
 }
 .daily-section-header--colored .daily-day-add-task-btn{
-  background:rgba(255,255,255,0.25);
-  color:#ffffff;
-  border-color:rgba(255,255,255,0.35);
+  background:rgba(0,0,0,0.1);
+  color:#1f2937;
+  border-color:rgba(0,0,0,0.12);
   box-shadow:none;
 }
 .daily-section-header--colored .daily-day-add-task-btn:hover{
-  background:rgba(255,255,255,0.35);
+  background:rgba(0,0,0,0.14);
 }
 .section-dot{
   width:9px;
@@ -3996,23 +3996,23 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 
 #dailyPage .daily-section-header--colored .daily-day-section-title,
 #dailyPage .daily-section-header--colored .daily-day-section-emoji {
-  color: #ffffff !important;
+  color: #1f2937 !important;
 }
 
 #dailyPage .daily-section-header--colored .daily-day-section-menu-btn {
-  color: #ffffff !important;
+  color: #1f2937 !important;
   background: transparent !important;
   border: 0 !important;
 }
 
 #dailyPage .daily-section-header--colored .daily-day-section-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(0, 0, 0, 0.08) !important;
 }
 
 #dailyPage .daily-section-header--colored .daily-day-add-task-btn {
-  background: rgba(255, 255, 255, 0.25) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: #1f2937 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
   box-shadow: none !important;
 }
 
