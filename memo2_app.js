@@ -555,120 +555,170 @@ function triggerMemoWriteInput(){
   memoWriteOnInput?.();
 }
 let selectedMemoImageBlock=null;
-function ensureMemoImageToolbar(){
-  let toolbar=document.getElementById('memoImageToolbar');
-  if(toolbar) return toolbar;
-  toolbar=document.createElement('div');
-  toolbar.id='memoImageToolbar';
-  toolbar.className='memo-image-toolbar';
-  toolbar.innerHTML=`
-    <button type="button" data-img-action="small">작게</button>
-    <button type="button" data-img-action="medium">보통</button>
-    <button type="button" data-img-action="large">크게</button>
-    <button type="button" data-img-action="left">좌</button>
-    <button type="button" data-img-action="center">중앙</button>
-    <button type="button" data-img-action="right">우</button>
-    <button type="button" data-img-action="up">위</button>
-    <button type="button" data-img-action="down">아래</button>
-    <button type="button" data-img-action="delete">삭제</button>
-  `;
-  document.body.appendChild(toolbar);
-  return toolbar;
+let resizingMemoImage=null;
+function ensureMemoImageBlockStructure(block){
+  let el=block;
+  if(el.tagName==='FIGURE'){
+    const div=document.createElement('div');
+    div.className='memo-image-block';
+    while(el.firstChild) div.appendChild(el.firstChild);
+    el.replaceWith(div);
+    el=div;
+  }
+  el.classList.add('memo-image-block');
+  el.contentEditable='false';
+  el.draggable=true;
+  const img=el.querySelector('img');
+  if(img){
+    img.classList.add('memo-pasted-image');
+    img.style.maxWidth='100%';
+    if(!img.style.width){
+      const w=img.width||img.getBoundingClientRect().width||420;
+      img.style.width=`${Math.round(w)}px`;
+    }
+  }
+  if(!el.querySelector('.memo-image-resize-handle')){
+    const handle=document.createElement('span');
+    handle.className='memo-image-resize-handle';
+    el.appendChild(handle);
+  }
+  return el;
 }
 function normalizeMemoImages(editor){
   if(!editor) return;
+  editor.querySelectorAll('figure.memo-image-block, .memo-image-block').forEach(block=>{
+    ensureMemoImageBlockStructure(block);
+  });
   editor.querySelectorAll('img').forEach(img=>{
     if(img.closest('.memo-image-block')) return;
-    const figure=document.createElement('figure');
-    figure.className='memo-image-block';
-    figure.contentEditable='false';
-    figure.style.textAlign='left';
+    const block=document.createElement('div');
+    block.className='memo-image-block';
+    block.contentEditable='false';
+    block.draggable=true;
     img.classList.add('memo-pasted-image');
     if(!img.style.width){
-      img.style.width='100%';
-      img.style.maxWidth='420px';
+      img.style.width=img.width?`${img.width}px`:'420px';
     }
-    img.parentNode.insertBefore(figure,img);
-    figure.appendChild(img);
+    img.style.maxWidth='100%';
+    const handle=document.createElement('span');
+    handle.className='memo-image-resize-handle';
+    img.parentNode.insertBefore(block,img);
+    block.appendChild(img);
+    block.appendChild(handle);
   });
 }
-function setupMemoImageControls(editor){
-  if(!editor||editor.dataset.imageControlsReady==='1') return;
-  editor.dataset.imageControlsReady='1';
-  const toolbar=ensureMemoImageToolbar();
-  function clearSelection(){
-    if(selectedMemoImageBlock){
-      selectedMemoImageBlock.classList.remove('is-selected');
+function getDragAfterElement(container,y){
+  const draggableElements=[...container.children].filter(el=>!el.classList.contains('is-dragging'));
+  return draggableElements.reduce((closest,child)=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-box.top-box.height/2;
+    if(offset<0&&offset>closest.offset) return {offset,element:child};
+    return closest;
+  },{offset:Number.NEGATIVE_INFINITY}).element;
+}
+function setupMemoImageDragMove(editor,onChange,selectBlock){
+  let draggingBlock=null;
+  editor.addEventListener('dragstart',(e)=>{
+    if(e.target.closest('.memo-image-resize-handle')){
+      e.preventDefault();
+      return;
     }
+    const block=e.target.closest('.memo-image-block');
+    if(!block||!editor.contains(block)) return;
+    draggingBlock=block;
+    selectBlock(block);
+    block.classList.add('is-dragging');
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain','memo-image-block');
+  });
+  editor.addEventListener('dragover',(e)=>{
+    if(!draggingBlock) return;
+    e.preventDefault();
+    const afterEl=getDragAfterElement(editor,e.clientY);
+    if(afterEl==null) editor.appendChild(draggingBlock);
+    else editor.insertBefore(draggingBlock,afterEl);
+  });
+  editor.addEventListener('drop',(e)=>{
+    if(!draggingBlock) return;
+    e.preventDefault();
+    draggingBlock.classList.remove('is-dragging');
+    draggingBlock=null;
+    onChange?.();
+  });
+  editor.addEventListener('dragend',()=>{
+    if(draggingBlock){
+      draggingBlock.classList.remove('is-dragging');
+      draggingBlock=null;
+      onChange?.();
+    }
+  });
+}
+function setupMemoImageDirectControls(editor){
+  if(!editor||editor.dataset.directImageControlsReady==='1') return;
+  editor.dataset.directImageControlsReady='1';
+  document.getElementById('memoImageToolbar')?.remove();
+  function clearSelection(){
+    if(selectedMemoImageBlock) selectedMemoImageBlock.classList.remove('is-selected');
     selectedMemoImageBlock=null;
-    toolbar.classList.remove('is-visible');
   }
-  function positionToolbar(block){
-    const rect=block.getBoundingClientRect();
-    toolbar.style.left=`${Math.min(rect.left,window.innerWidth-360)}px`;
-    toolbar.style.top=`${Math.max(8,rect.top-42+window.scrollY)}px`;
-  }
-  function selectImageBlock(block){
+  function selectBlock(block){
     clearSelection();
     selectedMemoImageBlock=block;
     block.classList.add('is-selected');
-    positionToolbar(block);
-    toolbar.classList.add('is-visible');
   }
   editor.addEventListener('click',(e)=>{
     const block=e.target.closest('.memo-image-block');
     if(block&&editor.contains(block)){
-      e.preventDefault();
-      selectImageBlock(block);
+      selectBlock(block);
       return;
     }
     clearSelection();
   });
-  toolbar.addEventListener('click',(e)=>{
-    const btn=e.target.closest('button');
-    if(!btn||!selectedMemoImageBlock) return;
-    const action=btn.dataset.imgAction;
-    const img=selectedMemoImageBlock.querySelector('img');
-    if(!img) return;
-    if(action==='small'){
-      img.style.width='35%';
-      img.style.maxWidth='260px';
-    }
-    if(action==='medium'){
-      img.style.width='60%';
-      img.style.maxWidth='420px';
-    }
-    if(action==='large'){
-      img.style.width='100%';
-      img.style.maxWidth='100%';
-    }
-    if(action==='left') selectedMemoImageBlock.style.textAlign='left';
-    if(action==='center') selectedMemoImageBlock.style.textAlign='center';
-    if(action==='right') selectedMemoImageBlock.style.textAlign='right';
-    if(action==='up'){
-      const prev=selectedMemoImageBlock.previousElementSibling;
-      if(prev) selectedMemoImageBlock.parentNode.insertBefore(selectedMemoImageBlock,prev);
-    }
-    if(action==='down'){
-      const next=selectedMemoImageBlock.nextElementSibling;
-      if(next) selectedMemoImageBlock.parentNode.insertBefore(next,selectedMemoImageBlock);
-    }
-    if(action==='delete'){
-      selectedMemoImageBlock.remove();
-      selectedMemoImageBlock=null;
-      toolbar.classList.remove('is-visible');
-      triggerMemoWriteInput();
-      return;
-    }
-    positionToolbar(selectedMemoImageBlock);
+  editor.addEventListener('mousedown',(e)=>{
+    const handle=e.target.closest('.memo-image-resize-handle');
+    if(!handle) return;
+    const block=handle.closest('.memo-image-block');
+    const img=block?.querySelector('img');
+    if(!block||!img) return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectBlock(block);
+    resizingMemoImage={
+      block,
+      img,
+      startX:e.clientX,
+      startWidth:img.getBoundingClientRect().width,
+    };
+    document.body.classList.add('memo-image-resizing');
+  });
+  document.addEventListener('mousemove',(e)=>{
+    if(!resizingMemoImage) return;
+    const dx=e.clientX-resizingMemoImage.startX;
+    const nextWidth=Math.max(80,resizingMemoImage.startWidth+dx);
+    const editorWidth=editor.getBoundingClientRect().width-32;
+    const finalWidth=Math.min(nextWidth,editorWidth);
+    resizingMemoImage.img.style.width=`${finalWidth}px`;
+    resizingMemoImage.img.style.maxWidth='100%';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!resizingMemoImage) return;
+    resizingMemoImage=null;
+    document.body.classList.remove('memo-image-resizing');
     triggerMemoWriteInput();
   });
   document.addEventListener('keydown',(e)=>{
     if(e.key==='Escape') clearSelection();
+    if((e.key==='Delete'||e.key==='Backspace')&&selectedMemoImageBlock&&editor.contains(selectedMemoImageBlock)){
+      const sel=window.getSelection();
+      if(sel&&!sel.isCollapsed) return;
+      if(!editor.contains(sel?.anchorNode)) return;
+      e.preventDefault();
+      selectedMemoImageBlock.remove();
+      selectedMemoImageBlock=null;
+      triggerMemoWriteInput();
+    }
   });
-  window.addEventListener('scroll',()=>{
-    if(selectedMemoImageBlock) positionToolbar(selectedMemoImageBlock);
-  },true);
+  setupMemoImageDragMove(editor,triggerMemoWriteInput,selectBlock);
 }
 function setupMemoImagePaste(editor){
   if(!editor||editor.dataset.pasteReady==='1') return;
@@ -688,9 +738,10 @@ function setupMemoImagePaste(editor){
     reader.onload=()=>{
       const src=reader.result;
       insertHtmlAtCursor(`
-        <figure class="memo-image-block" contenteditable="false">
-          <img src="${src}" class="memo-pasted-image" alt="pasted image" style="width:100%;max-width:420px;">
-        </figure>
+        <div class="memo-image-block" contenteditable="false" draggable="true">
+          <img src="${src}" class="memo-pasted-image" alt="pasted image" style="width:420px;max-width:100%;">
+          <span class="memo-image-resize-handle"></span>
+        </div>
         <p><br></p>
       `);
       triggerMemoWriteInput();
@@ -3897,7 +3948,7 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   if(!titleInput||!textarea||!saveBtn||!richEditor) return;
   
   setupMemoImagePaste(richEditor);
-  setupMemoImageControls(richEditor);
+  setupMemoImageDirectControls(richEditor);
   setupMemoToolbar(richEditor);
   
   if(titleEl) titleEl.textContent=editMode?'메모 수정':'새 메모 작성';
