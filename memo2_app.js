@@ -4445,13 +4445,14 @@ let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 const SECTION_COLORS=[
-  {label:'Green',value:'#10B981'},
-  {label:'Blue',value:'#185FA5'},
-  {label:'Amber',value:'#F59E0B'},
-  {label:'Orange',value:'#F97316'},
-  {label:'Purple',value:'#8B5CF6'},
-  {label:'Pink',value:'#EC4899'},
+  '#10B981', // Green
+  '#185FA5', // Blue
+  '#F59E0B', // Amber
+  '#F97316', // Orange
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
 ];
+const SECTION_COLOR_LABELS=['Green','Blue','Amber','Orange','Purple','Pink'];
 const LEGACY_DAILY_SECTION_COLORS={
   yellow:'#F59E0B',
   green:'#10B981',
@@ -4460,12 +4461,13 @@ const LEGACY_DAILY_SECTION_COLORS={
   red:'#EC4899',
   gray:'#94A3B8',
 };
-function resolveDailySectionDotColor(section){
+function resolveDailySectionColor(section){
+  if(section?.id==='__none__') return '#94A3B8';
   const color=section?.color||'';
-  if(SECTION_COLORS.some(c=>c.value===color)) return color;
+  if(SECTION_COLORS.includes(color)) return color;
   if(LEGACY_DAILY_SECTION_COLORS[color]) return LEGACY_DAILY_SECTION_COLORS[color];
   if(/^#[0-9a-f]{3,8}$/i.test(color)) return color;
-  return SECTION_COLORS[0].value;
+  return SECTION_COLORS[0];
 }
 const DAILY_SECTION_EMOJI_OPTIONS=['☀️','🌤️','🌙','📌','🗂️','✅','⭐','🔥','💼','📅','📝','🎯','💡','🍀','❤️'];
 const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
@@ -4564,7 +4566,7 @@ function addDailySection(dstr,title){
   const value=(title||'').trim();
   if(!value) return;
   const sections=getDailySections(dstr);
-  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:SECTION_COLORS[0].value,order:sections.length}]);
+  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:SECTION_COLORS[0],order:sections.length}]);
   setDailySections(dstr,next);
   dailyIsAddingSection=false;
   dailyNewSectionTitle='';
@@ -4573,7 +4575,7 @@ function addDailySection(dstr,title){
 function saveDailySection(dstr,sectionId,{title,emoji,color}){
   const value=(title||'').trim();
   if(!value) return;
-  const safeColor=SECTION_COLORS.some(c=>c.value===color)?color:SECTION_COLORS[0].value;
+  const safeColor=SECTION_COLORS.includes(color)?color:SECTION_COLORS[0];
   const sections=getDailySections(dstr);
   const patch={
     id:sectionId,
@@ -4732,7 +4734,7 @@ function ensureDailySections(dstr){
 function getDailySectionTheme(section){
   return {
     emoji:section?.emoji||'📌',
-    dotColor:resolveDailySectionDotColor(section),
+    headerColor:resolveDailySectionColor(section),
   };
 }
 function formatDailyMemoSavedAt(ts){
@@ -4783,7 +4785,7 @@ function showDailySectionEditPopup(anchor,dstr,section){
   const draft={
     title:section.title||'',
     emoji:section.emoji||'📌',
-    color:resolveDailySectionDotColor(section),
+    color:resolveDailySectionColor(section),
   };
   const pop=doc.createElement('div');
   pop.className='daily-section-edit-popup';
@@ -4817,15 +4819,15 @@ function showDailySectionEditPopup(anchor,dstr,section){
   const colorLabel=el('div','daily-section-edit-label','색상 선택');
   const colorGrid=el('div','daily-section-edit-color-grid');
   const colorBtns=[];
-  SECTION_COLORS.forEach((opt)=>{
+  SECTION_COLORS.forEach((hex,i)=>{
     const btn=el('button','daily-section-edit-color-btn section-dot');
     btn.type='button';
-    btn.title=opt.label;
-    btn.style.background=opt.value;
-    if(opt.value===draft.color) btn.classList.add('is-selected');
+    btn.title=SECTION_COLOR_LABELS[i]||hex;
+    btn.style.background=hex;
+    if(hex===draft.color) btn.classList.add('is-selected');
     btn.onclick=(e)=>{
       e.stopPropagation();
-      draft.color=opt.value;
+      draft.color=hex;
       colorBtns.forEach(b=>b.classList.toggle('is-selected',b===btn));
     };
     colorBtns.push(btn);
@@ -4994,12 +4996,15 @@ function renderDailyDayWorkspace(){
     const theme=getDailySectionTheme(section);
     const sec=el('section','daily-day-section-card daily-section-card');
     const secHead=el('div','daily-day-section-head daily-section-header');
+    const isColoredHeader=section.id!=='__none__';
+    if(isColoredHeader){
+      secHead.classList.add('daily-section-header--colored');
+      secHead.style.backgroundColor=theme.headerColor;
+      secHead.style.color='#ffffff';
+    }
     const leftHead=el('div','daily-day-section-left');
-    const dot=document.createElement('span');
-    dot.className='section-dot';
-    dot.style.cssText=`width:9px;height:9px;border-radius:50%;background:${theme.dotColor};display:inline-block;flex-shrink:0;`;
     const emo=el('span','daily-day-section-emoji',theme.emoji);
-    leftHead.append(dot,emo);
+    leftHead.append(emo);
     leftHead.appendChild(el('span','daily-day-section-title',section.title||'섹션'));
 
     const rightHead=el('div','daily-day-section-actions');
