@@ -3340,23 +3340,23 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 }
 .daily-section-header--colored .daily-day-section-title,
 .daily-section-header--colored .daily-day-section-emoji{
-  color:#1f2937;
+  color:inherit;
 }
 .daily-section-header--colored .daily-day-section-menu-btn{
-  color:#1f2937;
+  color:inherit;
   border-color:transparent;
 }
 .daily-section-header--colored .daily-day-section-menu-btn:hover{
   background:rgba(0,0,0,0.08);
 }
 .daily-section-header--colored .daily-day-add-task-btn{
-  background:rgba(0,0,0,0.1);
-  color:#1f2937;
-  border-color:rgba(0,0,0,0.12);
+  background:rgba(0,0,0,0.08);
+  color:var(--daily-section-text,inherit);
+  border-color:rgba(0,0,0,0.1);
   box-shadow:none;
 }
 .daily-section-header--colored .daily-day-add-task-btn:hover{
-  background:rgba(0,0,0,0.14);
+  background:rgba(0,0,0,0.12);
 }
 .section-dot{
   width:9px;
@@ -3996,11 +3996,11 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 
 #dailyPage .daily-section-header--colored .daily-day-section-title,
 #dailyPage .daily-section-header--colored .daily-day-section-emoji {
-  color: #1f2937 !important;
+  color: inherit !important;
 }
 
 #dailyPage .daily-section-header--colored .daily-day-section-menu-btn {
-  color: #1f2937 !important;
+  color: inherit !important;
   background: transparent !important;
   border: 0 !important;
 }
@@ -4010,9 +4010,9 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 }
 
 #dailyPage .daily-section-header--colored .daily-day-add-task-btn {
-  background: rgba(0, 0, 0, 0.1) !important;
-  color: #1f2937 !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--daily-section-text, inherit) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
   box-shadow: none !important;
 }
 

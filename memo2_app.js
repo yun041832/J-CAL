@@ -4445,29 +4445,57 @@ let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 const SECTION_COLORS=[
-  '#4ADE80', // Green (밝은)
-  '#60A5FA', // Blue (밝은)
-  '#FCD34D', // Amber (밝은)
-  '#FB923C', // Orange (밝은)
-  '#A78BFA', // Purple (밝은)
-  '#F472B6', // Pink (밝은)
+  {bg:'#dcfce7',text:'#166534'}, // Green
+  {bg:'#dbeafe',text:'#1e3a8a'}, // Blue
+  {bg:'#fef9c3',text:'#854d0e'}, // Amber
+  {bg:'#ffedd5',text:'#9a3412'}, // Orange
+  {bg:'#ede9fe',text:'#4c1d95'}, // Purple
+  {bg:'#fce7f3',text:'#9d174d'}, // Pink
 ];
 const SECTION_COLOR_LABELS=['Green','Blue','Amber','Orange','Purple','Pink'];
-const LEGACY_DAILY_SECTION_COLORS={
-  yellow:'#F59E0B',
-  green:'#10B981',
-  blue:'#185FA5',
-  purple:'#8B5CF6',
-  red:'#EC4899',
-  gray:'#94A3B8',
+const LEGACY_DAILY_SECTION_COLOR_IDS={
+  yellow:'#fef9c3',
+  green:'#dcfce7',
+  blue:'#dbeafe',
+  purple:'#ede9fe',
+  red:'#fce7f3',
+  gray:'#f1f5f9',
 };
-function resolveDailySectionColor(section){
-  if(section?.id==='__none__') return '#94A3B8';
-  const color=section?.color||'';
-  if(SECTION_COLORS.includes(color)) return color;
-  if(LEGACY_DAILY_SECTION_COLORS[color]) return LEGACY_DAILY_SECTION_COLORS[color];
-  if(/^#[0-9a-f]{3,8}$/i.test(color)) return color;
+const LEGACY_DAILY_SECTION_HEX={
+  '#4ADE80':'#dcfce7',
+  '#60A5FA':'#dbeafe',
+  '#FCD34D':'#fef9c3',
+  '#FB923C':'#ffedd5',
+  '#A78BFA':'#ede9fe',
+  '#F472B6':'#fce7f3',
+  '#10B981':'#dcfce7',
+  '#185FA5':'#dbeafe',
+  '#F59E0B':'#fef9c3',
+  '#F97316':'#ffedd5',
+  '#8B5CF6':'#ede9fe',
+  '#EC4899':'#fce7f3',
+};
+function findSectionColorEntry(colorValue){
+  const raw=(colorValue||'').trim();
+  if(!raw) return SECTION_COLORS[0];
+  const byBg=SECTION_COLORS.find(c=>c.bg.toLowerCase()===raw.toLowerCase());
+  if(byBg) return byBg;
+  if(LEGACY_DAILY_SECTION_COLOR_IDS[raw]){
+    const legacyBg=LEGACY_DAILY_SECTION_COLOR_IDS[raw];
+    return SECTION_COLORS.find(c=>c.bg===legacyBg)||SECTION_COLORS[0];
+  }
+  const mappedBg=LEGACY_DAILY_SECTION_HEX[raw]||LEGACY_DAILY_SECTION_HEX[raw.toUpperCase()];
+  if(mappedBg){
+    return SECTION_COLORS.find(c=>c.bg===mappedBg)||SECTION_COLORS[0];
+  }
+  if(/^#[0-9a-f]{3,8}$/i.test(raw)){
+    return {bg:raw,text:'#1f2937'};
+  }
   return SECTION_COLORS[0];
+}
+function resolveDailySectionPalette(section){
+  if(section?.id==='__none__') return {bg:'#f1f5f9',text:'#475569'};
+  return findSectionColorEntry(section?.color);
 }
 const DAILY_SECTION_EMOJI_OPTIONS=['☀️','🌤️','🌙','📌','🗂️','✅','⭐','🔥','💼','📅','📝','🎯','💡','🍀','❤️'];
 const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
@@ -4566,7 +4594,7 @@ function addDailySection(dstr,title){
   const value=(title||'').trim();
   if(!value) return;
   const sections=getDailySections(dstr);
-  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:SECTION_COLORS[0],order:sections.length}]);
+  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:SECTION_COLORS[0].bg,order:sections.length}]);
   setDailySections(dstr,next);
   dailyIsAddingSection=false;
   dailyNewSectionTitle='';
@@ -4575,7 +4603,7 @@ function addDailySection(dstr,title){
 function saveDailySection(dstr,sectionId,{title,emoji,color}){
   const value=(title||'').trim();
   if(!value) return;
-  const safeColor=SECTION_COLORS.includes(color)?color:SECTION_COLORS[0];
+  const safeColor=findSectionColorEntry(color).bg;
   const sections=getDailySections(dstr);
   const patch={
     id:sectionId,
@@ -4732,9 +4760,11 @@ function ensureDailySections(dstr){
   return sections.slice().sort((a,b)=>(a.order||0)-(b.order||0));
 }
 function getDailySectionTheme(section){
+  const palette=resolveDailySectionPalette(section);
   return {
     emoji:section?.emoji||'📌',
-    headerColor:resolveDailySectionColor(section),
+    bg:palette.bg,
+    text:palette.text,
   };
 }
 function formatDailyMemoSavedAt(ts){
@@ -4785,7 +4815,7 @@ function showDailySectionEditPopup(anchor,dstr,section){
   const draft={
     title:section.title||'',
     emoji:section.emoji||'📌',
-    color:resolveDailySectionColor(section),
+    color:resolveDailySectionPalette(section).bg,
   };
   const pop=doc.createElement('div');
   pop.className='daily-section-edit-popup';
@@ -4819,15 +4849,15 @@ function showDailySectionEditPopup(anchor,dstr,section){
   const colorLabel=el('div','daily-section-edit-label','색상 선택');
   const colorGrid=el('div','daily-section-edit-color-grid');
   const colorBtns=[];
-  SECTION_COLORS.forEach((hex,i)=>{
+  SECTION_COLORS.forEach((opt,i)=>{
     const btn=el('button','daily-section-edit-color-btn section-dot');
     btn.type='button';
-    btn.title=SECTION_COLOR_LABELS[i]||hex;
-    btn.style.background=hex;
-    if(hex===draft.color) btn.classList.add('is-selected');
+    btn.title=SECTION_COLOR_LABELS[i]||opt.bg;
+    btn.style.background=opt.bg;
+    if(opt.bg===draft.color) btn.classList.add('is-selected');
     btn.onclick=(e)=>{
       e.stopPropagation();
-      draft.color=hex;
+      draft.color=opt.bg;
       colorBtns.forEach(b=>b.classList.toggle('is-selected',b===btn));
     };
     colorBtns.push(btn);
@@ -4999,8 +5029,9 @@ function renderDailyDayWorkspace(){
     const isColoredHeader=section.id!=='__none__';
     if(isColoredHeader){
       secHead.classList.add('daily-section-header--colored');
-      secHead.style.backgroundColor=theme.headerColor;
-      secHead.style.color='#1f2937';
+      secHead.style.backgroundColor=theme.bg;
+      secHead.style.color=theme.text;
+      secHead.style.setProperty('--daily-section-text',theme.text);
     }
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',theme.emoji);
@@ -5021,6 +5052,10 @@ function renderDailyDayWorkspace(){
     }
     const addTaskBtn=el('button','daily-day-section-btn daily-day-add-task-btn','+ 작업 추가');
     addTaskBtn.type='button';
+    if(isColoredHeader){
+      addTaskBtn.style.background='rgba(0,0,0,0.08)';
+      addTaskBtn.style.color=theme.text;
+    }
     addTaskBtn.onclick=()=>{
       dailySectionTaskInputSectionId=section.id;
       dailySectionTaskInputText='';
