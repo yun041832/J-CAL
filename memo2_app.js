@@ -27,8 +27,14 @@ function applyTimerSubView(){
   const widgetBtn=document.getElementById('openStopwatchWidgetBtn');
   const showStopwatch=timerSubView==='stopwatch';
   page?.classList.toggle('timer-page--stopwatch',showStopwatch);
-  if(timerPanel) timerPanel.hidden=showStopwatch;
-  if(stopwatchPanel) stopwatchPanel.hidden=!showStopwatch;
+  if(timerPanel){
+    timerPanel.hidden=showStopwatch;
+    timerPanel.style.display=showStopwatch?'none':'block';
+  }
+  if(stopwatchPanel){
+    stopwatchPanel.hidden=!showStopwatch;
+    stopwatchPanel.style.display=showStopwatch?'flex':'none';
+  }
   if(widgetBtn) widgetBtn.style.display=showStopwatch?'':'none';
   document.getElementById('timerSubTabTimer')?.classList.toggle('is-active',!showStopwatch);
   document.getElementById('timerSubTabStopwatch')?.classList.toggle('is-active',showStopwatch);

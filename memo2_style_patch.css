@@ -3254,17 +3254,147 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   flex-wrap:wrap;
 }
 #timerPage .timer-view-segment{
-  background:#f3f4f6 !important;
-  border-radius:8px !important;
-  padding:2px !important;
+  display:flex;
+  align-items:center;
   gap:2px;
+  background:#f3f4f6;
+  border-radius:8px;
+  padding:2px;
 }
+#timerPage .timer-view-segment .daily-view-btn{
+  flex:1 1 0;
+  min-width:0;
+  background:transparent;
+  color:var(--text,#111827);
+  border:none;
+  border-radius:6px;
+  padding:4px 14px;
+  font-size:13px;
+  font-weight:600;
+  font-family:inherit;
+  line-height:1.2;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:background 0.15s ease, color 0.15s ease;
+}
+#timerPage .timer-view-segment .daily-view-btn:hover:not(.is-active){
+  background:#EEF2FF;
+  color:#5C8DFF;
+}
+#timerPage .timer-view-segment .daily-view-btn.is-active{
+  background:#5C8DFF;
+  color:#ffffff;
+  border:none;
+  border-radius:6px;
+  padding:4px 14px;
+  font-size:13px;
+  font-weight:700;
+}
+#timerPage #timerPanel{
+  display:block;
+}
+#timerPage #stopwatchPanel,
 #timerPage .stopwatch-page-content-wrap{
   flex:1;
   min-height:0;
-  display:flex;
+  display:none;
   flex-direction:column;
 }
+#timerPage.timer-page--stopwatch #timerPanel{
+  display:none !important;
+}
+#timerPage.timer-page--stopwatch #stopwatchPanel,
+#timerPage.timer-page--stopwatch .stopwatch-page-content-wrap{
+  display:flex !important;
+}
+#timerPage:not(.timer-page--stopwatch) #stopwatchPanel,
+#timerPage:not(.timer-page--stopwatch) .stopwatch-page-content-wrap{
+  display:none !important;
+}
+
+/* Stopwatch — browser page (match widget) */
+#stopwatchPageContent .stopwatch-card,
+#stopwatchPageContent .stopwatch-card--inline{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  width:100%;
+  max-width:360px;
+  margin:0 auto;
+  padding:28px 16px 32px;
+  box-sizing:border-box;
+}
+#stopwatchPageContent .timer__ring{
+  position:relative;
+  width:180px;
+  height:180px;
+  margin:8px auto 12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#stopwatchPageContent .stopwatch-time.timer__display{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  font-weight:800;
+  color:var(--text,#111827);
+  letter-spacing:1px;
+  font-variant-numeric:tabular-nums;
+}
+#stopwatchPageContent .stopwatch-status{
+  font-size:13px;
+  color:#5C8DFF;
+  background:#EEF2FF;
+  border-radius:999px;
+  padding:4px 14px;
+  display:inline-block;
+  margin-bottom:20px;
+  font-weight:600;
+}
+#stopwatchPageContent .stopwatch-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  width:100%;
+}
+#stopwatchPageContent .stopwatch-btn{
+  border-radius:24px;
+  padding:10px 28px;
+  font-size:14px;
+  font-weight:600;
+  border:none;
+  cursor:pointer;
+  font-family:inherit;
+  transition:background 0.15s ease, color 0.15s ease;
+}
+#stopwatchPageContent .stopwatch-btn--primary{
+  background:#5C8DFF;
+  color:#fff;
+}
+#stopwatchPageContent .stopwatch-btn--primary:hover{
+  background:#4A7AEE;
+}
+#stopwatchPageContent .stopwatch-btn--reset{
+  background:transparent;
+  border:1.5px solid #5C8DFF;
+  color:#5C8DFF;
+}
+#stopwatchPageContent .stopwatch-btn--reset:hover{
+  background:#EEF2FF;
+}
+
 @media (max-width:640px){
   #timerPage .timer-page-header{
     flex-wrap:wrap;
@@ -3273,6 +3403,10 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   #timerPage .timer-view-segment{
     width:100%;
     flex:1 1 100%;
+  }
+  #timerPage .timer-view-segment .daily-view-btn{
+    padding:4px 10px;
+    font-size:12px;
   }
 }
 
