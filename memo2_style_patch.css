@@ -3277,8 +3277,15 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-section-header-purple{
   background:linear-gradient(90deg,#f3e8ff 0%,#faf5ff 100%);
 }
+.daily-section-header-blue{
+  background:linear-gradient(90deg,#e0f2fe 0%,#f0f9ff 100%);
+}
+.daily-section-header-red{
+  background:linear-gradient(90deg,#fee2e2 0%,#fff5f5 100%);
+}
+.daily-section-header-gray,
 .daily-section-header-neutral{
-  background:linear-gradient(90deg,#f8fafc 0%,#ffffff 100%);
+  background:linear-gradient(90deg,#f1f5f9 0%,#f8fafc 100%);
 }
 .daily-day-section-left{
   display:flex;
@@ -3565,6 +3572,100 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-section-menu-popup{
   min-width:120px;
 }
+.daily-section-edit-popup{
+  width:min(280px,calc(100vw - 24px));
+  padding:14px;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(15,23,42,0.12);
+  box-sizing:border-box;
+}
+.daily-section-edit-label{
+  font-size:12px;
+  font-weight:700;
+  color:#475569;
+  margin:10px 0 6px;
+}
+.daily-section-edit-label:first-child{
+  margin-top:0;
+}
+.daily-section-edit-title{
+  width:100%;
+  height:36px;
+  padding:0 10px;
+  border:1px solid #dce5f2;
+  border-radius:8px;
+  font-size:13px;
+  outline:none;
+  box-sizing:border-box;
+  font-family:inherit;
+}
+.daily-section-edit-title:focus{
+  border-color:#3b82f6;
+  box-shadow:0 0 0 2px rgba(59,130,246,0.12);
+}
+.daily-section-edit-emoji-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+}
+.daily-section-edit-emoji-btn{
+  height:36px;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  background:#fff;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+.daily-section-edit-emoji-btn.is-selected{
+  border-color:#3b82f6;
+  background:#eff6ff;
+  box-shadow:0 0 0 2px rgba(59,130,246,0.15);
+}
+.daily-section-edit-color-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:6px;
+}
+.daily-section-edit-color-btn{
+  height:32px;
+  border:2px solid transparent;
+  border-radius:8px;
+  cursor:pointer;
+  padding:0;
+}
+.daily-section-edit-color-btn.is-selected{
+  border-color:#2563eb;
+  box-shadow:0 0 0 2px rgba(37,99,235,0.25);
+}
+.daily-section-edit-actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+}
+.daily-section-edit-cancel,
+.daily-section-edit-save{
+  flex:1;
+  height:34px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+}
+.daily-section-edit-cancel{
+  border:1px solid #e2e8f0;
+  background:#fff;
+  color:#475569;
+}
+.daily-section-edit-save{
+  border:1px solid #3b82f6;
+  background:#3b82f6;
+  color:#fff;
+}
 @media (max-width:1024px){
   .daily-day-layout{
     grid-template-columns:1fr;
@@ -3819,8 +3920,17 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background: #f1e8ff !important;
 }
 
+#dailyPage .daily-section-header-blue {
+  background: #e0f2fe !important;
+}
+
+#dailyPage .daily-section-header-red {
+  background: #fee2e2 !important;
+}
+
+#dailyPage .daily-section-header-gray,
 #dailyPage .daily-section-header-neutral {
-  background: #f8fafc !important;
+  background: #f1f5f9 !important;
 }
 
 #dailyPage .daily-day-section-left {
