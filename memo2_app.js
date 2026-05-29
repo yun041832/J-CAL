@@ -457,6 +457,7 @@ function ensureMemoDateInput(){
   if(dateInput) return dateInput;
   const titleInput=document.getElementById('memoTitleInput');
   const textarea=document.getElementById('memoTextarea');
+  const editorWrap=document.querySelector('.memo-editor-wrap');
   if(!titleInput||!textarea||!titleInput.parentElement) return null;
   dateInput=document.createElement('input');
   dateInput.type='date';
@@ -470,8 +471,146 @@ function ensureMemoDateInput(){
   dateInput.style.boxSizing='border-box';
   dateInput.style.background='var(--card)';
   dateInput.style.color='var(--text)';
-  titleInput.parentElement.insertBefore(dateInput,textarea);
+  titleInput.parentElement.insertBefore(dateInput,editorWrap||textarea);
   return dateInput;
+}
+let memoWriteOnInput=null;
+function isHtmlContent(str){
+  return /<\/?[a-z][\s\S]*>/i.test(str||'');
+}
+function escapeHtml(str){
+  return String(str||'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+function plainTextToHtml(str){
+  return escapeHtml(str||'').replace(/\n/g,'<br>');
+}
+function getMemoEditorHtml(editor){
+  return (editor?.innerHTML||'').trim();
+}
+function isMemoEditorEmpty(editor){
+  if(!editor) return true;
+  const text=(editor.textContent||'').replace(/\u00a0/g,' ').trim();
+  if(text) return false;
+  return !editor.querySelector('img');
+}
+function setMemoEditorHtml(editor,content){
+  if(!editor) return;
+  editor.innerHTML=isHtmlContent(content)?content:plainTextToHtml(content||'');
+}
+function syncMemoTextarea(textarea,editor){
+  if(textarea&&editor) textarea.value=getMemoEditorHtml(editor);
+}
+function sanitizeMemoHtml(html){
+  const template=document.createElement('template');
+  template.innerHTML=html||'';
+  template.content.querySelectorAll('script,iframe,object,embed').forEach(el=>el.remove());
+  template.content.querySelectorAll('*').forEach(el=>{
+    [...el.attributes].forEach(attr=>{
+      const name=attr.name.toLowerCase();
+      const value=attr.value||'';
+      if(name.startsWith('on')) el.removeAttribute(attr.name);
+      if((name==='href'||name==='src')&&value.trim().toLowerCase().startsWith('javascript:')){
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return template.innerHTML;
+}
+function renderMemoCardContent(el,raw){
+  if(!el) return;
+  const content=raw||'';
+  el.innerHTML=sanitizeMemoHtml(isHtmlContent(content)?content:plainTextToHtml(content));
+  el.style.whiteSpace='normal';
+}
+function insertHtmlAtCursor(html){
+  document.execCommand('insertHTML',false,html);
+}
+function triggerMemoWriteInput(){
+  memoWriteOnInput?.();
+}
+function setupMemoImagePaste(editor){
+  if(!editor||editor.dataset.pasteReady==='1') return;
+  editor.dataset.pasteReady='1';
+  editor.addEventListener('paste',(e)=>{
+    const items=e.clipboardData?.items;
+    if(!items) return;
+    const imageItem=Array.from(items).find(item=>item.type&&item.type.startsWith('image/'));
+    if(!imageItem) return;
+    e.preventDefault();
+    const file=imageItem.getAsFile();
+    if(!file) return;
+    if(file.size>500000){
+      console.warn('[memo] pasted image is large ('+Math.round(file.size/1024)+'KB); localStorage may fill quickly.');
+    }
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const src=reader.result;
+      insertHtmlAtCursor(`<img src="${src}" class="memo-pasted-image" alt="pasted image">`);
+      triggerMemoWriteInput();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function setupMemoToolbar(editor){
+  const toolbar=document.getElementById('memoMiniToolbar');
+  if(!toolbar||!editor||toolbar.dataset.ready==='1') return;
+  toolbar.dataset.ready='1';
+  toolbar.addEventListener('click',(e)=>{
+    const btn=e.target.closest('button');
+    if(!btn) return;
+    editor.focus();
+    const cmd=btn.dataset.cmd;
+    const action=btn.dataset.action;
+    if(cmd){
+      document.execCommand(cmd,false,null);
+      triggerMemoWriteInput();
+      return;
+    }
+    if(action==='checklist'){
+      document.execCommand(
+        'insertHTML',
+        false,
+        '<div class="memo-check-row"><input type="checkbox"> <span>체크 항목</span></div>'
+      );
+      triggerMemoWriteInput();
+      return;
+    }
+    if(action==='emoji'){
+      document.execCommand('insertText',false,'😊');
+      triggerMemoWriteInput();
+    }
+  });
+  const sizeSelect=document.getElementById('memoFontSizeSelect');
+  sizeSelect?.addEventListener('change',()=>{
+    if(!sizeSelect.value) return;
+    editor.focus();
+    document.execCommand('fontSize',false,'7');
+    editor.querySelectorAll('font[size="7"]').forEach(el=>{
+      el.removeAttribute('size');
+      el.style.fontSize=sizeSelect.value;
+    });
+    sizeSelect.value='';
+    triggerMemoWriteInput();
+  });
+  const colorInput=document.getElementById('memoColorInput');
+  colorInput?.addEventListener('input',()=>{
+    editor.focus();
+    document.execCommand('foreColor',false,colorInput.value);
+    triggerMemoWriteInput();
+  });
+  const highlightInput=document.getElementById('memoHighlightInput');
+  highlightInput?.addEventListener('input',()=>{
+    editor.focus();
+    if(!document.execCommand('hiliteColor',false,highlightInput.value)){
+      document.execCommand('backColor',false,highlightInput.value);
+    }
+    triggerMemoWriteInput();
+  });
 }
 const storeCache=new Map();
 const cloneDefault=(val)=>{
@@ -3608,11 +3747,15 @@ function initMemoPage(){
 function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=null){
   const titleInput=document.getElementById('memoTitleInput');
   const textarea=document.getElementById('memoTextarea');
+  const richEditor=document.getElementById('memoRichEditor');
   const saveBtn=document.getElementById('saveMemoBtn');
   const titleEl=document.getElementById('memoWriteTitle');
   const dateInput=ensureMemoDateInput();
   
-  if(!titleInput||!textarea||!saveBtn) return;
+  if(!titleInput||!textarea||!saveBtn||!richEditor) return;
+  
+  setupMemoImagePaste(richEditor);
+  setupMemoToolbar(richEditor);
   
   if(titleEl) titleEl.textContent=editMode?'메모 수정':'새 메모 작성';
   
@@ -3622,10 +3765,13 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   
   if(editItem){
     titleInput.value=editItem.title||'';
-    textarea.value=editItem.content||'';
+    const editContent=editItem.content||editItem.text||'';
+    setMemoEditorHtml(richEditor,editContent);
+    textarea.value=editContent;
     if(dateInput) dateInput.value=editItem.date||fmtLocalDate(new Date(editItem.createdAt));
   }else{
     titleInput.value='';
+    setMemoEditorHtml(richEditor,'');
     textarea.value='';
     if(dateInput) dateInput.value=fmtLocalDate(new Date());
   }
@@ -3634,8 +3780,9 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   let autoSaveTimer=null;
   
   const persistMemo=()=>{
+    syncMemoTextarea(textarea,richEditor);
     const title=titleInput.value.trim();
-    const content=textarea.value.trim();
+    const content=isMemoEditorEmpty(richEditor)?'':getMemoEditorHtml(richEditor);
     if(!title&&!content) return;
     const dateVal=dateInput?.value||fmtLocalDate(ST.selected);
     let list=getJayMemoList();
@@ -3667,12 +3814,14 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   };
   
   titleInput.oninput=onInput;
-  textarea.oninput=onInput;
+  richEditor.oninput=onInput;
+  memoWriteOnInput=onInput;
   if(dateInput) dateInput.onchange=onInput;
   
   saveBtn.onclick=()=>{
+    syncMemoTextarea(textarea,richEditor);
     const title=titleInput.value.trim();
-    const content=textarea.value.trim();
+    const content=isMemoEditorEmpty(richEditor)?'':getMemoEditorHtml(richEditor);
     if(!title&&!content){
       alert('제목 또는 내용을 입력하세요.');
       return;
@@ -3773,13 +3922,11 @@ function createMemoCard(item,idx,ref){
   contentWrap.style.minHeight='60px';
   contentWrap.style.lineHeight='1.6';
   contentWrap.style.wordBreak='break-word';
-  contentWrap.style.whiteSpace='pre-wrap';
-  
-  // 이모티콘과 텍스트
-  const emojiSpan=item.emoji?el('span','memo-card__emoji',item.emoji+' '):'';
-  const textSpan=el('span','',item.content||'');
+  const emojiSpan=item.emoji?el('span','memo-card__emoji',item.emoji+' '):null;
+  const contentBody=el('div','memo-card__html');
+  renderMemoCardContent(contentBody,item.content||item.text||'');
   if(emojiSpan) contentWrap.appendChild(emojiSpan);
-  contentWrap.appendChild(textSpan);
+  contentWrap.appendChild(contentBody);
   
   // 색상 적용
   const applyColor=(col)=>{

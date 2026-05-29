@@ -3408,3 +3408,88 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
     grid-template-columns:1fr;
   }
 }
+
+/* 메모 리치 에디터 */
+.memo-editor-wrap{
+  border:1px solid #e9ecf2;
+  border-radius:12px;
+  background:var(--card);
+  overflow:hidden;
+}
+.memo-mini-toolbar{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  padding:8px;
+  border-bottom:1px solid #e9ecf2;
+  background:#f8fafc;
+}
+.memo-mini-toolbar button,
+.memo-mini-toolbar select,
+.memo-mini-toolbar input[type="color"]{
+  height:30px;
+  border:1px solid #dbe3ef;
+  border-radius:8px;
+  background:#fff;
+  font-size:12px;
+  cursor:pointer;
+}
+.memo-mini-toolbar button{
+  padding:0 9px;
+}
+.memo-rich-editor{
+  min-height:400px;
+  padding:16px;
+  outline:none;
+  font-size:15px;
+  line-height:1.65;
+  font-family:inherit;
+  word-break:break-word;
+}
+.memo-rich-editor:empty::before{
+  content:attr(data-placeholder);
+  color:#94a3b8;
+  pointer-events:none;
+}
+.memo-rich-editor ul{
+  padding-left:22px;
+}
+.memo-check-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:4px 0;
+}
+.memo-check-row input[type="checkbox"]{
+  width:16px;
+  height:16px;
+}
+.memo-pasted-image,
+.memo-rich-editor img,
+.memo-card img{
+  max-width:100%;
+  height:auto;
+  border-radius:10px;
+  display:block;
+  margin:10px 0;
+}
+.memo-card__html{
+  word-break:break-word;
+}
+@media (max-width:768px){
+  .memo-mini-toolbar{
+    gap:5px;
+    padding:7px;
+  }
+  .memo-mini-toolbar button,
+  .memo-mini-toolbar select,
+  .memo-mini-toolbar input[type="color"]{
+    height:28px;
+    font-size:11px;
+  }
+  .memo-rich-editor{
+    min-height:320px;
+    padding:14px;
+  }
+}
