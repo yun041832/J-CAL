@@ -4903,17 +4903,11 @@ function updateDailyViewButtons(){
   map.forEach(({id,mode})=>{
     const btn=document.getElementById(id);
     if(!btn) return;
-    if(dailyViewMode===mode){
-      btn.style.background='#EEF2FF';
-      btn.style.color='#5C8DFF';
-      btn.style.border='1px solid #5C8DFF';
-      btn.style.fontWeight='700';
-    }else{
-      btn.style.background='transparent';
-      btn.style.color='#666';
-      btn.style.border='none';
-      btn.style.fontWeight='600';
-    }
+    btn.classList.toggle('is-active', dailyViewMode===mode);
+    btn.style.removeProperty('background');
+    btn.style.removeProperty('color');
+    btn.style.removeProperty('border');
+    btn.style.removeProperty('font-weight');
   });
 }
 function setDailyModeLayout(){

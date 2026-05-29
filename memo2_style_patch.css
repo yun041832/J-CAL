@@ -3190,33 +3190,34 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   min-width:0;
   height:36px;
   padding:0 16px;
-  border-radius:10px;
-  border:none;
-  background:transparent !important;
-  color:#666 !important;
+  border-radius:6px;
+  border:0.5px solid #e2e8f0;
+  background:transparent;
+  color:#666;
   font-size:14px;
   font-weight:600;
   font-family:inherit;
   line-height:1;
   white-space:nowrap;
   cursor:pointer;
-  box-shadow:none !important;
+  box-shadow:none;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  transition:background 0.15s ease;
+  transition:background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-#dailyPage .daily-view-btn:hover{
-  background:rgba(255,255,255,0.5) !important;
+#dailyPage .daily-view-btn:hover:not(.is-active){
+  background:#EEF2FF;
+  color:#5C8DFF;
+  border-color:#EEF2FF;
 }
-#dailyPage .daily-view-btn[style*="5C8DFF"],
-#dailyPage .daily-view-btn[style*="5c8dff"],
-#dailyPage .daily-view-btn[style*="EEF2FF"]{
-  background:var(--color-primary-light,#EEF2FF) !important;
-  border:1px solid var(--color-primary,#5C8DFF) !important;
-  box-shadow:0 1px 3px rgba(92,141,255,0.12) !important;
-  color:var(--color-primary,#5C8DFF) !important;
-  font-weight:700 !important;
+#dailyPage .daily-view-btn.is-active{
+  background:#5C8DFF;
+  color:#ffffff;
+  border:none;
+  border-radius:6px;
+  font-weight:700;
+  box-shadow:none;
 }
 @media (max-width:640px){
   #dailyPage .daily-page-header{
