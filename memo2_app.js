@@ -4702,14 +4702,39 @@ function getDailySections(dstr){
 function setDailySections(dstr,list){
   set(kDailySections(dstr),Array.isArray(list)?list:[]);
 }
+const DAILY_PRESET_SECTIONS=[
+  {title:'오전',emoji:'☀️',color:'yellow',order:0},
+  {title:'오후',emoji:'🌤',color:'green',order:1},
+  {title:'저녁',emoji:'🌙',color:'purple',order:2},
+];
+function isLegacyDefaultDailySections(sections){
+  if(!sections.length) return true;
+  if(sections.length!==1) return false;
+  const title=(sections[0].title||'').trim();
+  return title==='기본 섹션'||title==='일간 섹션';
+}
 function ensureDailySections(dstr){
   let sections=getDailySections(dstr);
-  if(!sections.length){
-    sections=[
-      {id:createDailySectionId(),title:'오전',emoji:'☀️',color:'yellow',order:0},
-      {id:createDailySectionId(),title:'오후',emoji:'🌤',color:'green',order:1},
-      {id:createDailySectionId(),title:'저녁',emoji:'🌙',color:'purple',order:2},
-    ];
+  if(isLegacyDefaultDailySections(sections)){
+    const legacyId=sections[0]?.id;
+    sections=DAILY_PRESET_SECTIONS.map((preset,order)=>({
+      id:createDailySectionId(),
+      title:preset.title,
+      emoji:preset.emoji,
+      color:preset.color,
+      order,
+    }));
+    if(legacyId){
+      const tasks=getDailyTasks(dstr);
+      let changed=false;
+      tasks.forEach((task)=>{
+        if(task.sectionId===legacyId){
+          task.sectionId=sections[0].id;
+          changed=true;
+        }
+      });
+      if(changed) saveDailyTasks(dstr,tasks);
+    }
     setDailySections(dstr,sections);
   }
   return sections.slice().sort((a,b)=>(a.order||0)-(b.order||0));
@@ -4717,9 +4742,10 @@ function ensureDailySections(dstr){
 function getDailySectionTheme(section){
   const title=(section?.title||'').trim();
   const emoji=section?.emoji||'';
-  if(title.includes('오전')||emoji==='☀️') return {headerClass:'daily-section-header-yellow',emoji:emoji||'☀️'};
-  if(title.includes('오후')||emoji==='🌤'||emoji==='🌥') return {headerClass:'daily-section-header-green',emoji:emoji||'🌤'};
-  if(title.includes('저녁')||emoji==='🌙') return {headerClass:'daily-section-header-purple',emoji:emoji||'🌙'};
+  const color=section?.color||'';
+  if(color==='yellow'||title.includes('오전')||emoji==='☀️') return {headerClass:'daily-section-header-yellow',emoji:emoji||'☀️'};
+  if(color==='green'||title.includes('오후')||emoji==='🌤'||emoji==='🌥') return {headerClass:'daily-section-header-green',emoji:emoji||'🌤'};
+  if(color==='purple'||title.includes('저녁')||emoji==='🌙') return {headerClass:'daily-section-header-purple',emoji:emoji||'🌙'};
   return {headerClass:'daily-section-header-neutral',emoji:emoji||'📌'};
 }
 function formatDailyMemoSavedAt(ts){
@@ -4799,7 +4825,7 @@ function setDailyModeLayout(){
   show(dayWrap, mode==='day');
   show(weekWrap, mode==='week');
   show(monthWrap, mode==='month');
-  show(inputSection, mode==='day'||mode==='week');
+  show(inputSection, mode==='week');
   show(listSection, mode==='week');
   if(inputSection) inputSection.classList.toggle('is-day-mode',mode==='day');
   updateDailyViewButtons();
@@ -4847,9 +4873,9 @@ function renderDailyDayWorkspace(){
   const sections=ensureDailySections(dstr);
 
   host.innerHTML='';
-  const wrap=el('div','daily-day-layout daily-main-grid');
-  const left=el('div','daily-day-sections daily-sections');
-  const right=el('div','daily-day-memo-panel daily-memo-panel');
+  const wrap=el('div','daily-day-layout');
+  const left=el('div','daily-day-sections');
+  const right=el('div','daily-day-memo-panel');
 
   const sectionHead=el('div','daily-day-sections-head');
   const sectionTitle=el('div','daily-day-head-title','오늘 작업');
