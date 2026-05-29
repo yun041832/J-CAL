@@ -1002,8 +1002,8 @@ function renderCalendar(){
 
     if(Array.isArray(memoItems) && memoItems.length){
       const memoFlag=el('span','memo-flag','🗒️');
-      memoFlag.title=`메모 ${memoItems.length}개`;
-      memoFlag.setAttribute('aria-label',`메모 ${memoItems.length}개`);
+      memoFlag.title=`${memoItems.length} memo(s)`;
+      memoFlag.setAttribute('aria-label',`${memoItems.length} memo(s)`);
       memoFlag.dataset.count=String(memoItems.length);
       cell.appendChild(memoFlag);
     }
@@ -1148,7 +1148,7 @@ function renderRight(){
   // 일정/투두 리스트 분리 렌더링
   const eventLabel = document.getElementById('eventListLabel');
   const todoLabel = document.getElementById('todoListLabel');
-  if(eventLabel) eventLabel.innerHTML = '<span class="tab-icon">📅</span>일정';
+  if(eventLabel) eventLabel.innerHTML = '<span class="tab-icon">📅</span>Event';
   if(todoLabel) todoLabel.innerHTML = '<span class="tab-icon">✅</span>TODO';
   renderEvents();
   renderTodos();
@@ -1209,6 +1209,8 @@ function setupFabButton(){
     if(tabEvent&&tabTodo){
       tabEvent.classList.toggle('active',mode==='event');
       tabTodo.classList.toggle('active',mode==='todo');
+      tabEvent.classList.toggle('is-active',mode==='event');
+      tabTodo.classList.toggle('is-active',mode==='todo');
     }
     const panel=document.getElementById('todoOptionsPanel');
     if(panel){ panel.style.display=mode==='event'?'block':'none'; }
@@ -1231,7 +1233,7 @@ function renderEvents(){
   if(!eventList) return;
   eventList.innerHTML='';
   if(list.length === 0) {
-    const empty = el('div', '', '등록된 일정이 없습니다');
+    const empty = el('div', '', 'No events yet');
     empty.style.color = '#b0b8c1';
     empty.style.fontSize = '14px';
     empty.style.textAlign = 'center';
@@ -1293,16 +1295,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(tabEvent && tabTodo){
     tabEvent.onclick = ()=>{
       scheduleTab = 'event';
-      tabEvent.classList.add('active');
-      tabTodo.classList.remove('active');
+      tabEvent.classList.add('active','is-active');
+      tabTodo.classList.remove('active','is-active');
       renderRight();
       reloadAdsense();
       trackMenuPV('tab:event');
     };
     tabTodo.onclick = ()=>{
       scheduleTab = 'todo';
-      tabTodo.classList.add('active');
-      tabEvent.classList.remove('active');
+      tabTodo.classList.add('active','is-active');
+      tabEvent.classList.remove('active','is-active');
       renderRight();
       reloadAdsense();
       trackMenuPV('tab:todo');
@@ -1646,7 +1648,7 @@ function renderTodos(){
   if(!todoList) return;
   todoList.innerHTML='';
   if(list.length === 0) {
-    const empty = el('div', '', '등록된 할 일이 없습니다');
+    const empty = el('div', '', 'No tasks yet');
     empty.style.color = '#b0b8c1';
     empty.style.fontSize = '14px';
     empty.style.textAlign = 'center';
@@ -4002,7 +4004,7 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
   setupMemoImageDirectControls(richEditor);
   setupMemoToolbar(richEditor);
   
-  if(titleEl) titleEl.textContent=editMode?'메모 수정':'새 메모 작성';
+  if(titleEl) titleEl.textContent=editMode?'Edit Memo':'New Memo';
   
   const editItem=editMode&&editItemId
     ? getJayMemoList().find(m=>m.id===editItemId)
@@ -4097,7 +4099,7 @@ function renderMemoPageList(){
     empty.style.padding='60px 20px';
     empty.style.color='var(--text-muted)';
     empty.style.fontSize='15px';
-    empty.textContent='등록된 메모가 없습니다.';
+    empty.textContent='No memos yet.';
     content.appendChild(empty);
     return;
   }
@@ -4143,8 +4145,8 @@ function createMemoCard(item,idx,ref){
   btnGroup.style.display='flex';
   btnGroup.style.gap='4px';
   
-  const widgetBtn=el('button','memo-card__btn','위젯');
-  widgetBtn.title='위젯으로 열기';
+  const widgetBtn=el('button','memo-card__btn','Widget');
+  widgetBtn.title='Open widget';
   widgetBtn.onclick=(e)=>{
     e.stopPropagation();
     openMemoWidgetPopup(item);
@@ -6838,7 +6840,7 @@ function widgetMemo(){
       const items=load();
       if(!items.length){
         const empty=doc.createElement('li');
-        empty.textContent='등록된 메모가 없습니다.';
+        empty.textContent='No memos yet.';
         empty.style.fontSize='13px';
         empty.style.color='#94a3b8';
         empty.style.textAlign='center';

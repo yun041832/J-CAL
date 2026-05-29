@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529timer-fix">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260529tabs-i18n">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -430,14 +430,14 @@
       <!-- 루틴 페이지 (기본 숨김) -->
       <div id="routinePage" class="card hidden" style="display: flex; flex-direction: column; height: 100%;">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-          <div class="card__title">✅ 루틴</div>
+          <div class="card__title">✅ Routine</div>
         </div>
         <div id="routineWeekCalendar" class="routine-week-calendar"></div>
         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 12px;">
-          <button id="toggleReorderBtn" class="icon-btn" title="목록 순서 변경" style="padding: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: var(--card); border-radius: 8px;">
+          <button id="toggleReorderBtn" class="icon-btn" title="Reorder list" style="padding: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: var(--card); border-radius: 8px;">
             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#64748b"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z"/></svg>
           </button>
-          <button id="addRoutineBtn" class="icon-btn" title="새 루틴 추가" style="padding: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: var(--card); border-radius: 8px;">
+          <button id="addRoutineBtn" class="icon-btn" title="Add routine" style="padding: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: var(--card); border-radius: 8px;">
             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#64748b"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160Zm40 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
           </button>
         </div>
@@ -447,11 +447,11 @@
       <div id="dailyPage" class="card hidden" style="display:flex;flex-direction:column;height:100%;">
         <div class="card__header daily-page-header">
           <div class="card__title">📋 Daily</div>
-          <div class="daily-view-segment" role="tablist" aria-label="Daily view switcher">
-            <button id="dailyDayViewBtn" type="button" class="daily-view-btn" role="tab" title="Today" aria-label="Today">Today</button>
-            <button id="dailyWeekViewBtn" type="button" class="daily-view-btn" role="tab" title="Week" aria-label="Week">Week</button>
-            <button id="dailyMonthViewBtn" type="button" class="daily-view-btn" role="tab" title="Month" aria-label="Month">Month</button>
-            <button id="openDailyWidgetBtn" type="button" class="daily-view-btn daily-view-btn--widget" title="Widget" aria-label="Widget">Widget</button>
+          <div class="view-segment daily-view-segment" role="tablist" aria-label="Daily view switcher">
+            <button id="dailyDayViewBtn" type="button" class="view-tab-btn daily-view-btn" role="tab" title="Today" aria-label="Today">Today</button>
+            <button id="dailyWeekViewBtn" type="button" class="view-tab-btn daily-view-btn" role="tab" title="Week" aria-label="Week">Week</button>
+            <button id="dailyMonthViewBtn" type="button" class="view-tab-btn daily-view-btn" role="tab" title="Month" aria-label="Month">Month</button>
+            <button id="openDailyWidgetBtn" type="button" class="view-tab-btn daily-view-btn daily-view-btn--widget" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>
         <div class="card__header-unified" style="padding:8px 12px;">
@@ -476,25 +476,25 @@
       <!-- 메모 페이지 (기본 숨김) -->
       <div id="memoPage" class="card hidden" style="display: flex; flex-direction: column; height: 100%;">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-          <div class="card__title">📝 메모</div>
+          <div class="card__title">📝 Memo</div>
           <div style="display:flex;align-items:center;">
             <div id="memo-view-toggle" style="display:flex;gap:4px;margin-right:8px;">
               <button type="button" id="btn-grid-view" onclick="setMemoView('grid')"
-                title="그리드 보기" style="
+                title="Grid view" style="
                 width:28px;height:28px;border-radius:6px;border:1px solid #e0e0e0;
                 background:#1a56db;color:#fff;cursor:pointer;font-size:13px;
                 display:flex;align-items:center;justify-content:center;">
                 ⊞
               </button>
               <button type="button" id="btn-list-view" onclick="setMemoView('list')"
-                title="리스트 보기" style="
+                title="List view" style="
                 width:28px;height:28px;border-radius:6px;border:1px solid #e0e0e0;
                 background:#fff;color:#666;cursor:pointer;font-size:13px;
                 display:flex;align-items:center;justify-content:center;">
                 ☰
               </button>
             </div>
-            <button id="addMemoBtn" class="icon-btn" title="새 메모 추가" style="padding: 4px; display: flex; align-items: center; justify-content: center; border: none; background: none;">
+            <button id="addMemoBtn" class="icon-btn" title="Add memo" style="padding: 4px; display: flex; align-items: center; justify-content: center; border: none; background: none;">
               <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160Zm40 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
             </button>
           </div>
@@ -506,7 +506,7 @@
       <div id="insightPage" class="card hidden" style="display: flex; flex-direction: column; height: 100%;">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
           <div class="card__title">💡 Insight</div>
-          <button id="addInsightBtn" class="icon-btn" title="새 글 추가" style="padding: 4px; display: flex; align-items: center; justify-content: center; border: none; background: none;">
+          <button id="addInsightBtn" class="icon-btn" title="Add post" style="padding: 4px; display: flex; align-items: center; justify-content: center; border: none; background: none;">
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160Zm40 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
           </button>
         </div>
@@ -517,12 +517,12 @@
       <!-- 인사이트 작성 페이지 (기본 숨김) -->
       <div id="insightWritePage" class="card hidden">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
-          <div class="card__title" id="insightWriteTitle">새 인사이트</div>
+          <div class="card__title" id="insightWriteTitle">New Insight</div>
           <button id="saveInsightBtn" class="btn-confirm" style="padding: 8px 16px;">Save</button>
         </div>
         <div class="insight-write-body">
           <div id="insightLangToggle" class="insight-lang-toggle"></div>
-          <input type="text" id="insightTitleInput" placeholder="제목" class="insight-write-input insight-write-input--title">
+          <input type="text" id="insightTitleInput" placeholder="Title" class="insight-write-input insight-write-input--title">
           <input type="date" id="insightDateInput" class="insight-write-input">
           <textarea id="insightTextarea" placeholder="내용" class="insight-write-textarea"></textarea>
         </div>
@@ -531,27 +531,27 @@
       <!-- 메모 작성 페이지 (기본 숨김) -->
       <div id="memoWritePage" class="card hidden">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecf2; padding-bottom: 12px;">
-          <div class="card__title" id="memoWriteTitle">새 메모 작성</div>
+          <div class="card__title" id="memoWriteTitle">New Memo</div>
           <button id="saveMemoBtn" class="btn-confirm" style="padding: 8px 16px;">Save</button>
         </div>
         <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
-          <input type="text" id="memoTitleInput" placeholder="제목" style="width: 100%; padding: 12px 16px; border: none; border-bottom: 2px solid #e9ecf2; font-size: 18px; font-weight: 600; font-family: inherit; box-sizing: border-box; outline: none;" />
+          <input type="text" id="memoTitleInput" placeholder="Title" style="width: 100%; padding: 12px 16px; border: none; border-bottom: 2px solid #e9ecf2; font-size: 18px; font-weight: 600; font-family: inherit; box-sizing: border-box; outline: none;" />
           <textarea id="memoTextarea" hidden></textarea>
           <div class="memo-editor-wrap">
             <div class="memo-mini-toolbar" id="memoMiniToolbar">
               <button type="button" data-cmd="insertUnorderedList">• List</button>
               <button type="button" data-action="checklist">☑ Check</button>
               <button type="button" data-action="emoji">😊</button>
-              <select id="memoFontSizeSelect" title="글자 크기">
-                <option value="">크기</option>
+              <select id="memoFontSizeSelect" title="Font size">
+                <option value="">Size</option>
                 <option value="14px">14</option>
                 <option value="16px">16</option>
                 <option value="18px">18</option>
                 <option value="22px">22</option>
                 <option value="28px">28</option>
               </select>
-              <input id="memoColorInput" type="color" title="글자색" />
-              <input id="memoHighlightInput" type="color" title="하이라이트" value="#fff3a3" />
+              <input id="memoColorInput" type="color" title="Text color" />
+              <input id="memoHighlightInput" type="color" title="Highlight" value="#fff3a3" />
             </div>
             <div id="memoRichEditor" class="memo-rich-editor" contenteditable="true" data-placeholder="Content"></div>
           </div>
@@ -562,9 +562,9 @@
       <div id="timerPage" class="card hidden">
         <div class="card__header timer-page-header">
           <div class="card__title">⏲️ Timer</div>
-          <div class="timer-view-segment daily-view-segment" role="tablist" aria-label="Timer view switcher">
-            <button id="timerSubTabTimer" type="button" class="daily-view-btn is-active" role="tab" aria-selected="true">Timer</button>
-            <button id="timerSubTabStopwatch" type="button" class="daily-view-btn" role="tab" aria-selected="false">Stopwatch</button>
+          <div class="view-segment timer-view-segment daily-view-segment" role="tablist" aria-label="Timer view switcher">
+            <button id="timerSubTabTimer" type="button" class="view-tab-btn daily-view-btn is-active" role="tab" aria-selected="true">Timer</button>
+            <button id="timerSubTabStopwatch" type="button" class="view-tab-btn daily-view-btn" role="tab" aria-selected="false">Stopwatch</button>
           </div>
           <button type="button" id="openStopwatchWidgetBtn" class="icon-btn-ghost widget-open-btn" title="Widget" aria-label="Widget" style="display:none;">Widget</button>
         </div>
@@ -583,7 +583,7 @@
             <h2>Logs</h2>
             <p class="logs-sub">Dev diary · Thoughts · Experiments</p>
           </div>
-          <div class="logs-filter">
+          <div class="logs-filter view-segment">
             <button type="button" class="filter-btn active" data-filter="all">All</button>
             <button type="button" class="filter-btn" data-filter="dev">Dev</button>
             <button type="button" class="filter-btn" data-filter="think">Thoughts</button>
@@ -621,15 +621,15 @@
         <div class="card__header-unified">
           <div class="goal-bar">
             <span class="goal-emoji" id="goalEmojiBadge"></span>
-            <input type="text" id="monthlyGoalInput" class="monthly-goal-input-unified" placeholder="이달의 목표를 입력하고 Enter">
-            <button type="button" id="goalStyleBtn" class="goal-style-btn" aria-label="목표 스타일">⋮</button>
+            <input type="text" id="monthlyGoalInput" class="monthly-goal-input-unified" placeholder="Enter this month's goal and press Enter">
+            <button type="button" id="goalStyleBtn" class="goal-style-btn" aria-label="Goal style">⋮</button>
           </div>
           <div class="nav-controls" style="align-items:center;gap:6px;">
             <button id="todayBtn" class="btn-today">Today</button>
             <button id="prevMonth" class="icon-btn">◀</button>
             <div id="headerYmLabel" class="header-ym-compact">🗓</div>
             <button id="nextMonth" class="icon-btn">▶</button>
-            <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="위젯" aria-label="위젯">위젯</button>
+            <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>
 
@@ -689,15 +689,15 @@
       <!-- 일정/투두 카드 -->
       <div class="card">
         <div class="card__header">
-          <div class="card__title">📅 일정 등록 (To-Do)</div>
+          <div class="card__title">📅 Add Event</div>
         </div>
         <div class="datebox">
           <div id="selectedDateText" class="datebox__date">2025-12-12</div>
 
           <!-- 일정/투두 탭 -->
-          <div class="schedule-type-tabs" style="display:flex;gap:0;justify-content:left;margin:12px 0 8px 0;">
-            <button id="tabEvent" class="tab-btn left active" type="button">
-              <span class="tab-icon">📅</span> 일정
+          <div class="schedule-type-tabs view-segment" style="display:flex;gap:2px;justify-content:left;margin:12px 0 8px 0;">
+            <button id="tabEvent" class="view-tab-btn daily-view-btn is-active" type="button">
+              <span class="tab-icon">📅</span> Event
             </button>
             <button id="tabTodo" class="tab-btn right" type="button" style="display:none;">
               <span class="tab-icon">✅</span> TODO
@@ -706,32 +706,32 @@
 
           <!-- 할 일 입력 -->
           <div class="todo__input-group">
-            <input id="todoInput" type="text" placeholder="할 일을 입력하고 Enter">
-            <button id="todoAddBtn" class="icon-btn" title="추가">
+            <input id="todoInput" type="text" placeholder="Add a task and press Enter">
+            <button id="todoAddBtn" class="icon-btn" title="Add">
               <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
                 <path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160Zm40 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/>
               </svg>
             </button>
-            <button id="todoColorBtn" class="icon-btn color-indicator" title="색상"></button>
-            <button id="todoEmojiBtn" class="icon-btn emoji-gray" title="이모티콘">😊</button>
-            <button id="todoOptionsBtn" class="icon-btn" title="상세 설정">⋮</button>
+            <button id="todoColorBtn" class="icon-btn color-indicator" title="Color"></button>
+            <button id="todoEmojiBtn" class="icon-btn emoji-gray" title="Emoji">😊</button>
+            <button id="todoOptionsBtn" class="icon-btn" title="Options">⋮</button>
           </div>
 
           <!-- 상세 설정 (기본 숨김) -->
           <div id="todoOptionsPanel" class="todo-options-panel" style="display:none">
             <div class="event-datetime-row">
               <div class="event-date-group">
-                <label>시작:</label>
+                <label>Start:</label>
                 <input id="todoStartDate" type="date">
               </div>
               <div class="event-date-group">
-                <label>종료:</label>
+                <label>End:</label>
                 <input id="todoEndDate" type="date">
               </div>
             </div>
             <div class="event-time-row">
               <div class="event-time-group">
-                <label>시간:</label>
+                <label>Time:</label>
                 <input id="eventTime" type="time">
               </div>
               <div class="event-options">
@@ -750,10 +750,10 @@
 
       <!-- 메모 카드 -->
       <div class="card">
-        <div class="card__header"><div class="card__title">⎙ 메모</div></div>
+        <div class="card__header"><div class="card__title">⎙ Memo</div></div>
         <div class="datebox">
           <div class="memo__header">
-            <label class="memo__datepick">날짜: <input id="memoDate" type="date"></label>
+            <label class="memo__datepick">Date: <input id="memoDate" type="date"></label>
           </div>
           <div class="memo__add">
             <textarea id="memoInput" rows="2" placeholder="Write a memo..."></textarea>
@@ -770,11 +770,11 @@
     <div class="footer-content">
       <div class="footer-links">
         <!-- ✅ 실제 페이지로 연결 권장 (없으면 파일/라우트 생성 필요) -->
-        <a href="/privacy.html" id="privacyLink" class="footer-link">개인정보 보호정책</a>
+        <a href="/privacy.html" id="privacyLink" class="footer-link">Privacy Policy</a>
         <span class="footer-divider">|</span>
-        <a href="/contact.html" id="contactLink" class="footer-link">문의하기</a>
+        <a href="/contact.html" id="contactLink" class="footer-link">Contact</a>
       </div>
-      <p class="footer-copyright">&copy; 2025 Jay Calendar. All rights reserved.</p>
+      <p class="footer-copyright">&copy; 2026 Jay Calendar. All rights reserved.</p>
     </div>
   </footer>
 
@@ -789,7 +789,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="js/logs.js?v=20260529logs" defer></script>
-  <script src="memo2_app.js?v=20260529timer-fix" defer></script>
+  <script src="memo2_app.js?v=20260529tabs-i18n" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{

@@ -3166,7 +3166,56 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   }
 }
 
-/* Daily 상단 보기 전환 (segmented control) */
+/* Unified view tab bar (Daily, Timer, calendar panel, …) */
+.view-segment,
+.daily-view-segment,
+.timer-view-segment{
+  display:flex;
+  align-items:center;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:100%;
+  gap:2px;
+  background:#f3f4f6;
+  border-radius:8px;
+  padding:2px;
+}
+.view-tab-btn,
+.daily-view-btn{
+  flex:1 1 0;
+  min-width:0;
+  padding:5px 14px;
+  font-size:13px;
+  font-weight:400;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:var(--text,#111827);
+  font-family:inherit;
+  line-height:1.2;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:background 0.15s ease, color 0.15s ease;
+}
+.view-tab-btn:hover:not(.is-active),
+.daily-view-btn:hover:not(.is-active){
+  background:#EEF2FF;
+  color:#5C8DFF;
+}
+.view-tab-btn.is-active,
+.daily-view-btn.is-active{
+  padding:5px 14px;
+  font-size:13px;
+  font-weight:500;
+  border-radius:6px;
+  background:#5C8DFF;
+  color:#ffffff;
+  border:none;
+}
 #dailyPage .daily-page-header{
   display:flex;
   justify-content:space-between;
@@ -3174,63 +3223,21 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   flex-shrink:0;
   gap:12px;
 }
-#dailyPage .daily-view-segment{
-  display:flex;
-  align-items:center;
-  flex:0 1 auto;
-  min-width:0;
-  max-width:100%;
-  background:#f6f2ea;
-  border-radius:12px;
-  padding:4px;
-  gap:2px;
-}
-#dailyPage .daily-view-btn{
-  flex:1 1 0;
-  min-width:0;
-  height:36px;
-  padding:0 16px;
-  border-radius:6px;
-  border:0.5px solid #e2e8f0;
-  background:transparent;
-  color:#666;
-  font-size:14px;
-  font-weight:600;
-  font-family:inherit;
-  line-height:1;
-  white-space:nowrap;
-  cursor:pointer;
-  box-shadow:none;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  transition:background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-#dailyPage .daily-view-btn:hover:not(.is-active){
-  background:#EEF2FF;
-  color:#5C8DFF;
-  border-color:#EEF2FF;
-}
-#dailyPage .daily-view-btn.is-active{
-  background:#5C8DFF;
-  color:#ffffff;
-  border:none;
-  border-radius:6px;
-  font-weight:700;
-  box-shadow:none;
-}
 @media (max-width:640px){
   #dailyPage .daily-page-header{
     flex-wrap:wrap;
     align-items:flex-start;
   }
-  #dailyPage .daily-view-segment{
+  .view-segment,
+  .daily-view-segment,
+  .timer-view-segment{
     width:100%;
     flex:1 1 100%;
   }
-  #dailyPage .daily-view-btn{
-    padding:0 10px;
-    font-size:13px;
+  .view-tab-btn,
+  .daily-view-btn{
+    padding:5px 10px;
+    font-size:12px;
   }
 }
 
@@ -3252,47 +3259,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   flex-shrink:0;
   gap:12px;
   flex-wrap:wrap;
-}
-#timerPage .timer-view-segment{
-  display:flex;
-  align-items:center;
-  gap:2px;
-  background:#f3f4f6;
-  border-radius:8px;
-  padding:2px;
-}
-#timerPage .timer-view-segment .daily-view-btn{
-  flex:1 1 0;
-  min-width:0;
-  background:transparent;
-  color:var(--text,#111827);
-  border:none;
-  border-radius:6px;
-  padding:4px 14px;
-  font-size:13px;
-  font-weight:600;
-  font-family:inherit;
-  line-height:1.2;
-  white-space:nowrap;
-  cursor:pointer;
-  box-shadow:none;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  transition:background 0.15s ease, color 0.15s ease;
-}
-#timerPage .timer-view-segment .daily-view-btn:hover:not(.is-active){
-  background:#EEF2FF;
-  color:#5C8DFF;
-}
-#timerPage .timer-view-segment .daily-view-btn.is-active{
-  background:#5C8DFF;
-  color:#ffffff;
-  border:none;
-  border-radius:6px;
-  padding:4px 14px;
-  font-size:13px;
-  font-weight:700;
 }
 #timerPage #timerPanel{
   display:block;
@@ -3399,14 +3365,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   #timerPage .timer-page-header{
     flex-wrap:wrap;
     align-items:flex-start;
-  }
-  #timerPage .timer-view-segment{
-    width:100%;
-    flex:1 1 100%;
-  }
-  #timerPage .timer-view-segment .daily-view-btn{
-    padding:4px 10px;
-    font-size:12px;
   }
 }
 
@@ -4429,25 +4387,31 @@ input[type="checkbox"],
   gap:6px;
   margin-bottom:16px;
 }
+.logs-filter.view-segment{
+  margin-bottom:16px;
+}
 .logs-filter .filter-btn{
-  padding:4px 12px;
-  font-size:12px;
-  border:0.5px solid var(--line,#e2e8f0);
-  border-radius:20px;
+  padding:5px 14px;
+  font-size:13px;
+  font-weight:400;
+  border:none;
+  border-radius:6px;
   background:transparent;
-  color:var(--text-muted,#64748b);
+  color:var(--text,#111827);
   cursor:pointer;
   font-family:inherit;
 }
-.logs-filter .filter-btn:hover{
-  background:var(--color-primary-light,#EEF2FF);
-  color:var(--color-primary,#5C8DFF);
-  border-color:var(--color-primary-light,#EEF2FF);
+.logs-filter .filter-btn:hover:not(.active){
+  background:#EEF2FF;
+  color:#5C8DFF;
 }
 .logs-filter .filter-btn.active{
+  padding:5px 14px;
+  font-size:13px;
+  font-weight:500;
   background:#5C8DFF;
   color:#fff;
-  border-color:#5C8DFF;
+  border:none;
 }
 .logs-list{
   display:block;
