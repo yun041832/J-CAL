@@ -55,7 +55,7 @@
 
   <!-- Full Stylesheets -->
   <link rel="stylesheet" href="memo2_style.css?v=202601041310">
-  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530daily-tab">
+  <link rel="stylesheet" href="memo2_style_patch.css?v=20260530timer-tabs">
 
   <!-- index.html : </head> 바로 위 -->
 <style>
@@ -180,7 +180,7 @@
     .widget-open-btn{
       display:none !important;
     }
-    #stopwatchPage .widget-open-btn{
+    #timerPage #openStopwatchWidgetBtn{
       display:none !important;
     }
   }
@@ -188,7 +188,7 @@
     #mobile-tab-bar{
       display:none !important;
     }
-    #stopwatchPage .card__header .widget-open-btn{
+    #timerPage.timer-page--stopwatch #openStopwatchWidgetBtn{
       display:inline-flex !important;
     }
   }
@@ -226,7 +226,6 @@
       <button class="menu-btn" data-widget="memo" title="Memo">📝 Memo</button>
       <button class="menu-btn" data-widget="todo" style="display:none;">✅ To-do</button>
       <button class="menu-btn" data-widget="timer" title="Timer">⏲️ Timer</button>
-      <button class="menu-btn" data-widget="stopwatch" title="Stopwatch">⏱️ Stopwatch</button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
 
     </aside>
@@ -339,10 +338,6 @@
       <button type="button" class="mobile-tab-btn" data-widget="timer" aria-label="Timer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">⏲️</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Timer</span>
-      </button>
-      <button type="button" class="mobile-tab-btn" data-widget="stopwatch" aria-label="Stopwatch" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
-        <span style="font-size:20px;line-height:1.2;">⏱️</span>
-        <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Stop</span>
       </button>
     </nav>
 
@@ -562,21 +557,22 @@
         </div>
       </div>
 
-      <!-- 타이머 페이지 (기본 숨김) -->
+      <!-- Timer + Stopwatch (tabbed) -->
       <div id="timerPage" class="card hidden">
-        <div class="card__header">
-          <div class="card__title">⏲️ 타이머</div>
+        <div class="card__header timer-page-header">
+          <div class="card__title">⏲️ Timer</div>
+          <div class="timer-view-segment daily-view-segment" role="tablist" aria-label="Timer view switcher">
+            <button id="timerSubTabTimer" type="button" class="daily-view-btn is-active" role="tab" aria-selected="true">Timer</button>
+            <button id="timerSubTabStopwatch" type="button" class="daily-view-btn" role="tab" aria-selected="false">Stopwatch</button>
+          </div>
+          <button type="button" id="openStopwatchWidgetBtn" class="icon-btn-ghost widget-open-btn" title="Widget" aria-label="Widget" style="display:none;">Widget</button>
         </div>
-        <div id="timerGrid" class="timer-grid"></div>
-      </div>
-
-      <!-- 스탑워치 페이지 (기본 숨김) -->
-      <div id="stopwatchPage" class="card hidden">
-        <div class="card__header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div class="card__title">⏱️ 스탑워치</div>
-          <button type="button" id="openStopwatchWidgetBtn" class="icon-btn-ghost widget-open-btn" title="위젯" aria-label="위젯">위젯</button>
+        <div id="timerPanel">
+          <div id="timerGrid" class="timer-grid"></div>
         </div>
-        <div id="stopwatchPageContent" class="stopwatch-page-content"></div>
+        <div id="stopwatchPanel" class="stopwatch-page-content-wrap" hidden>
+          <div id="stopwatchPageContent" class="stopwatch-page-content"></div>
+        </div>
       </div>
 
       <!-- 달력 페이지 (기본 숨김) -->
@@ -772,7 +768,7 @@
     </div>
   </noscript>
 
-  <script src="memo2_app.js?v=20260530daily-i18n" defer></script>
+  <script src="memo2_app.js?v=20260530timer-tabs" defer></script>
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>{
@@ -891,7 +887,7 @@
       else if (widget === 'routine' && typeof showRoutinePage === 'function') showRoutinePage()
       else if (widget === 'daily' && typeof showDailyPage === 'function') showDailyPage()
       else if (widget === 'timer' && typeof showTimerPage === 'function') showTimerPage()
-      else if (widget === 'stopwatch' && typeof showStopwatchPage === 'function') showStopwatchPage()
+      else if (widget === 'stopwatch' && typeof showTimerPage === 'function') showTimerPage('stopwatch')
     }
 
     document.querySelectorAll('#mobile-tab-bar .mobile-tab-btn').forEach(function (btn) {
@@ -949,25 +945,25 @@
     <div class="timer-setting-modal__overlay" aria-hidden="true"></div>
     <div class="timer-setting-modal__card" role="dialog" aria-labelledby="timerSettingModalTitle">
       <div class="timer-setting-modal__header">
-        <span id="timerSettingModalTitle" class="timer-setting-modal__title">타이머 설정</span>
-        <button type="button" id="timerSettingModalClose" class="timer-setting-modal__close" aria-label="닫기">✕</button>
+        <span id="timerSettingModalTitle" class="timer-setting-modal__title">Timer settings</span>
+        <button type="button" id="timerSettingModalClose" class="timer-setting-modal__close" aria-label="Close">✕</button>
       </div>
       <div class="timer-setting-modal__body">
         <div class="timer-setting-modal__field">
-          <label for="timerSettingLabel">라벨(이름)</label>
-          <input type="text" id="timerSettingLabel" placeholder="예: 집중 시간" autocomplete="off">
+          <label for="timerSettingLabel">Label</label>
+          <input type="text" id="timerSettingLabel" placeholder="e.g. Focus time" autocomplete="off">
         </div>
         <div class="timer-setting-modal__time-row">
           <div class="timer-setting-modal__field">
-            <label for="timerSettingH">시</label>
+            <label for="timerSettingH">h</label>
             <input type="number" id="timerSettingH" min="0" value="0">
           </div>
           <div class="timer-setting-modal__field">
-            <label for="timerSettingM">분</label>
+            <label for="timerSettingM">m</label>
             <input type="number" id="timerSettingM" min="0" value="0">
           </div>
           <div class="timer-setting-modal__field">
-            <label for="timerSettingS">초</label>
+            <label for="timerSettingS">s</label>
             <input type="number" id="timerSettingS" min="0" value="0">
           </div>
         </div>

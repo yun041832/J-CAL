@@ -12,15 +12,42 @@ const insightWritePage=document.getElementById('insightWritePage');
 const routinePage=document.getElementById('routinePage');
 const dailyPage=document.getElementById('dailyPage');
 const timerPage=document.getElementById('timerPage');
-const stopwatchPage=document.getElementById('stopwatchPage');
+let timerSubView='timer';
 const rightPane=document.querySelector('.right');
 
 function hideInsightPages(){
   insightPage?.classList.add('hidden');
   insightWritePage?.classList.add('hidden');
 }
-function hideStopwatchPage(){
-  stopwatchPage?.classList.add('hidden');
+function applyTimerSubView(){
+  const page=document.getElementById('timerPage');
+  const timerPanel=document.getElementById('timerPanel');
+  const stopwatchPanel=document.getElementById('stopwatchPanel');
+  const widgetBtn=document.getElementById('openStopwatchWidgetBtn');
+  const showStopwatch=timerSubView==='stopwatch';
+  page?.classList.toggle('timer-page--stopwatch',showStopwatch);
+  if(timerPanel) timerPanel.hidden=showStopwatch;
+  if(stopwatchPanel) stopwatchPanel.hidden=!showStopwatch;
+  if(widgetBtn) widgetBtn.style.display=showStopwatch?'':'none';
+  document.getElementById('timerSubTabTimer')?.classList.toggle('is-active',!showStopwatch);
+  document.getElementById('timerSubTabStopwatch')?.classList.toggle('is-active',showStopwatch);
+  const tabTimer=document.getElementById('timerSubTabTimer');
+  const tabSw=document.getElementById('timerSubTabStopwatch');
+  if(tabTimer) tabTimer.setAttribute('aria-selected',String(!showStopwatch));
+  if(tabSw) tabSw.setAttribute('aria-selected',String(showStopwatch));
+  if(showStopwatch) initStopwatchPage?.();
+}
+function setTimerSubView(mode){
+  timerSubView=mode==='stopwatch'?'stopwatch':'timer';
+  localStorage.setItem('memo2.timerSubView',timerSubView);
+  localStorage.setItem('memo2.lastPage',timerSubView==='stopwatch'?'stopwatch':'timer');
+  applyTimerSubView();
+}
+function bindTimerSubTabs(){
+  if(window._jcalTimerSubTabsBound) return;
+  window._jcalTimerSubTabsBound=true;
+  document.getElementById('timerSubTabTimer')?.addEventListener('click',()=> setTimerSubView('timer'));
+  document.getElementById('timerSubTabStopwatch')?.addEventListener('click',()=> setTimerSubView('stopwatch'));
 }
 
 function showHomeIntro(){
@@ -33,7 +60,6 @@ function showHomeIntro(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
 }
@@ -46,7 +72,6 @@ function showCalendarPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.remove('hidden');
   renderCalendar?.();
@@ -62,7 +87,6 @@ function showMemoPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   getJayMemoList();
@@ -78,7 +102,6 @@ function showMemoWritePage(editMode=false,itemId=null,idx=null,dstr=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initMemoWritePage?.(editMode,itemId,idx,dstr);
@@ -92,7 +115,6 @@ function showRoutinePage(){
   routinePage?.classList.remove('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initRoutinePage?.();
@@ -105,15 +127,18 @@ function showDailyPage(){
   memoWritePage?.classList.add('hidden');
   routinePage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   dailyPage?.classList.remove('hidden');
   hideInsightPages();
   rightPane?.classList.add('hidden');
   initDailyPage?.();
   applyDailyView?.();
 }
-function showTimerPage(){
-  localStorage.setItem('memo2.lastPage', 'timer');
+function showTimerPage(subView){
+  if(subView==='stopwatch') timerSubView='stopwatch';
+  else if(subView==='timer') timerSubView='timer';
+  else if(localStorage.getItem('memo2.lastPage')==='stopwatch') timerSubView='stopwatch';
+  else timerSubView='timer';
+  localStorage.setItem('memo2.lastPage', timerSubView==='stopwatch'?'stopwatch':'timer');
   homeIntroSection?.classList.add('hidden');
   calendarPage?.classList.add('hidden');
   memoPage?.classList.add('hidden');
@@ -121,25 +146,15 @@ function showTimerPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.remove('hidden');
-  hideStopwatchPage();
   hideInsightPages();
-  rightPane?.classList.add('hidden');
-  initTimersPage?.();
-}
-function showStopwatchPage(){
-  localStorage.setItem('memo2.lastPage', 'stopwatch');
-  homeIntroSection?.classList.add('hidden');
-  calendarPage?.classList.add('hidden');
-  memoPage?.classList.add('hidden');
-  memoWritePage?.classList.add('hidden');
-  routinePage?.classList.add('hidden');
-  dailyPage?.classList.add('hidden');
-  timerPage?.classList.add('hidden');
-  hideInsightPages();
-  stopwatchPage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
   hideUsage?.();
-  initStopwatchPage?.();
+  bindTimerSubTabs();
+  initTimersPage?.();
+  applyTimerSubView();
+}
+function showStopwatchPage(){
+  showTimerPage('stopwatch');
 }
 function showInsightPage(){
   localStorage.setItem('memo2.lastPage', 'insight');
@@ -150,7 +165,6 @@ function showInsightPage(){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   insightWritePage?.classList.add('hidden');
   insightPage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -165,7 +179,6 @@ function showInsightWritePage(editMode=false,editItemId=null){
   routinePage?.classList.add('hidden');
   dailyPage?.classList.add('hidden');
   timerPage?.classList.add('hidden');
-  hideStopwatchPage();
   insightPage?.classList.add('hidden');
   insightWritePage?.classList.remove('hidden');
   rightPane?.classList.add('hidden');
@@ -206,9 +219,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(t==='routine') showRoutinePage();
       if(t==='daily') showDailyPage();
       if(t==='todo') widgetTodo?.();
-      if(t==='timer') showTimerPage();
+      if(t==='timer') showTimerPage('timer');
       if(t==='alarm') widgetAlarm?.();
-      if(t==='stopwatch') showStopwatchPage();
+      if(t==='stopwatch') showTimerPage('stopwatch');
       if(t==='insight') showInsightPage();
     };
   });
@@ -253,7 +266,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'routine') showRoutinePage();
   else if(lastPage === 'daily') showDailyPage();
   else if(lastPage === 'timer') showTimerPage();
-  else if(lastPage === 'stopwatch') showStopwatchPage();
+  else if(lastPage === 'stopwatch') showTimerPage('stopwatch');
   else if(lastPage === 'insight') showInsightPage();
   else showHomeIntro();
 
@@ -2826,7 +2839,7 @@ function makeWidget(title, bodyBuilder, rootClass){
   const w=el('section','widget'+(rootClass?` ${rootClass}`:'')); w.style.zIndex=++z; w.style.fontFamily='"Noto Sans KR","Noto Sans",sans-serif';
   const head=el('div','widget__head'); head.style.cursor='grab';
   const t=el('div','widget__title',title);
-  const btns=el('div'); const pop=el('button','widget__btn widget-open-btn','위젯'); const x=el('button','widget__btn','✕');
+  const btns=el('div'); const pop=el('button','widget__btn widget-open-btn','Widget'); const x=el('button','widget__btn','✕');
   btns.append(pop,x); head.append(t,btns);
   const body=el('div','widget__body'); body.appendChild(bodyBuilder(false, window));
 
@@ -2856,12 +2869,12 @@ function makeWidget(title, bodyBuilder, rootClass){
 /* ── 스탑워치·타이머 localStorage 동기화 (브라우저↔위젯) ── */
 const SW_LS_KEYS=['stopwatch_start_time','stopwatch_is_running','stopwatch_elapsed_ms'];
 const TIMER_PRESETS=[
-  {label:'15분',ms:15*60*1000},
-  {label:'30분',ms:30*60*1000},
-  {label:'1시간',ms:60*60*1000},
-  {label:'1시간 30분',ms:90*60*1000},
-  {label:'2시간',ms:120*60*1000},
-  {label:'3시간',ms:180*60*1000},
+  {label:'15m',ms:15*60*1000},
+  {label:'30m',ms:30*60*1000},
+  {label:'1h',ms:60*60*1000},
+  {label:'1h 30m',ms:90*60*1000},
+  {label:'2h',ms:120*60*1000},
+  {label:'3h',ms:180*60*1000},
 ];
 const LEGACY_TM_LS_KEYS=['timer_start_time','timer_is_running','timer_remaining_ms'];
 
@@ -3103,12 +3116,12 @@ function widgetTimer(){
     let totalMs=0,endPerf=0,raf=null,paused=false,remainMs=0;
     const fmt=(ms)=>{const s=Math.max(0,Math.ceil(ms/1000));const hh=String(Math.floor(s/3600)).padStart(2,'0');const mm=String(Math.floor((s%3600)/60)).padStart(2,'0');const ss=String(s%60).padStart(2,'0');return `${hh}:${mm}:${ss}`;}
     const draw=(left)=>{ const p=totalMs>0?Math.min(1,Math.max(0,1-left/totalMs)):0; fg.setAttribute('stroke-dashoffset',String(C*(1-p))); disp.textContent=fmt(left); }
-    const tick=()=>{ const left=Math.max(0,endPerf-performance.now()); draw(left); if(left<=0){ cancelAnimationFrame(raf); raf=null; alert('타이머 종료'); send({type:'reset'}); saveState({status:'idle'}); return; } raf=requestAnimationFrame(tick); }
+    const tick=()=>{ const left=Math.max(0,endPerf-performance.now()); draw(left); if(left<=0){ cancelAnimationFrame(raf); raf=null; alert('Timer finished'); send({type:'reset'}); saveState({status:'idle'}); return; } raf=requestAnimationFrame(tick); }
 
     function apply(msg,remote=false){
       if(msg.type==='start'){
         totalMs=msg.totalMs; const dur=Math.max(0,msg.endEpoch-Date.now()); endPerf=performance.now()+dur; paused=false; remainMs=0;
-        eta.textContent=`종료 ${fmtAmPm(new Date(msg.endEpoch))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
+        eta.textContent=`Ends ${fmtAmPm(new Date(msg.endEpoch))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); draw(dur); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'start',totalMs,endEpoch:msg.endEpoch});
         saveState({status:'running',totalMs,endEpoch:msg.endEpoch});
@@ -3119,7 +3132,7 @@ function widgetTimer(){
         saveState({status:'paused',totalMs,remainMs});
         persistTimer(timerIndex,false,remainMs);
       }else if(msg.type==='resume'){
-        paused=false; endPerf=performance.now()+msg.remainMs; eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
+        paused=false; endPerf=performance.now()+msg.remainMs; eta.textContent=`Ends ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
         if(!remote) send({type:'resume',remainMs:msg.remainMs});
         saveState({status:'running',totalMs,endEpoch:Date.now()+msg.remainMs});
@@ -3160,7 +3173,7 @@ function widgetTimer(){
     wrap.append(ring,eta,row);
     return wrap;
   }
-  return makeWidget('타이머', build, 'widget--timer');
+  return makeWidget('Timer', build, 'widget--timer');
 }
 
 /* ── 타이머 / 스탑워치 원형 크기 ── */
@@ -3269,8 +3282,8 @@ function createTimerBox(timerIndex){
   
   // 헤더 (화살표, X 버튼)
   const header=el('div','timer-box__header');
-  const popoutBtn=el('button','timer-box__btn widget-open-btn','위젯');
-  popoutBtn.title='위젯으로 열기';
+  const popoutBtn=el('button','timer-box__btn widget-open-btn','Widget');
+  popoutBtn.title='Open widget';
   popoutBtn.onclick=()=> openTimerWidgetPopup(timerIndex);
   header.appendChild(popoutBtn);
   
@@ -3332,7 +3345,7 @@ function createTimerBox(timerIndex){
   
   const fmtAmPm=(d)=>{
     const h=d.getHours(),m=d.getMinutes();
-    const ampm=h>=12?'오후':'오전';
+    const ampm=h>=12?'PM':'AM';
     const hh=h%12||12;
     return `${ampm} ${hh}:${String(m).padStart(2,'0')}`;
   };
@@ -3349,7 +3362,7 @@ function createTimerBox(timerIndex){
     if(left<=0){ 
       cancelAnimationFrame(raf); 
       raf=null; 
-      alert(`타이머 ${displayNum} 종료`); 
+      alert(`Timer ${displayNum} finished`); 
       apply({type:'reset'}); 
       return; 
     } 
@@ -3376,7 +3389,7 @@ function createTimerBox(timerIndex){
       endPerf=performance.now()+dur; 
       paused=false; 
       remainMs=0;
-      eta.textContent=`종료 ${fmtAmPm(new Date(msg.endEpoch))}`; 
+      eta.textContent=`Ends ${fmtAmPm(new Date(msg.endEpoch))}`; 
       setStartIcon(true);
       if(raf) cancelAnimationFrame(raf); 
       draw(dur); 
@@ -3397,7 +3410,7 @@ function createTimerBox(timerIndex){
     }else if(msg.type==='resume'){
       paused=false; 
       endPerf=performance.now()+msg.remainMs; 
-      eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
+      eta.textContent=`Ends ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
       setStartIcon(true);
       if(raf) cancelAnimationFrame(raf); 
       raf=requestAnimationFrame(tick);
@@ -3579,7 +3592,7 @@ function openTimerWidgetPopup(timerIndex){
       if(left<=0){ 
         cancelAnimationFrame(raf); 
         raf=null; 
-        alert(`타이머 ${idx+1} 종료`); 
+        alert(`Timer ${idx+1} finished`); 
         send({type:'reset'}); 
         saveState({status:'idle'}); 
         clearTimerStorage(idx);
@@ -3601,7 +3614,7 @@ function openTimerWidgetPopup(timerIndex){
         endPerf=performance.now()+dur; 
         paused=false; 
         remainMs=0;
-        eta.textContent=`종료 ${fmtAmPm(new Date(msg.endEpoch))}`; 
+        eta.textContent=`Ends ${fmtAmPm(new Date(msg.endEpoch))}`; 
         setStartIcon(true);
         if(raf) cancelAnimationFrame(raf); 
         draw(dur); 
@@ -3622,7 +3635,7 @@ function openTimerWidgetPopup(timerIndex){
       }else if(msg.type==='resume'){
         paused=false; 
         endPerf=performance.now()+msg.remainMs; 
-        eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
+        eta.textContent=`Ends ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
         setStartIcon(true);
         if(raf) cancelAnimationFrame(raf); 
         raf=requestAnimationFrame(tick);
@@ -3701,7 +3714,7 @@ function openTimerWidgetPopup(timerIndex){
     return wrap;
   }
   
-  openWidgetPopup(`타이머 ${displayNum}`, build, {timerIndex});
+  openWidgetPopup(`Timer ${displayNum}`, build, {timerIndex});
 }
 
 function openTimerWidget(index){
@@ -3762,11 +3775,11 @@ function openTimerWidget(index){
 
     const inputs=el('div','timer__inputs');
     const ih=document.createElement('input'); 
-    ih.type='number'; ih.min=0; ih.placeholder='시'; ih.value=savedSettings.h||'';
+    ih.type='number'; ih.min=0; ih.placeholder='h'; ih.value=savedSettings.h||'';
     const im=document.createElement('input'); 
-    im.type='number'; im.min=0; im.placeholder='분'; im.value=savedSettings.m||'';
+    im.type='number'; im.min=0; im.placeholder='m'; im.value=savedSettings.m||'';
     const is=document.createElement('input'); 
-    is.type='number'; is.min=0; is.placeholder='초'; is.value=savedSettings.s||'';
+    is.type='number'; is.min=0; is.placeholder='s'; is.value=savedSettings.s||'';
     [ih,im,is].forEach(inp=>{ inp.style.textAlign='center'; inp.style.height='34px'; });
     inputs.append(ih,im,is);
     
@@ -3820,7 +3833,7 @@ function openTimerWidget(index){
       if(left<=0){ 
         cancelAnimationFrame(raf); 
         raf=null; 
-        alert(`타이머 ${index} 종료`); 
+        alert(`Timer ${index} finished`); 
         send({type:'reset'}); 
         saveState({status:'idle'}); 
         return; 
@@ -3835,7 +3848,7 @@ function openTimerWidget(index){
         endPerf=performance.now()+dur; 
         paused=false; 
         remainMs=0;
-        eta.textContent=`종료 ${fmtAmPm(new Date(msg.endEpoch))}`; 
+        eta.textContent=`Ends ${fmtAmPm(new Date(msg.endEpoch))}`; 
         bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); 
         draw(dur); 
@@ -3854,7 +3867,7 @@ function openTimerWidget(index){
       }else if(msg.type==='resume'){
         paused=false; 
         endPerf=performance.now()+msg.remainMs; 
-        eta.textContent=`종료 ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
+        eta.textContent=`Ends ${fmtAmPm(new Date(Date.now()+msg.remainMs))}`; 
         bPause.innerHTML=`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="currentColor"/></svg>`;
         if(raf) cancelAnimationFrame(raf); 
         raf=requestAnimationFrame(tick);
@@ -3922,7 +3935,7 @@ function openTimerWidget(index){
     wrap.append(ring,eta,inputs,row);
     return wrap;
   }
-  return makeWidget(`타이머 ${index}`, build, 'widget--timer');
+  return makeWidget(`Timer ${index}`, build, 'widget--timer');
 }
 
 /* ── 메모 페이지 ── */
@@ -6470,22 +6483,22 @@ function buildStopwatchCard(win,isPopup){
 
   const sub=doc.createElement('div');
   sub.className='stopwatch-status';
-  sub.textContent='대기';
+  sub.textContent='Ready';
 
   const actions=doc.createElement('div');
   actions.className='stopwatch-actions';
   const startBtn=doc.createElement('button');
   startBtn.type='button';
   startBtn.className='stopwatch-btn stopwatch-btn--primary';
-  startBtn.textContent='시작';
+  startBtn.textContent='Start';
   const pauseBtn=doc.createElement('button');
   pauseBtn.type='button';
   pauseBtn.className='stopwatch-btn stopwatch-btn--primary';
-  pauseBtn.textContent='일시정지';
+  pauseBtn.textContent='Pause';
   const resetBtn=doc.createElement('button');
   resetBtn.type='button';
   resetBtn.className='stopwatch-btn stopwatch-btn--reset';
-  resetBtn.textContent='리셋';
+  resetBtn.textContent='Reset';
   actions.append(startBtn,pauseBtn,resetBtn);
 
   card.append(ring,sub,actions);
@@ -6516,34 +6529,34 @@ function buildStopwatchCard(win,isPopup){
     const start=parseInt(localStorage.getItem('stopwatch_start_time')||'0',10)||0;
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
     if(isRunning&&start){
-      running=true; accMs=base; segmentStart=start; sub.textContent='측정 중';
+      running=true; accMs=base; segmentStart=start; sub.textContent='Running';
       updateDisplay(ms); raf=win.requestAnimationFrame(tick);
     }else{
       running=false; accMs=ms; segmentStart=0;
-      updateDisplay(ms); sub.textContent=ms>0?'일시정지':'대기';
+      updateDisplay(ms); sub.textContent=ms>0?'Paused':'Ready';
     }
   };
 
   startBtn.onclick=()=>{
     if(running) return;
-    segmentStart=Date.now(); running=true; sub.textContent='측정 중';
+    segmentStart=Date.now(); running=true; sub.textContent='Running';
     persistStopwatch(true,accMs,segmentStart);
     raf=win.requestAnimationFrame(tick);
   };
   pauseBtn.onclick=()=>{
     if(!running){
-      segmentStart=Date.now(); running=true; sub.textContent='측정 중';
+      segmentStart=Date.now(); running=true; sub.textContent='Running';
       persistStopwatch(true,accMs,segmentStart);
       raf=win.requestAnimationFrame(tick);
       return;
     }
-    running=false; accMs=currentMs(); segmentStart=0; sub.textContent='일시정지';
+    running=false; accMs=currentMs(); segmentStart=0; sub.textContent='Paused';
     persistStopwatch(false,accMs);
     updateDisplay(accMs);
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
   };
   resetBtn.onclick=()=>{
-    running=false; accMs=0; segmentStart=0; updateDisplay(0); sub.textContent='대기';
+    running=false; accMs=0; segmentStart=0; updateDisplay(0); sub.textContent='Ready';
     clearStopwatchStorage();
     if(raf){ win.cancelAnimationFrame(raf); raf=null; }
   };
@@ -6572,7 +6585,7 @@ function initStopwatchPage(){
 }
 
 function widgetStopwatch(){
-  return makeWidget('스탑워치',(isPopup, win)=> buildStopwatchCard(win,!!isPopup), 'widget--stopwatch');
+  return makeWidget('Stopwatch',(isPopup, win)=> buildStopwatchCard(win,!!isPopup), 'widget--stopwatch');
 }
 
 /* ── 동기화 미니 달력/메모/투두 위젯 ── */
