@@ -4552,12 +4552,258 @@ function resolveDailySectionPalette(section){
 }
 const DAILY_SECTION_EMOJI_OPTIONS=['☀️','🌤️','🌙','📌','🗂️','✅','⭐','🔥','💼','📅','📝','🎯','💡','🍀','❤️'];
 const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-function getDailyTasks(dstr){
-  const list=get(kDaily(dstr),[]);
-  return Array.isArray(list)?list:[];
+const DAILY_SB_URL='https://kwiwsjvuvmwtfboxtfij.supabase.co';
+const DAILY_SB_KEY='sb_publishable_c6617EGJLrdzmJvt_tlAnA_dmYkHJTD';
+let _dailySbClient=null;
+let _dailySbUserId=null;
+const _dailyTasksCache=new Map();
+const _dailySectionsCache=new Map();
+const _dailyTasksLoadPromises=new Map();
+const _dailySectionsLoadPromises=new Map();
+
+function getDailySupabaseClient(){
+  if(!_dailySbClient && typeof window!=='undefined' && window.supabase?.createClient){
+    _dailySbClient=window.supabase.createClient(DAILY_SB_URL,DAILY_SB_KEY);
+    _dailySbClient.auth.onAuthStateChange((_evt,session)=>{
+      _dailySbUserId=session?.user?.id||null;
+      _dailyTasksCache.clear();
+      _dailySectionsCache.clear();
+      _dailyTasksLoadPromises.clear();
+      _dailySectionsLoadPromises.clear();
+      if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+    });
+    _dailySbClient.auth.getSession().then(({data:{session}})=>{
+      _dailySbUserId=session?.user?.id||null;
+    }).catch((err)=> console.error('daily supabase auth init',err));
+  }
+  return _dailySbClient;
 }
+
+function readDailyTasksLocal(dstr){
+  const list=get(kDaily(dstr),[]);
+  return Array.isArray(list)?list.slice():[];
+}
+
+function readDailySectionsLocal(dstr){
+  const list=get(kDailySections(dstr),[]);
+  return Array.isArray(list)?list.slice():[];
+}
+
+async function resolveDailyUserId(){
+  getDailySupabaseClient();
+  if(_dailySbUserId) return _dailySbUserId;
+  const sb=_dailySbClient;
+  if(!sb) return null;
+  try{
+    const {data:{session},error}=await sb.auth.getSession();
+    if(error) throw error;
+    _dailySbUserId=session?.user?.id||null;
+    return _dailySbUserId;
+  }catch(err){
+    console.error('resolveDailyUserId',err);
+    return null;
+  }
+}
+
+function mapSupabaseTaskRow(row){
+  return {
+    id:row.id,
+    text:row.text||'',
+    done:!!row.done,
+    sectionId:row.section_id||undefined,
+  };
+}
+
+function mapSupabaseSectionRow(row){
+  return {
+    id:row.id,
+    title:row.title||'',
+    emoji:row.emoji||'📌',
+    color:row.color||SECTION_COLORS[0].bg,
+    order:row.sort_order??0,
+  };
+}
+
+function ensureDailyTaskId(task){
+  if(task?.id && typeof task.id==='string' && task.id.length>10) return task.id;
+  if(typeof crypto!=='undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `task_${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
+}
+
+async function loadDailyTasksFromSupabase(dstr){
+  const userId=await resolveDailyUserId();
+  if(!userId) return readDailyTasksLocal(dstr);
+  const sb=getDailySupabaseClient();
+  try{
+    const {data,error}=await sb.from('daily_tasks')
+      .select('id,text,done,section_id,created_at')
+      .eq('user_id',userId)
+      .eq('date',dstr)
+      .order('created_at',{ascending:true});
+    if(error) throw error;
+    const list=(data||[]).map(mapSupabaseTaskRow);
+    _dailyTasksCache.set(dstr,list);
+    set(kDaily(dstr),list);
+    return list.slice();
+  }catch(err){
+    console.error('loadDailyTasksFromSupabase',err);
+    return readDailyTasksLocal(dstr);
+  }
+}
+
+async function persistDailyTasksToSupabase(dstr,list){
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  const normalized=Array.isArray(list)?list.slice():[];
+  try{
+    const rows=normalized.map((t)=>{
+      const id=ensureDailyTaskId(t);
+      t.id=id;
+      return {
+        id,
+        user_id:userId,
+        date:dstr,
+        text:t.text||'',
+        done:!!t.done,
+        section_id:t.sectionId||null,
+      };
+    });
+    const {data:existing,error:fetchErr}=await sb.from('daily_tasks')
+      .select('id')
+      .eq('user_id',userId)
+      .eq('date',dstr);
+    if(fetchErr) throw fetchErr;
+    const keepIds=new Set(rows.map(r=>r.id));
+    const deleteIds=(existing||[]).map(r=>r.id).filter(id=>!keepIds.has(id));
+    if(rows.length){
+      const {error}=await sb.from('daily_tasks').upsert(rows,{onConflict:'id'});
+      if(error) throw error;
+    }
+    if(deleteIds.length){
+      const {error}=await sb.from('daily_tasks').delete().in('id',deleteIds);
+      if(error) throw error;
+    }
+    _dailyTasksCache.set(dstr,normalized);
+    set(kDaily(dstr),normalized);
+  }catch(err){
+    console.error('persistDailyTasksToSupabase',err);
+    set(kDaily(dstr),normalized);
+  }
+}
+
+async function loadDailySectionsFromSupabase(dstr){
+  const userId=await resolveDailyUserId();
+  if(!userId) return readDailySectionsLocal(dstr);
+  const sb=getDailySupabaseClient();
+  try{
+    const {data,error}=await sb.from('daily_sections')
+      .select('id,title,emoji,color,sort_order')
+      .eq('user_id',userId)
+      .eq('date',dstr)
+      .order('sort_order',{ascending:true});
+    if(error) throw error;
+    const list=(data||[]).map(mapSupabaseSectionRow);
+    _dailySectionsCache.set(dstr,list);
+    set(kDailySections(dstr),list);
+    return list.slice();
+  }catch(err){
+    console.error('loadDailySectionsFromSupabase',err);
+    return readDailySectionsLocal(dstr);
+  }
+}
+
+async function persistDailySectionsToSupabase(dstr,list){
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  const normalized=Array.isArray(list)?list.slice():[];
+  try{
+    const rows=normalized.map((s,i)=>({
+      id:s.id,
+      user_id:userId,
+      date:dstr,
+      title:s.title||'',
+      emoji:s.emoji||'📌',
+      color:s.color||SECTION_COLORS[0].bg,
+      sort_order:s.order??i,
+    }));
+    const {data:existing,error:fetchErr}=await sb.from('daily_sections')
+      .select('id')
+      .eq('user_id',userId)
+      .eq('date',dstr);
+    if(fetchErr) throw fetchErr;
+    const keepIds=new Set(rows.map(r=>r.id));
+    const deleteIds=(existing||[]).map(r=>r.id).filter(id=>!keepIds.has(id));
+    if(rows.length){
+      const {error}=await sb.from('daily_sections').upsert(rows,{onConflict:'id'});
+      if(error) throw error;
+    }
+    if(deleteIds.length){
+      const {error}=await sb.from('daily_sections').delete().in('id',deleteIds);
+      if(error) throw error;
+    }
+    _dailySectionsCache.set(dstr,normalized);
+    set(kDailySections(dstr),normalized);
+  }catch(err){
+    console.error('persistDailySectionsToSupabase',err);
+    set(kDailySections(dstr),normalized);
+  }
+}
+
+function prefetchDailyTasks(dstr){
+  if(_dailyTasksCache.has(dstr)||_dailyTasksLoadPromises.has(dstr)) return;
+  const p=loadDailyTasksFromSupabase(dstr).then(()=>{
+    _dailyTasksLoadPromises.delete(dstr);
+    if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+  }).catch((err)=>{
+    console.error('prefetchDailyTasks',err);
+    _dailyTasksLoadPromises.delete(dstr);
+  });
+  _dailyTasksLoadPromises.set(dstr,p);
+}
+
+function prefetchDailySections(dstr){
+  if(_dailySectionsCache.has(dstr)||_dailySectionsLoadPromises.has(dstr)) return;
+  const p=loadDailySectionsFromSupabase(dstr).then(()=>{
+    _dailySectionsLoadPromises.delete(dstr);
+    if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+  }).catch((err)=>{
+    console.error('prefetchDailySections',err);
+    _dailySectionsLoadPromises.delete(dstr);
+  });
+  _dailySectionsLoadPromises.set(dstr,p);
+}
+
+function getDailyTasks(dstr){
+  getDailySupabaseClient();
+  if(_dailySbUserId){
+    if(_dailyTasksCache.has(dstr)) return _dailyTasksCache.get(dstr).slice();
+    prefetchDailyTasks(dstr);
+    return readDailyTasksLocal(dstr);
+  }
+  resolveDailyUserId().then((userId)=>{
+    if(!userId||_dailyTasksCache.has(dstr)) return;
+    return loadDailyTasksFromSupabase(dstr).then(()=>{
+      if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+    });
+  }).catch(err=> console.error('getDailyTasks',err));
+  return readDailyTasksLocal(dstr);
+}
+
 function saveDailyTasks(dstr,list){
-  set(kDaily(dstr),Array.isArray(list)?list:[]);
+  const normalized=Array.isArray(list)?list.slice():[];
+  set(kDaily(dstr),normalized);
+  _dailyTasksCache.set(dstr,normalized);
+  (async ()=>{
+    try{
+      const userId=await resolveDailyUserId();
+      if(!userId) return;
+      await persistDailyTasksToSupabase(dstr,normalized);
+    }catch(err){
+      console.error('saveDailyTasks',err);
+    }
+  })();
 }
 function refreshDailyTaskViews(){
   if(dailyViewMode==='day') renderDailyDayWorkspace();
@@ -4802,11 +5048,34 @@ function bindDailyViewButtons(){
 function kDailySections(d){ return `memo2.daily.sections.${d}`; }
 function createDailySectionId(){ return `daily_section_${Date.now()}_${Math.random().toString(36).slice(2,7)}`; }
 function getDailySections(dstr){
-  const list=get(kDailySections(dstr),[]);
-  return Array.isArray(list)?list:[];
+  getDailySupabaseClient();
+  if(_dailySbUserId){
+    if(_dailySectionsCache.has(dstr)) return _dailySectionsCache.get(dstr).slice();
+    prefetchDailySections(dstr);
+    return readDailySectionsLocal(dstr);
+  }
+  resolveDailyUserId().then((userId)=>{
+    if(!userId||_dailySectionsCache.has(dstr)) return;
+    return loadDailySectionsFromSupabase(dstr).then(()=>{
+      if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+    });
+  }).catch(err=> console.error('getDailySections',err));
+  return readDailySectionsLocal(dstr);
 }
+
 function setDailySections(dstr,list){
-  set(kDailySections(dstr),Array.isArray(list)?list:[]);
+  const normalized=Array.isArray(list)?list.slice():[];
+  set(kDailySections(dstr),normalized);
+  _dailySectionsCache.set(dstr,normalized);
+  (async ()=>{
+    try{
+      const userId=await resolveDailyUserId();
+      if(!userId) return;
+      await persistDailySectionsToSupabase(dstr,normalized);
+    }catch(err){
+      console.error('setDailySections',err);
+    }
+  })();
 }
 function ensureDailySections(dstr){
   const sections=getDailySections(dstr);
