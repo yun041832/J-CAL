@@ -39,7 +39,8 @@
     return null;
   }
   function memoOpenWidgetPopup(title, bodyBuilder) {
-    if (typeof openWidgetPopup === 'function') return openWidgetPopup(title, bodyBuilder);
+    const openFn = window.openWidgetPopup;
+    if (typeof openFn === 'function') return openFn(title, bodyBuilder);
     return null;
   }
 

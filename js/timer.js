@@ -1412,6 +1412,10 @@ function widgetStopwatch(){
     getTimerButtonLabel,
     timerLsKey,
     ensureTimeStyles,
+    TIME_STYLE_ID,
+    TIME_STYLE,
+    WIDGET_TIMER_BTN_STYLE,
+    WIDGET_STOPWATCH_STYLE,
   };
 
   Object.assign(window.JCal || (window.JCal = {}), timerApi);

@@ -1832,6 +1832,11 @@ function reminderItemEl(item,idx,ref){
 /* ── 공통 위젯 + 팝아웃 ── */
 function openWidgetPopup(title, bodyBuilder, opts){
   opts=opts||{};
+  const JCal=window.JCal||{};
+  const styleId=JCal.TIME_STYLE_ID||'time-style-shared';
+  const timeStyle=JCal.TIME_STYLE||'';
+  const widgetTimerBtnStyle=JCal.WIDGET_TIMER_BTN_STYLE||'';
+  const widgetStopwatchStyle=JCal.WIDGET_STOPWATCH_STYLE||'';
   let openUrl='about:blank';
   if(opts.timerIndex!=null){
     const u=new URL(window.location.href);
@@ -1841,7 +1846,7 @@ function openWidgetPopup(title, bodyBuilder, opts){
   const win=window.open(openUrl,'_blank','width=420,height=420,resizable=yes');
   if(!win) return null;
   win.document.write(`<!doctype html><meta charset="utf-8"><title>${title}</title>
-      <style id="${TIME_STYLE_ID}">
+      <style id="${styleId}">
         html,body{margin:0;height:100%;overflow:hidden}
         body{background:#fff;font-family:"Noto Sans","Noto Sans KR",sans-serif}
         .wrap{padding:0;box-sizing:border-box;height:100%;width:100%;overflow:hidden;display:flex;align-items:stretch;justify-content:stretch}
@@ -1851,9 +1856,9 @@ function openWidgetPopup(title, bodyBuilder, opts){
         .color-btn:hover,.del-btn:hover{background:#eef2f8;border-color:#cdd5e2}
         .color-pop{position:absolute;z-index:9999;background:#fff;border:1px solid #e9ecf2;border-radius:10px;padding:8px;display:grid;grid-template-columns:repeat(10,16px);gap:6px;box-shadow:0 6px 18px rgba(17,24,39,.08)}
         .color-pop .sw{width:16px;height:16px;border-radius:4px;border:1px solid #d6dae3;cursor:pointer}
-${TIME_STYLE}
-${WIDGET_TIMER_BTN_STYLE}
-${WIDGET_STOPWATCH_STYLE}
+${timeStyle}
+${widgetTimerBtnStyle}
+${widgetStopwatchStyle}
         /* ★ 미니 달력 */
         .mini-cal__head{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
         .mini-cal__days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
