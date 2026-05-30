@@ -549,7 +549,8 @@ function deleteJayMemoById(id){
 function memoItemEl(item,idx,ref,dstr){
   const li=el('li','memo-item');
   if(!item.hasOwnProperty('emoji')) item.emoji='';
-  const text=el('span','memo-text',(item.emoji?item.emoji+' ':'')+(item.content??item.text??''));
+  const text=el('span','memo-text');
+  renderMemoHtml(text,item.content??item.text??'',item.emoji||'');
   const applyColor=(col)=>{
     if(col==='rainbow'){
       text.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)';
@@ -953,6 +954,7 @@ function createMemoCard(item,idx,ref){
 }
 
 function openMemoWidget(item){
+  const memo=getJayMemoList().find(m=>m.id===item?.id)||item;
   // 개별 메모를 위젯으로 여는 함수
   function build(isPopup, win){
     const doc=win.document;
@@ -968,22 +970,23 @@ function openMemoWidget(item){
     title.style.fontWeight='600';
     title.style.fontSize='16px';
     title.style.marginBottom='12px';
-    title.textContent=item.title||'제목 없음';
+    title.textContent=memo.title||'제목 없음';
     
     const content=doc.createElement('div');
     content.className='memo-widget memo-widget-content';
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
     if(isPopup) ensureMemoWidgetPopupStyles(doc);
-    renderMemoHtml(content,item.content||item.text||'',item.emoji||'');
+    renderMemoHtml(content,memo.content||memo.text||'',memo.emoji||'');
     
     W.append(title,content);
     return W;
   }
-  return memoMakeWidget(item.title||'메모', build, 'widget--memo');
+  return memoMakeWidget(memo.title||'메모', build, 'widget--memo');
 }
 
 function openMemoWidgetPopup(item){
+  const memo=getJayMemoList().find(m=>m.id===item?.id)||item;
   // 개별 메모를 팝업 위젯으로 바로 여는 함수
   function build(isPopup, win){
     const doc=win.document;
@@ -1000,18 +1003,18 @@ function openMemoWidgetPopup(item){
     title.style.fontWeight='600';
     title.style.fontSize='16px';
     title.style.marginBottom='12px';
-    title.textContent=item.title||'제목 없음';
+    title.textContent=memo.title||'제목 없음';
     
     const content=doc.createElement('div');
     content.className='memo-widget memo-widget-content memo-popup-content';
     content.style.lineHeight='1.6';
     content.style.wordBreak='break-word';
-    renderMemoHtml(content,item.content||item.text||'',item.emoji||'');
+    renderMemoHtml(content,memo.content||memo.text||'',memo.emoji||'');
     
     W.append(title,content);
     return W;
   }
-  memoOpenWidgetPopup(item.title||'메모', build);
+  memoOpenWidgetPopup(memo.title||'메모', build);
 }
 
 function showMemoCardMenu(anchor,item,idx,ref,dstr){
@@ -1093,11 +1096,10 @@ function widgetMemo(){
     W.append(notice,ul);
 
     const getSel=()=> win.localStorage.getItem('memo2.selected')||fmtLocalDate(new Date());
-    const load=()=> JSON.parse(win.localStorage.getItem(kMemo(getSel()))||'[]');
 
     function render(){
       ul.innerHTML='';
-      const items=load();
+      const items=getMemosForDate(getSel());
       if(!items.length){
         const empty=doc.createElement('li');
         empty.textContent='No memos yet.';
@@ -1108,15 +1110,16 @@ function widgetMemo(){
         ul.append(empty);
         return;
       }
+      if(isPopup) ensureMemoWidgetPopupStyles(doc);
       items.forEach((it)=>{
         const li=doc.createElement('li');
         li.style.display='block';
-        const tx=doc.createElement('span');
-        tx.textContent=(it.emoji?`${it.emoji} `:'')+it.text;
+        const tx=doc.createElement('div');
         tx.style.display='block';
         tx.style.padding='8px 10px';
         tx.style.borderRadius='10px';
         tx.style.wordBreak='break-word';
+        renderMemoHtml(tx,it.content??it.text??'',it.emoji||'');
         const applyColor=(clr)=>{
           if(!clr){ tx.style.backgroundColor='#f8fafc'; tx.style.color='#0f172a'; return; }
           if(clr==='rainbow'){ tx.style.background='linear-gradient(135deg,#667eea 0%,#764ba2 25%,#f093fb 50%,#4facfe 75%,#00f2fe 100%)'; tx.style.color='#fff'; return; }
@@ -1134,7 +1137,7 @@ function widgetMemo(){
         ul.append(li);
       });
     }
-    win.addEventListener('storage',(e)=>{ if(e.key==='memo2.selected'||e.key?.startsWith('memo2.memos.')) render(); });
+    win.addEventListener('storage',(e)=>{ if(e.key==='memo2.selected'||e.key==='jay_memo_list'||e.key?.startsWith('memo2.memos.')) render(); });
     if('BroadcastChannel' in win){ const bc=new win.BroadcastChannel(APP_CH); bc.onmessage=(m)=>{ if(m.data?.type) render(); }; }
     render(); return W;
   }
