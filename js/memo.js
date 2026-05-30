@@ -26,6 +26,23 @@
   const kMemo = (d) => 'memo2.memos.' + d;
   const JAY_MEMO_LIST_KEY = 'jay_memo_list';
   const JAY_MEMO_MIGRATED_KEY = 'memo2.jay_memo_migrated';
+  function getMemoSelectedDateStr() {
+    if (typeof ST !== 'undefined' && ST.selected) return fmtLocalDate(ST.selected);
+    const saved = localStorage.getItem('memo2.selected');
+    return saved || fmtLocalDate(new Date());
+  }
+  function memoPostApp(msg) {
+    if (typeof postApp === 'function') postApp(msg);
+  }
+  function memoMakeWidget(title, bodyBuilder, rootClass) {
+    if (typeof makeWidget === 'function') return makeWidget(title, bodyBuilder, rootClass);
+    return null;
+  }
+  function memoOpenWidgetPopup(title, bodyBuilder) {
+    if (typeof openWidgetPopup === 'function') return openWidgetPopup(title, bodyBuilder);
+    return null;
+  }
+
 
   function hideInsightPages() {
     document.getElementById('insightPage')?.classList.add('hidden');
@@ -511,10 +528,13 @@ function setupMemoToolbar(editor){
 
 /* ── 오른쪽 메모 ── */
 function renderMemos(){
-  const dstr=$.memoDate.value||fmtLocalDate(ST.selected);
+  const memoDateEl=document.getElementById('memoDate');
+  const memoListEl=document.getElementById('memoList');
+  if(!memoListEl) return;
+  const dstr=memoDateEl?.value||getMemoSelectedDateStr();
   const list=getMemosForDate(dstr);
-  $.memoList.innerHTML='';
-  list.forEach((it,i)=> $.memoList.appendChild(memoItemEl(it,i,list,dstr)));
+  memoListEl.innerHTML='';
+  list.forEach((it,i)=> memoListEl.appendChild(memoItemEl(it,i,list,dstr)));
 }
 function updateJayMemoById(id,patch){
   const list=getJayMemoList();
@@ -526,128 +546,6 @@ function updateJayMemoById(id,patch){
 function deleteJayMemoById(id){
   setJayMemoList(getJayMemoList().filter(m=>m.id!==id));
 }
-function showEventConfigModal(anchor){
-  const doc=anchor?.ownerDocument||document;
-  const win=doc.defaultView||window;
-  if(openPop){ openPop.remove(); openPop=null; }
-  const pop=doc.createElement('div');
-  pop.className='event-config-pop';
-  Object.assign(pop.style,{
-    position:'absolute',
-    zIndex:'9999',
-    background:'#fff',
-    border:'1px solid #e2e8f0',
-    borderRadius:'12px',
-    boxShadow:'0 10px 30px rgba(0,0,0,0.12)',
-    padding:'12px',
-    minWidth:'240px'
-  });
-
-  const title=el('div','event-config-title','일정 설정');
-
-  const allDayRow=el('div','event-detail-row');
-  const allDayIcon=el('span','row-icon','⏰');
-  const allDayLabel=el('span','row-label','하루 종일');
-  const allDayToggle=document.createElement('input');
-  allDayToggle.type='checkbox';
-  allDayToggle.className='toggle-switch';
-  allDayToggle.checked=false;
-  allDayRow.append(allDayIcon,allDayLabel,allDayToggle);
-
-  const dateRow=el('div','event-detail-row');
-  const dateIcon=el('span','row-icon','📅');
-  const dateInputs=el('div','date-inputs');
-  dateInputs.style.gap='6px';
-  dateInputs.style.alignItems='center';
-  const startInput=document.createElement('input'); startInput.type='date'; startInput.value=$.eventStartDate?.value||$.todoStartDate?.value||fmtLocalDate(ST.selected);
-  const arrow=el('span','','→');
-  const endInput=document.createElement('input'); endInput.type='date'; endInput.value=$.eventEndDate?.value||$.todoEndDate?.value||startInput.value;
-  dateInputs.append(startInput,arrow,endInput);
-  dateRow.append(dateIcon,dateInputs);
-
-  const timeRow=el('div','event-detail-row');
-  const timeIcon=el('span','row-icon','⏱️');
-  const timeLabel=el('span','row-label','시간');
-  const timeInput=document.createElement('input'); timeInput.type='time'; timeInput.value=$.eventTime?.value||''; timeInput.disabled=allDayToggle.checked;
-  allDayToggle.onchange=()=>{ timeInput.disabled=allDayToggle.checked; if(allDayToggle.checked) timeInput.value=''; };
-  timeRow.append(timeIcon,timeLabel,timeInput);
-
-  const alarmRow=el('div','event-detail-row');
-  const alarmIcon=el('span','row-icon','🔔');
-  const alarmLabel=el('span','row-label','알림');
-  const alarmToggle=document.createElement('input'); alarmToggle.type='checkbox'; alarmToggle.className='toggle-switch'; alarmToggle.checked=$.eventAlarm?.checked||false;
-  alarmRow.append(alarmIcon,alarmLabel,alarmToggle);
-
-  const repeatRow=el('div','event-detail-row');
-  const repeatIcon=el('span','row-icon','🔄');
-  const repeatLabel=el('span','row-label','반복');
-  const repeatBtn=document.createElement('button');
-  repeatBtn.type='button';
-  repeatBtn.className='repeat-inline-btn';
-  repeatBtn.style.padding='8px 12px';
-  repeatBtn.style.border='1px solid #e2e8f0';
-  repeatBtn.style.borderRadius='10px';
-  repeatBtn.style.background='#f8fafc';
-  repeatBtn.style.cursor='pointer';
-  const repeatLabels={'none':'반복 안 함','daily':'매일','weekly':'매주','monthly':'매월','yearly':'매년'};
-  const applyRepeatLabel=()=>{
-    repeatBtn.textContent=repeatLabels[ST.eventRepeat]||'반복 안 함';
-    const active=ST.eventRepeat && ST.eventRepeat!=='none';
-    repeatBtn.style.background=active?'#e0ecff':'#f8fafc';
-    repeatBtn.style.color=active?'#4A7AEE':'#334155';
-  };
-  applyRepeatLabel();
-  repeatBtn.onclick=(e)=>{
-    e.stopPropagation();
-    showRepeatModal(ST.eventRepeat,(value)=>{
-      ST.eventRepeat=value;
-      applyRepeatLabel();
-      updateRepeatButton();
-    });
-  };
-  repeatRow.append(repeatIcon,repeatLabel,repeatBtn);
-
-  const footer=el('div','repeat-modal-footer');
-  const saveBtn=el('button','btn-confirm','Save');
-  saveBtn.onclick=()=>{
-    if($.eventStartDate) $.eventStartDate.value=startInput.value;
-    if($.eventEndDate) $.eventEndDate.value=endInput.value;
-    if($.todoStartDate) $.todoStartDate.value=startInput.value;
-    if($.todoEndDate) $.todoEndDate.value=endInput.value;
-    if($.eventTime){ $.eventTime.value=allDayToggle.checked?'':timeInput.value; $.eventTime.disabled=allDayToggle.checked; }
-    if($.eventAlarm) $.eventAlarm.checked=alarmToggle.checked;
-    updateRepeatButton();
-    pop.remove();
-    openPop=null;
-  };
-  footer.append(saveBtn);
-
-  pop.append(title,allDayRow,dateRow,timeRow,alarmRow,repeatRow,footer);
-  doc.body.appendChild(pop);
-  openPop=pop;
-
-  const rect=anchor?.getBoundingClientRect?.()||{left:0,bottom:0};
-  let left=rect.left+(win.scrollX||0);
-  let top=rect.bottom+4+(win.scrollY||0);
-  pop.style.left=`${left}px`;
-  pop.style.top=`${top}px`;
-  pop.style.minWidth='240px';
-
-  requestAnimationFrame(()=>{
-    const popRect=pop.getBoundingClientRect();
-    const vw=win.innerWidth; const vh=win.innerHeight;
-    if(popRect.right>vw) left=Math.max(10,vw-popRect.width-10);
-    if(popRect.bottom>vh) top=Math.max(10,vh-popRect.height-10);
-    pop.style.left=`${left}px`;
-    pop.style.top=`${top}px`;
-  });
-
-  const close=(e)=>{
-    if(!pop.contains(e.target) && e.target!==anchor){ pop.remove(); openPop=null; doc.removeEventListener('mousedown',close); }
-  };
-  setTimeout(()=>doc.addEventListener('mousedown',close),10);
-}
-
 function memoItemEl(item,idx,ref,dstr){
   const li=el('li','memo-item');
   if(!item.hasOwnProperty('emoji')) item.emoji='';
@@ -788,26 +686,39 @@ function showMemoMenu(anchor,item,idx,ref,dstr){
   };
   setTimeout(()=>doc.addEventListener('click',closeMenu),10);
 }
-$.memoAdd.onclick=()=>{
-  const txt=$.memoInput.value.replace(/\s+$/,'');
-  if(!txt) return;
-  const dstr=$.memoDate.value||fmtLocalDate(ST.selected);
-  const list=getJayMemoList();
-  list.push({
-    id:createMemoId(),
-    title:'',
-    content:txt,
-    date:dstr,
-    createdAt:Date.now(),
-    emoji:'',
-    color:'',
-  });
-  setJayMemoList(list);
-  $.memoInput.value='';
-  renderMemos();
-  renderMemoPageList?.();
-  postApp({type:'refresh'});
-};
+function bindMemoRightPanel(){
+  const memoAdd=document.getElementById('memoAddBtn');
+  const memoInput=document.getElementById('memoInput');
+  const memoDateEl=document.getElementById('memoDate');
+  if(!memoAdd||memoAdd.dataset.memoBound==='1') return;
+  memoAdd.dataset.memoBound='1';
+  memoAdd.onclick=()=>{
+    const txt=memoInput?.value.replace(/\s+$/,'')||'';
+    if(!txt) return;
+    const dstr=memoDateEl?.value||getMemoSelectedDateStr();
+    const list=getJayMemoList();
+    list.push({
+      id:createMemoId(),
+      title:'',
+      content:txt,
+      date:dstr,
+      createdAt:Date.now(),
+      emoji:'',
+      color:'',
+    });
+    setJayMemoList(list);
+    if(memoInput) memoInput.value='';
+    renderMemos();
+    renderMemoPageList?.();
+    memoPostApp({type:'refresh'});
+  };
+  if(memoInput) memoInput.onkeydown=()=>{};
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',bindMemoRightPanel);
+}else{
+  bindMemoRightPanel();
+}
 
 /* ── 메모 페이지 ── */
 function initMemoPage(){
@@ -867,7 +778,7 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
     const title=titleInput.value.trim();
     const content=isMemoEditorEmpty(richEditor)?'':getMemoEditorHtml(richEditor);
     if(!title&&!content) return;
-    const dateVal=dateInput?.value||fmtLocalDate(ST.selected);
+    const dateVal=dateInput?.value||getMemoSelectedDateStr();
     let list=getJayMemoList();
     if(savedMemoId){
       const idx=list.findIndex(m=>m.id===savedMemoId);
@@ -1069,7 +980,7 @@ function openMemoWidget(item){
     W.append(title,content);
     return W;
   }
-  return makeWidget(item.title||'메모', build, 'widget--memo');
+  return memoMakeWidget(item.title||'메모', build, 'widget--memo');
 }
 
 function openMemoWidgetPopup(item){
@@ -1100,7 +1011,7 @@ function openMemoWidgetPopup(item){
     W.append(title,content);
     return W;
   }
-  openWidgetPopup(item.title||'메모', build);
+  memoOpenWidgetPopup(item.title||'메모', build);
 }
 
 function showMemoCardMenu(anchor,item,idx,ref,dstr){
@@ -1227,7 +1138,7 @@ function widgetMemo(){
     if('BroadcastChannel' in win){ const bc=new win.BroadcastChannel(APP_CH); bc.onmessage=(m)=>{ if(m.data?.type) render(); }; }
     render(); return W;
   }
-  return makeWidget('메모', build, 'widget--memo');
+  return memoMakeWidget('메모', build, 'widget--memo');
 }
 
   const memoApi = {
@@ -1242,6 +1153,8 @@ function widgetMemo(){
     renderMemos,
     renderMemoPageList,
     createMemoId,
+    renderMemoHtml,
+    bindMemoRightPanel,
     updateJayMemoById,
     deleteJayMemoById,
     widgetMemo,
@@ -1263,4 +1176,5 @@ function widgetMemo(){
   window.widgetMemo = widgetMemo;
   window.openMemoWidget = openMemoWidget;
   window.openMemoWidgetPopup = openMemoWidgetPopup;
+  window.renderMemoHtml = renderMemoHtml;
 })();

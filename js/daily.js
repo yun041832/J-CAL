@@ -25,6 +25,19 @@
 
   function kDaily(d) { return 'memo2.daily.' + d; }
 
+  function getJayMemoList() {
+    return (window.JCal?.getJayMemoList || window.getJayMemoList)?.() ?? [];
+  }
+  function setJayMemoList(list) {
+    (window.JCal?.setJayMemoList || window.setJayMemoList)?.(list);
+  }
+  function createMemoId() {
+    return (window.JCal?.createMemoId || window.createMemoId)?.() ?? ('memo_' + Date.now());
+  }
+  function renderMemoHtml(targetEl, content, emojiPrefix) {
+    (window.JCal?.renderMemoHtml || window.renderMemoHtml)?.(targetEl, content, emojiPrefix);
+  }
+
   let dailyOpenPop = null;
 
   function hideInsightPages() {
@@ -949,7 +962,7 @@ function renderDailyDayWorkspace(){
   if(!host) return;
   renderDailyWeekGoal();
   const dstr=fmtLocalDate(dailySelectedDate);
-  const allTasks=get(kDaily(dstr),[]);
+  const allTasks=getDailyTasks(dstr);
   const sections=ensureDailySections(dstr);
 
   host.innerHTML='';
@@ -1093,7 +1106,7 @@ function renderDailyDayWorkspace(){
   saveMemoBtn.type='button';
   const goMemoBtn=el('button','daily-day-section-btn daily-memo-all-btn','View all');
   goMemoBtn.type='button';
-  goMemoBtn.onclick=()=>{ if(typeof showMemoPage==='function') showMemoPage(); };
+  goMemoBtn.onclick=()=>{ window.JCal?.showMemoPage?.(); };
   memoActions.append(saveMemoBtn,goMemoBtn);
 
   const memoList=el('div','daily-memo-linked-list');
