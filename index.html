@@ -802,12 +802,13 @@
       'https://kwiwsjvuvmwtfboxtfij.supabase.co',
       'sb_publishable_c6617EGJLrdzmJvt_tlAnA_dmYkHJTD'
     )
+    window.supabase = supabase
 
     // 로그인 버튼 클릭
     async function signInWithGoogle() {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: 'https://jaycalendar.com' }
+        options: { redirectTo: 'https://calendar.justdoc.net' }
       })
     }
 
