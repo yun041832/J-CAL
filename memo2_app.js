@@ -4562,8 +4562,8 @@ const _dailyTasksLoadPromises=new Map();
 const _dailySectionsLoadPromises=new Map();
 
 function getDailySupabaseClient(){
-  if(!_dailySbClient && typeof window!=='undefined' && window.supabase?.createClient){
-    _dailySbClient=window.supabase.createClient(DAILY_SB_URL,DAILY_SB_KEY);
+  if(!_dailySbClient && typeof window!=='undefined' && window.supabase?.auth){
+    _dailySbClient=window.supabase;
     _dailySbClient.auth.onAuthStateChange((_evt,session)=>{
       _dailySbUserId=session?.user?.id||null;
       _dailyTasksCache.clear();
@@ -8067,7 +8067,7 @@ const contactContent = `
   
   <h3>이메일 문의</h3>
   <p><strong>이메일:</strong> <a href="mailto:support@calendar.justdoc.net" style="color:var(--primary);">support@calendar.justdoc.net</a></p>
-  <p>영업일 기준 1-2일 내에 답변드리겠습니다.</p>
+  <p>검토 후 순차적으로 답변드리겠습니다.</p>
   
   <h3>자주 묻는 질문</h3>
   <ul>
