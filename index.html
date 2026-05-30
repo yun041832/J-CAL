@@ -911,8 +911,8 @@
       setMobileTabActive(widget)
       if (typeof showUsage === 'function') showUsage(widget)
       if (widget === 'calendar' && typeof showCalendarPage === 'function') showCalendarPage()
-      else if (widget === 'memo' && typeof showMemoPage === 'function') showMemoPage()
-      else if (widget === 'routine' && typeof showRoutinePage === 'function') showRoutinePage()
+      else if (widget === 'memo') { if(typeof showMemoPage === 'function') showMemoPage(); else window.JCal?.showMemoPage?.(); }
+      else if (widget === 'routine') { if(typeof showRoutinePage === 'function') showRoutinePage(); else window.JCal?.showRoutinePage?.(); }
       else if (widget === 'daily' && typeof showDailyPage === 'function') showDailyPage()
       else if (widget === 'timer' && typeof showTimerPage === 'function') showTimerPage()
       else if (widget === 'stopwatch' && typeof showTimerPage === 'function') showTimerPage('stopwatch')
