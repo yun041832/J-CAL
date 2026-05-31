@@ -24,6 +24,149 @@
   }
 
   const kMemo = (d) => 'memo2.memos.' + d;
+
+// ── Supabase 동기화 레이어 ──────────────────────────────
+const MEMO_SB_URL = 'https://kwiwsjvuvmwtfboxtfij.supabase.co';
+let _memoSbClient = null;
+let _memoSbUserId = null;
+const MEMO_SB_UPLOADED_KEY = 'memo_sb_uploaded_v1';
+
+function getMemoSupabaseClient() {
+  if (!_memoSbClient && typeof window !== 'undefined' && window.supabase?.auth) {
+    _memoSbClient = window.supabase;
+    _memoSbClient.auth.onAuthStateChange((_evt, session) => {
+      _memoSbUserId = session?.user?.id || null;
+      if (_memoSbUserId) {
+        syncMemoFromSupabase();
+      }
+    });
+    _memoSbClient.auth.getSession().then(({ data: { session } }) => {
+      _memoSbUserId = session?.user?.id || null;
+    }).catch((err) => console.error('[memo] supabase auth init', err));
+  }
+  return _memoSbClient;
+}
+
+async function resolveMemoUserId() {
+  getMemoSupabaseClient();
+  if (_memoSbUserId) return _memoSbUserId;
+  const sb = _memoSbClient;
+  if (!sb) return null;
+  try {
+    const { data: { session }, error } = await sb.auth.getSession();
+    if (error) throw error;
+    _memoSbUserId = session?.user?.id || null;
+    return _memoSbUserId;
+  } catch (err) {
+    console.error('[memo] resolveMemoUserId', err);
+    return null;
+  }
+}
+
+// Supabase row → 내부 형식
+function mapSupabaseMemoRow(row) {
+  return {
+    id: row.id,
+    title: row.title || '',
+    content: row.content || '',
+    date: row.date || '',
+    emoji: row.emoji || '',
+    color: row.color || '',
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+// Supabase에서 전체 memo 로드 후 localStorage에 저장
+async function syncMemoFromSupabase() {
+  const userId = await resolveMemoUserId();
+  if (!userId) return;
+  const sb = getMemoSupabaseClient();
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('memo')
+      .select('id,title,content,date,emoji,color,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    const list = (data || []).map(mapSupabaseMemoRow);
+    // Supabase 데이터가 있을 때만 localStorage 덮어씀
+    if (list.length > 0) {
+      localStorage.setItem(JAY_MEMO_LIST_KEY, JSON.stringify(list));
+      invalidateStoreCache(JAY_MEMO_LIST_KEY);
+      if (typeof renderMemos === 'function') renderMemos();
+      if (typeof renderMemoPageList === 'function') renderMemoPageList();
+    } else {
+      // Supabase 비어있으면 localStorage → Supabase 최초 업로드
+      await uploadLocalMemosToSupabase(userId, sb);
+    }
+  } catch (err) {
+    console.error('[memo] syncMemoFromSupabase', err);
+    // 실패해도 localStorage 건드리지 않음
+  }
+}
+
+// 최초 1회: localStorage 데이터 → Supabase 업로드
+async function uploadLocalMemosToSupabase(userId, sb) {
+  if (localStorage.getItem(MEMO_SB_UPLOADED_KEY) === 'true') return;
+  const localList = JSON.parse(localStorage.getItem(JAY_MEMO_LIST_KEY) || '[]');
+  if (!Array.isArray(localList) || localList.length === 0) return;
+  try {
+    const rows = localList.map(m => ({
+      id: (m.id && m.id.length > 10) ? m.id : crypto.randomUUID(),
+      user_id: userId,
+      title: m.title || '',
+      content: m.content || m.text || '',
+      date: m.date || new Date().toISOString().slice(0, 10),
+      emoji: m.emoji || '',
+      color: m.color || '',
+    }));
+    const { error } = await sb.from('memo').upsert(rows, { onConflict: 'id' });
+    if (error) throw error;
+    localStorage.setItem(MEMO_SB_UPLOADED_KEY, 'true');
+    console.log('[memo] 최초 업로드 완료:', rows.length, '개');
+  } catch (err) {
+    console.error('[memo] uploadLocalMemosToSupabase', err);
+  }
+}
+
+// 개별 메모 저장 (추가/수정)
+async function upsertMemoToSupabase(memo) {
+  const userId = await resolveMemoUserId();
+  if (!userId) return;
+  const sb = getMemoSupabaseClient();
+  if (!sb) return;
+  try {
+    const row = {
+      id: memo.id,
+      user_id: userId,
+      title: memo.title || '',
+      content: memo.content || memo.text || '',
+      date: memo.date || new Date().toISOString().slice(0, 10),
+      emoji: memo.emoji || '',
+      color: memo.color || '',
+    };
+    const { error } = await sb.from('memo').upsert(row, { onConflict: 'id' });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[memo] upsertMemoToSupabase', err);
+  }
+}
+
+// 개별 메모 삭제
+async function deleteMemoFromSupabase(id) {
+  const userId = await resolveMemoUserId();
+  if (!userId) return;
+  const sb = getMemoSupabaseClient();
+  if (!sb) return;
+  try {
+    const { error } = await sb.from('memo').delete().eq('id', id).eq('user_id', userId);
+    if (error) throw error;
+  } catch (err) {
+    console.error('[memo] deleteMemoFromSupabase', err);
+  }
+}
+// ── Supabase 동기화 레이어 끝 ───────────────────────────
+
   const JAY_MEMO_LIST_KEY = 'jay_memo_list';
   const JAY_MEMO_MIGRATED_KEY = 'memo2.jay_memo_migrated';
   function getMemoSelectedDateStr() {
@@ -64,6 +207,7 @@
     document.querySelector('.right')?.classList.add('hidden');
     getJayMemoList();
     initMemoPage();
+    getMemoSupabaseClient(); // 최초 진입 시 인증 상태 초기화 + 동기화 트리거
     const savedView = localStorage.getItem('memoViewMode') || 'grid';
     setTimeout(() => { if (typeof setMemoView === 'function') setMemoView(savedView); }, 50);
   }
@@ -152,6 +296,7 @@ function setJayMemoList(list){
 }
 function deleteJayMemoById(id){
   setJayMemoList(getJayMemoList().filter(m=>m.id!==id));
+  deleteMemoFromSupabase(id); // Supabase 동기화
 }
 
 function getMemosForDate(dstr){
@@ -546,6 +691,7 @@ function updateJayMemoById(id,patch){
   if(idx<0) return;
   list[idx]={...list[idx],...patch};
   setJayMemoList(list);
+  upsertMemoToSupabase(list.find(m=>m.id===id)||{id});
 }
 function memoItemEl(item,idx,ref,dstr){
   const li=el('li','memo-item');
@@ -788,7 +934,7 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
       list[idx]={...list[idx],title,content,date:dateVal};
     }else{
       savedMemoId=createMemoId();
-      list.push({
+      const newMemo={
         id:savedMemoId,
         title,
         content,
@@ -796,9 +942,11 @@ function initMemoWritePage(editMode=false,editItemId=null,editIdx=null,editDstr=
         createdAt:Date.now(),
         emoji:'',
         color:'',
-      });
+      };
+      list.push(newMemo);
     }
     setJayMemoList(list);
+    upsertMemoToSupabase(list.find(m=>m.id===savedMemoId)||{id:savedMemoId}); // Supabase 동기화
     renderMemos();
     renderMemoPageList();
     postApp({type:'refresh'});
