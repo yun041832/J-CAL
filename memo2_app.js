@@ -3109,7 +3109,7 @@ const contactContent = `
   <p>Jay Calendar 사용 중 문의사항이나 제안사항이 있으시면 언제든지 연락해주세요.</p>
   
   <h3>이메일 문의</h3>
-  <p><strong>이메일:</strong> <a href="mailto:support@calendar.justdoc.net" style="color:var(--primary);">support@calendar.justdoc.net</a></p>
+  <p><strong>이메일:</strong> <a href="mailto:support@planner.justdoc.net" style="color:var(--primary);">support@planner.justdoc.net</a></p>
   <p>검토 후 순차적으로 답변드리겠습니다.</p>
   
   <h3>자주 묻는 질문</h3>
