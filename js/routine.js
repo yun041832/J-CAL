@@ -21,9 +21,29 @@
 
   const ROUTINES_KEY = 'memo2.routines';
   const ROUTINE_SB_MIGRATED_KEY = 'memo2.routine_migrated_supabase';
+  const ROUTINE_ID_MAP_KEY = 'memo2.routine_id_map';
   let _routineListCache = null;
   let _routineSbUserId = null;
   let _routineListLoadPromise = null;
+
+  function readRoutineIdMap() {
+    try {
+      return JSON.parse(localStorage.getItem(ROUTINE_ID_MAP_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function writeRoutineIdMap(idMap) {
+    localStorage.setItem(ROUTINE_ID_MAP_KEY, JSON.stringify(idMap));
+  }
+
+  function getLocalIdFromSupabaseId(supabaseId, idMap) {
+    for (const [localId, uuid] of Object.entries(idMap)) {
+      if (uuid === supabaseId) return Number(localId) || localId;
+    }
+    return null;
+  }
 
   async function getSupabaseRoutineList() {
     const { data: { session } } = await window.supabase.auth.getSession();
@@ -34,33 +54,59 @@
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: true });
     if (error) { console.error('routine fetch error', error); return null; }
-    return data.map(r => ({
-      id: r.id,
-      text: r.name || '',
-      checked: !!r.checked,
-      startDate: r.start_date || '',
-      endDate: r.end_date || '',
-      repeatDays: Array.isArray(r.days) ? r.days : [],
-      color: r.color || '',
-      emoji: r.emoji || '',
-    }));
+    const idMap = readRoutineIdMap();
+    let nextLocalId = Math.max(
+      0,
+      ...Object.keys(idMap).map(k => Number(k)).filter(n => !Number.isNaN(n))
+    );
+    const mapped = data.map(r => {
+      let localId = getLocalIdFromSupabaseId(r.id, idMap);
+      if (localId == null) {
+        nextLocalId += 1;
+        localId = nextLocalId;
+        idMap[String(localId)] = r.id;
+      }
+      return {
+        id: localId,
+        text: r.name || '',
+        checked: !!r.checked,
+        startDate: r.start_date || '',
+        endDate: r.end_date || '',
+        repeatDays: Array.isArray(r.days) ? r.days : [],
+        color: r.color || '',
+        emoji: r.emoji || '',
+      };
+    });
+    writeRoutineIdMap(idMap);
+    return mapped;
   }
 
   async function saveSupabaseRoutine(routine) {
     const { data: { session } } = await window.supabase.auth.getSession();
     if (!session) return false;
+
+    let idMap = readRoutineIdMap();
+    let supabaseId = idMap[String(routine.id)];
+    if (!supabaseId) {
+      supabaseId = crypto.randomUUID();
+      idMap[String(routine.id)] = supabaseId;
+      writeRoutineIdMap(idMap);
+    }
+
     const payload = {
-      id: routine.id,
+      id: supabaseId,
       user_id: session.user.id,
-      name: routine.text || '',
+      name: routine.text || routine.name || '',
       color: routine.color || '',
       emoji: routine.emoji || '',
       days: routine.repeatDays || [],
-      start_date: routine.startDate || null,
-      end_date: routine.endDate || null,
-      checked: !!routine.checked,
+      start_date: routine.startDate || '2026-01-01',
+      end_date: routine.endDate || '2026-12-31',
+      checked: routine.checked || false,
     };
-    const { error } = await window.supabase.from('routine').upsert(payload, { onConflict: 'id' });
+    const { error } = await window.supabase
+      .from('routine')
+      .upsert(payload, { onConflict: 'id' });
     if (error) { console.error('routine save error', error); return false; }
     return true;
   }
@@ -68,8 +114,16 @@
   async function deleteSupabaseRoutine(id) {
     const { data: { session } } = await window.supabase.auth.getSession();
     if (!session) return false;
-    const { error } = await window.supabase.from('routine').delete().eq('id', id).eq('user_id', session.user.id);
+    const idMap = readRoutineIdMap();
+    const supabaseId = idMap[String(id)];
+    if (!supabaseId) return false;
+    const { error } = await window.supabase
+      .from('routine')
+      .delete()
+      .eq('id', supabaseId);
     if (error) { console.error('routine delete error', error); return false; }
+    delete idMap[String(id)];
+    writeRoutineIdMap(idMap);
     return true;
   }
 
