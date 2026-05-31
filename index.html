@@ -213,6 +213,21 @@
       grid-template-columns:repeat(2,1fr) !important;
     }
   }
+  #memoPage{
+    position:fixed;
+    top:0;
+    left:68px;
+    right:0;
+    bottom:0;
+    z-index:100;
+    background:#fff;
+    overflow-y:auto;
+  }
+  @media (max-width:1024px){
+    #memoPage{
+      left:0;
+    }
+  }
 </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
