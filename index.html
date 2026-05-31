@@ -148,6 +148,10 @@
     font-size:14px;
     font-weight:700;
   }
+  #homeBtn,
+  button[data-widget="home"] {
+    display: none !important;
+  }
   #mobile-tab-bar{
     display:none;
     position:fixed;
@@ -219,7 +223,7 @@
   <div class="app">
     <div class="sidebar-stack">
     <aside class="sidebar">
-      <button class="menu-btn" id="homeBtn" title="Home" style="display:none;"><span class="menu-icon">🏠</span><span class="menu-label">Home</span></button>
+      <button class="menu-btn" id="homeBtn" title="Home" style="display:none !important;"><span class="menu-icon">🏠</span><span class="menu-label">Home</span></button>
       <button class="menu-btn" data-widget="calendar" title="Calendar"><span class="menu-icon">📅</span><span class="menu-label">Cal</span></button>
       <button class="menu-btn" data-widget="routine" title="Routine"><span class="menu-icon">✅</span><span class="menu-label">Rout</span></button>
       <button class="menu-btn" data-widget="daily" title="Daily"><span class="menu-icon">📋</span><span class="menu-label">Daily</span></button>
@@ -722,39 +726,54 @@
         <!-- ✅ 사이트 소개 단일 블록 (홈에서만 보임) -->
         <section id="siteIntro" class="usage-section" style="margin-bottom:24px;">
           <div class="usage-text" style="max-width:600px;margin:0 auto;">
-            <h2 class="usage-title">PC 위젯 온라인 달력 (루틴·투두리스트·체크리스트·메모·일정관리)</h2>
-            <p>Jay Calendar는 ToDo 리스트를 달력에 추가하고, 체크하고, 수정하는 것에 중점을 두고 개발했습니다.</p>
-            <p>대부분의 달력 서비스가 '일정'에 초점을 맞춘다면,</p>
-            <p>Jay Calendar는 '일정 관리'에 초점을 맞춰 월간 달력에 담았습니다.</p>
-            <p>상단에는 이달의 목표를 입력하여 매일 목표를 되새기고 동기부여가 될 수 있도록 했습니다.</p>
-            <p>달력에서 날짜를 누르면 그날 해야 할 일을 확인할 수있고, 체크할 수 있으며, 계획을 추가할 수 있습니다.</p>
-            <p>메모를 입력한 날에는 달력에 표시를 줌으로써 보다 편리하게 관리할 수 있도록 했습니다.</p>
-            <p>일정등록에서는 바탕색을 포인트로 일정을 등록할 수 있고</p>
-            <p>투두등록에서는 글자색을 바꿔가며 리스트를 만들어 한눈에 구분할 수 있습니다.</p>
-            <br><br>
-            <p>또 하나의 특징은 모바일에서는 흔하지만 웹에서 찾기 힘든 PC 위젯형 구성입니다.</p>
-            <p>이 웹페이지를 만든 이유이기도 합니다.</p>
-            <p>달력·메모·투두를 위젯 창과 메인 화면에 함께 볼 수 있고,<br>필요할 땐 스티커처럼 각 메뉴를 바탕화면 위젯처럼 띄워 사용할 수도 있습니다.</p>
-            <p>그리고 타이머 기능도 함께 담았습니다.</p>
-            <p>여러분의 일정과 할 일 관리에 도움이 되길 바랍니다.</p>
+            <p>Jay Calendar was built to bring everything into one place —
+            routines, to-dos, checklists, memos, and events.
+            Most calendar apps focus on scheduling.
+            Jay Calendar focuses on getting things done.
+            Click any date to check tasks, add plans, and track your day.</p>
           </div>
         </section>
 
         <!-- 사용법 안내 섹션 (메뉴 클릭 시만 보임) -->
         <div id="usageSection" class="usage-section" style="display:none;">
-          <h3 class="usage-title">How to use</h3>
+          <h3 class="usage-title">How to Use</h3>
           <div class="usage-grid">
             <div class="usage-column">
               <h4 class="usage-subtitle">Menu Guide</h4>
-              <div id="usageIntro" class="usage-text"></div>
+              <div id="usageIntro" class="usage-text">
+                <p>Jay Calendar is a browser-based productivity dashboard.</p>
+                <p>Manage your schedule, routines, daily tasks, memos, and timers — all in one tab.</p>
+                <p>No install required.</p>
+              </div>
             </div>
             <div class="usage-column">
               <h4 class="usage-subtitle">How to Use</h4>
-              <div id="usageMethod" class="usage-text"></div>
+              <div id="usageMethod" class="usage-text">
+                <p><strong>Calendar:</strong></p>
+                <ul>
+                  <li>Select a date: Click any date to view events and tasks for that day</li>
+                  <li>Navigate months: Use ◀ ▶ buttons to move between months</li>
+                  <li>Go to today: Click the date number at the top to jump to today</li>
+                  <li>Set monthly goal: Type in the input at the top and press Enter</li>
+                  <li>Check events: Each date cell shows up to 6 events with color and emoji</li>
+                  <li>Color coding: Assign colors to events to distinguish work, personal, etc.</li>
+                  <li>Use emoji: Add emoji to events for visual clarity</li>
+                </ul>
+              </div>
             </div>
             <div class="usage-column">
               <h4 class="usage-subtitle">Widget Guide</h4>
-              <div id="usageWidget" class="usage-text"></div>
+              <div id="usageWidget" class="usage-text">
+                <p>The calendar widget opens as a floating popup.</p>
+                <ul>
+                  <li>Open widget: Click '▣ Cal' in the sidebar</li>
+                  <li>Move widget: Drag the widget header to reposition</li>
+                  <li>Resize widget: Drag the bottom-right corner to resize</li>
+                  <li>Close widget: Click X in the widget header</li>
+                  <li>Multiple widgets: Open several widgets side by side</li>
+                  <li>Mini calendar: Widget syncs with the main view in real time</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -899,7 +918,7 @@
 
     function setHomeTabVisible(visible) {
       const homeBtn = document.getElementById('homeBtn')
-      if (homeBtn) homeBtn.style.display = 'none'
+      if (homeBtn) homeBtn.style.setProperty('display', 'none', 'important')
     }
 
     function applyPostLoginPage() {
