@@ -95,8 +95,19 @@
   }
 
   async function refreshJayMemoListFromSupabase() {
-    const list = await getSupabaseMemoList();
+    let list = await getSupabaseMemoList();
     if (list === null) return null;
+    if (!list.length) {
+      migrateJayMemoListIfNeeded();
+      const localList = get(JAY_MEMO_LIST_KEY, []);
+      if (Array.isArray(localList) && localList.length) {
+        list = localList.slice();
+        for (const memo of list) {
+          await saveSupabaseMemo(memo);
+        }
+        console.log('memo fallback migration done', list.length);
+      }
+    }
     _memoListCache = list;
     setLocalJayMemoList(list);
     return list;

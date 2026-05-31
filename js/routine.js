@@ -184,8 +184,18 @@
   }
 
   async function refreshRoutinesFromSupabase() {
-    const list = await getSupabaseRoutineList();
+    let list = await getSupabaseRoutineList();
     if (list === null) return null;
+    if (!list.length) {
+      const localList = readRoutinesLocal();
+      if (localList.length) {
+        list = localList.slice();
+        for (const routine of list) {
+          await saveSupabaseRoutine(routine);
+        }
+        console.log('routine fallback migration done', list.length);
+      }
+    }
     _routineListCache = list;
     setRoutinesLocal(list);
     return list;
