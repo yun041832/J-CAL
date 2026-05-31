@@ -111,8 +111,9 @@ async function uploadLocalMemosToSupabase(userId, sb) {
   const localList = JSON.parse(localStorage.getItem(JAY_MEMO_LIST_KEY) || '[]');
   if (!Array.isArray(localList) || localList.length === 0) return;
   try {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const rows = localList.map(m => ({
-      id: (m.id && m.id.length > 10) ? m.id : crypto.randomUUID(),
+      id: (m.id && UUID_REGEX.test(m.id)) ? m.id : crypto.randomUUID(),
       user_id: userId,
       title: m.title || '',
       content: m.content || m.text || '',
@@ -136,8 +137,9 @@ async function upsertMemoToSupabase(memo) {
   const sb = getMemoSupabaseClient();
   if (!sb) return;
   try {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const row = {
-      id: memo.id,
+      id: (memo.id && UUID_REGEX.test(memo.id)) ? memo.id : crypto.randomUUID(),
       user_id: userId,
       title: memo.title || '',
       content: memo.content || memo.text || '',
