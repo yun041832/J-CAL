@@ -817,8 +817,8 @@ function showEventMenu(anchor,item,ref,dstr,applyStyle){
   const pop=doc.createElement('div');
   pop.className='event-menu-popup';
   
-  const emojiBtn=el('button','menu-item','💬 이모티콘 변경');
-  const colorBtn=el('button','menu-item','🎨 색상 변경');
+  const emojiBtn=el('button','menu-item','💬 Change Emoji');
+  const colorBtn=el('button','menu-item','🎨 Change Color');
   
   emojiBtn.onclick=()=>{
     pop.remove();
@@ -847,10 +847,7 @@ function showEventMenu(anchor,item,ref,dstr,applyStyle){
   pop.append(emojiBtn,colorBtn);
   doc.body.appendChild(pop);
   openPop=pop;
-  
-  const rect=anchor.getBoundingClientRect();
-  pop.style.left=rect.left+'px';
-  pop.style.top=(rect.bottom+4)+'px';
+  positionEventMenuPopup(pop,anchor);
   
   const closeMenu=(e)=>{
     if(!pop.contains(e.target) && e.target!==anchor){
@@ -897,6 +894,15 @@ const EMOJI_CATEGORIES={
 };
 
 let openPop=null;
+function positionEventMenuPopup(pop,anchor,popupWidth=140){
+  const win=(anchor.ownerDocument||document).defaultView||window;
+  const rect=anchor.getBoundingClientRect();
+  const left=(rect.right+popupWidth>win.innerWidth)
+    ?rect.left-popupWidth
+    :rect.right;
+  pop.style.left=left+'px';
+  pop.style.top=rect.bottom+'px';
+}
 function showEmojiPicker(anchor,onPick){
   const doc=anchor.ownerDocument||document;
   const win=doc.defaultView||window;
@@ -1178,8 +1184,8 @@ function showTodoMenu(anchor,item,ref,dstr,applyText){
   const pop=doc.createElement('div');
   pop.className='event-menu-popup';
   
-  const emojiBtn=el('button','menu-item','💬 이모티콘 변경');
-  const colorBtn=el('button','menu-item','🎨 색상 변경');
+  const emojiBtn=el('button','menu-item','💬 Change Emoji');
+  const colorBtn=el('button','menu-item','🎨 Change Color');
   
   emojiBtn.onclick=()=>{
     pop.remove();
@@ -1207,36 +1213,7 @@ function showTodoMenu(anchor,item,ref,dstr,applyText){
   pop.append(emojiBtn,colorBtn);
   doc.body.appendChild(pop);
   openPop=pop;
-  
-  const rect=anchor.getBoundingClientRect();
-  const win=doc.defaultView||window;
-  
-  let left=rect.left+(win.scrollX||0);
-  let top=rect.bottom+4+(win.scrollY||0);
-  
-  pop.style.left=`${left}px`;
-  pop.style.top=`${top}px`;
-  pop.style.visibility='hidden';
-  
-  requestAnimationFrame(()=>{
-    const popRect=pop.getBoundingClientRect();
-    const viewWidth=win.innerWidth;
-    const viewHeight=win.innerHeight;
-    
-    // 화면 오른쪽 경계 처리
-    if(popRect.right>viewWidth){
-      left=Math.max(10, viewWidth-popRect.width-10);
-    }
-    
-    // 화면 아래쪽 경계 처리
-    if(popRect.bottom>viewHeight){
-      top=rect.top-popRect.height-4+(win.scrollY||0);
-    }
-    
-    pop.style.left=`${left}px`;
-    pop.style.top=`${top}px`;
-    pop.style.visibility='visible';
-  });
+  positionEventMenuPopup(pop,anchor);
   
   const closeMenu=(e)=>{
     if(!pop.contains(e.target) && e.target!==anchor){
@@ -1249,17 +1226,17 @@ function showTodoMenu(anchor,item,ref,dstr,applyText){
 }
 
 /* ── 반복 설정 ── */
+const REPEAT_LABELS={
+  'none':'Does not repeat',
+  'daily':'Daily',
+  'weekly':'Weekly',
+  'monthly':'Monthly',
+  'yearly':'Yearly'
+};
 ST.eventRepeat='none';
 function updateRepeatButton(){
-  const labels={
-    'none':'반복 안 함',
-    'daily':'매일',
-    'weekly':'매주',
-    'monthly':'매월',
-    'yearly':'매년'
-  };
   if($.eventRepeatBtn){
-    $.eventRepeatBtn.textContent=labels[ST.eventRepeat]||'반복 안 함';
+    $.eventRepeatBtn.textContent=REPEAT_LABELS[ST.eventRepeat]||'Does not repeat';
     if(ST.eventRepeat!=='none'){
       $.eventRepeatBtn.classList.add('active');
     }else{
@@ -1269,7 +1246,7 @@ function updateRepeatButton(){
 
   const inlineBtn=document.getElementById('inlineRepeatBtn');
   if(inlineBtn){
-    inlineBtn.textContent=labels[ST.eventRepeat]||'반복 안 함';
+    inlineBtn.textContent=REPEAT_LABELS[ST.eventRepeat]||'Does not repeat';
     const active=ST.eventRepeat && ST.eventRepeat!=='none';
     inlineBtn.style.background=active?'#e0ecff':'#f8fafc';
     inlineBtn.style.color=active?'#4A7AEE':'#334155';
@@ -1291,11 +1268,10 @@ function showRepeatModal(currentValue,onConfirm){
   const modal=el('div','event-detail-modal');
   
   const options=['none','daily','weekly','monthly','yearly'];
-  const labels={'none':'반복 안 함','daily':'매일','weekly':'매주','monthly':'매월','yearly':'매년'};
   
-  modal.innerHTML='<h3>반복 설정</h3>';
+  modal.innerHTML='<h3>Repeat</h3>';
   options.forEach(opt=>{
-    const btn=el('button','repeat-option',labels[opt]);
+    const btn=el('button','repeat-option',REPEAT_LABELS[opt]);
     if(opt===currentValue) btn.classList.add('active');
     btn.onclick=()=>{
       onConfirm(opt);
@@ -1405,17 +1381,16 @@ function showEventDetailModal(item,ref,dstr){
   alarmRow.append(alarmIcon,alarmLabel,alarmValue);
   
   // 반복
-  const repeatLabels={'none':'반복 안 함','daily':'매일','weekly':'매주','monthly':'매월','yearly':'매년'};
   const repeatRow=el('div','event-detail-row');
   const repeatIcon=el('span','row-icon','🔄');
-  const repeatLabel=el('span','row-label','반복');
-  const repeatValue=el('span','row-value',repeatLabels[item.repeat||'none']);
+  const repeatLabel=el('span','row-label','Repeat');
+  const repeatValue=el('span','row-value',REPEAT_LABELS[item.repeat||'none']);
   repeatRow.append(repeatIcon,repeatLabel,repeatValue);
   repeatRow.style.cursor='pointer';
   repeatRow.onclick=()=>{
     showRepeatModal(item.repeat||'none',(value)=>{
       item.repeat=value;
-      repeatValue.textContent=repeatLabels[value];
+      repeatValue.textContent=REPEAT_LABELS[value];
     });
   };
   
@@ -1478,8 +1453,8 @@ function showEventInputMenu(anchor){
   const pop=doc.createElement('div');
   pop.className='event-menu-popup';
   
-  const emojiBtn=el('button','menu-item','💬 이모티콘 추가');
-  const colorBtn=el('button','menu-item','🎨 색상 변경');
+  const emojiBtn=el('button','menu-item','💬 Change Emoji');
+  const colorBtn=el('button','menu-item','🎨 Change Color');
   
   emojiBtn.onclick=()=>{
     pop.remove();
@@ -1500,36 +1475,7 @@ function showEventInputMenu(anchor){
   pop.append(emojiBtn,colorBtn);
   doc.body.appendChild(pop);
   openPop=pop;
-  
-  const rect=anchor.getBoundingClientRect();
-  const win=doc.defaultView||window;
-  
-  let left=rect.left+(win.scrollX||0);
-  let top=rect.bottom+4+(win.scrollY||0);
-  
-  pop.style.left=`${left}px`;
-  pop.style.top=`${top}px`;
-  pop.style.visibility='hidden';
-  
-  requestAnimationFrame(()=>{
-    const popRect=pop.getBoundingClientRect();
-    const viewWidth=win.innerWidth;
-    const viewHeight=win.innerHeight;
-    
-    // 화면 오른쪽 경계 처리
-    if(popRect.right>viewWidth){
-      left=Math.max(10, viewWidth-popRect.width-10);
-    }
-    
-    // 화면 아래쪽 경계 처리
-    if(popRect.bottom>viewHeight){
-      top=rect.top-popRect.height-4+(win.scrollY||0);
-    }
-    
-    pop.style.left=`${left}px`;
-    pop.style.top=`${top}px`;
-    pop.style.visibility='visible';
-  });
+  positionEventMenuPopup(pop,anchor);
   
   const closeMenu=(e)=>{
     if(!pop.contains(e.target) && e.target!==anchor){
@@ -1721,11 +1667,11 @@ function setupInlineRepeat(){
   });
 
   const options=[
-    {val:'none',label:'반복 안 함'},
-    {val:'daily',label:'매일'},
-    {val:'weekly',label:'매주'},
-    {val:'monthly',label:'매월'},
-    {val:'yearly',label:'매년'},
+    {val:'none',label:'Does not repeat'},
+    {val:'daily',label:'Daily'},
+    {val:'weekly',label:'Weekly'},
+    {val:'monthly',label:'Monthly'},
+    {val:'yearly',label:'Yearly'},
   ];
 
   options.forEach(opt=>{
