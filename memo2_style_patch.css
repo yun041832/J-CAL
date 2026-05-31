@@ -4605,3 +4605,29 @@ input[type="checkbox"],
 .menu-btn::first-line {
   font-size: 20px !important;
 }
+
+.menu-icon {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+}
+.menu-label {
+  font-size: 9px;
+  line-height: 1;
+  display: block;
+  color: inherit;
+}
+.app {
+  grid-template-columns: 68px minmax(0,1fr) !important;
+}
+.app:has(> .right:not(.hidden)) {
+  grid-template-columns: 68px minmax(0,1fr) minmax(300px,360px) !important;
+}
+.sidebar {
+  width: 68px !important;
+  min-width: 68px !important;
+}
+.menu-btn {
+  min-height: 52px !important;
+  padding: 8px 4px !important;
+}
