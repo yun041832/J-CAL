@@ -20,122 +20,6 @@
   function formatYearMonth(y, m) { return MONTHS_EN[m] + ' ' + y; }
 
   const ROUTINES_KEY = 'memo2.routines';
-  const ROUTINE_SB_MIGRATED_KEY = 'memo2.routine_migrated_supabase';
-  const ROUTINE_ID_MAP_KEY = 'memo2.routine_id_map';
-  let _routineListCache = null;
-  let _routineSbUserId = null;
-  let _routineListLoadPromise = null;
-
-  function readRoutineIdMap() {
-    try {
-      return JSON.parse(localStorage.getItem(ROUTINE_ID_MAP_KEY) || '{}');
-    } catch {
-      return {};
-    }
-  }
-
-  function writeRoutineIdMap(idMap) {
-    localStorage.setItem(ROUTINE_ID_MAP_KEY, JSON.stringify(idMap));
-  }
-
-  function getLocalIdFromSupabaseId(supabaseId, idMap) {
-    for (const [localId, uuid] of Object.entries(idMap)) {
-      if (uuid === supabaseId) return Number(localId) || localId;
-    }
-    return null;
-  }
-
-  async function getSupabaseRoutineList() {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return null;
-    const { data, error } = await window.supabase
-      .from('routine')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: true });
-    if (error) { console.error('routine fetch error', error); return null; }
-    const idMap = readRoutineIdMap();
-    let nextLocalId = Math.max(
-      0,
-      ...Object.keys(idMap).map(k => Number(k)).filter(n => !Number.isNaN(n))
-    );
-    const mapped = data.map(r => {
-      let localId = getLocalIdFromSupabaseId(r.id, idMap);
-      if (localId == null) {
-        nextLocalId += 1;
-        localId = nextLocalId;
-        idMap[String(localId)] = r.id;
-      }
-      return {
-        id: localId,
-        text: r.name || '',
-        checked: !!r.checked,
-        startDate: r.start_date || '',
-        endDate: r.end_date || '',
-        repeatDays: Array.isArray(r.days) ? r.days : [],
-        color: r.color || '',
-        emoji: r.emoji || '',
-      };
-    });
-    writeRoutineIdMap(idMap);
-    return mapped;
-  }
-
-  async function saveSupabaseRoutine(routine) {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return false;
-
-    let idMap = readRoutineIdMap();
-    let supabaseId = idMap[String(routine.id)];
-    if (!supabaseId) {
-      supabaseId = crypto.randomUUID();
-      idMap[String(routine.id)] = supabaseId;
-      writeRoutineIdMap(idMap);
-    }
-
-    const payload = {
-      id: supabaseId,
-      user_id: session.user.id,
-      name: routine.text || routine.name || '',
-      color: routine.color || '',
-      emoji: routine.emoji || '',
-      days: routine.repeatDays || [],
-      start_date: routine.startDate || '2026-01-01',
-      end_date: routine.endDate || '2026-12-31',
-      checked: routine.checked || false,
-    };
-    const { error } = await window.supabase
-      .from('routine')
-      .upsert(payload, { onConflict: 'id' });
-    if (error) { console.error('routine save error', error); return false; }
-    return true;
-  }
-
-  async function deleteSupabaseRoutine(id) {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return false;
-    const idMap = readRoutineIdMap();
-    const supabaseId = idMap[String(id)];
-    if (!supabaseId) return false;
-    const { error } = await window.supabase
-      .from('routine')
-      .delete()
-      .eq('id', supabaseId);
-    if (error) { console.error('routine delete error', error); return false; }
-    delete idMap[String(id)];
-    writeRoutineIdMap(idMap);
-    return true;
-  }
-
-  async function migrateLocalRoutineToSupabase() {
-    const migrated = localStorage.getItem(ROUTINE_SB_MIGRATED_KEY);
-    if (migrated) return;
-    const list = JSON.parse(localStorage.getItem(ROUTINES_KEY) || '[]');
-    if (!list.length) { localStorage.setItem(ROUTINE_SB_MIGRATED_KEY, 'true'); return; }
-    for (const routine of list) { await saveSupabaseRoutine(routine); }
-    localStorage.setItem(ROUTINE_SB_MIGRATED_KEY, 'true');
-    console.log('routine migration done', list.length);
-  }
 
   function readRoutinesLocal() {
     try {
@@ -158,9 +42,8 @@
   }
 
   function getRoutines() {
-    if (_routineSbUserId && _routineListCache) return _routineListCache.slice();
     let routines = readRoutinesLocal();
-    if (!routines.length && !_routineSbUserId) {
+    if (!routines.length) {
       routines = getDefaultSampleRoutines();
       setRoutinesLocal(routines);
     }
@@ -169,83 +52,7 @@
 
   function setRoutines(routines) {
     const arr = Array.isArray(routines) ? routines.slice() : [];
-    const prev = getRoutines();
     setRoutinesLocal(arr);
-    if (_routineSbUserId) _routineListCache = arr.slice();
-    if (!window.supabase?.auth) return;
-    window.supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user?.id) return;
-      const newIds = new Set(arr.map(r => r.id));
-      for (const r of prev) {
-        if (r.id != null && !newIds.has(r.id)) await deleteSupabaseRoutine(r.id);
-      }
-      for (const r of arr) await saveSupabaseRoutine(r);
-    }).catch(err => console.error('setRoutines supabase', err));
-  }
-
-  async function refreshRoutinesFromSupabase() {
-    let list = await getSupabaseRoutineList();
-    if (list === null) return null;
-    if (!list.length) {
-      const localList = readRoutinesLocal();
-      if (localList.length) {
-        list = localList.slice();
-        for (const routine of list) {
-          await saveSupabaseRoutine(routine);
-        }
-        console.log('routine fallback migration done', list.length);
-      }
-    }
-    _routineListCache = list;
-    setRoutinesLocal(list);
-    return list;
-  }
-
-  function refreshRoutineViews() {
-    if (typeof renderRoutineList === 'function') renderRoutineList();
-    if (typeof renderRoutineWeekCalendar === 'function') renderRoutineWeekCalendar();
-  }
-
-  async function ensureRoutinesLoaded() {
-    if (!window.supabase?.auth) return getRoutines();
-    const { data: { session } } = await window.supabase.auth.getSession();
-    _routineSbUserId = session?.user?.id || null;
-    if (!_routineSbUserId) {
-      _routineListCache = null;
-      return getRoutines();
-    }
-    if (_routineListCache) return _routineListCache.slice();
-    if (!_routineListLoadPromise) {
-      _routineListLoadPromise = refreshRoutinesFromSupabase().finally(() => {
-        _routineListLoadPromise = null;
-      });
-    }
-    await _routineListLoadPromise;
-    return getRoutines();
-  }
-
-  function initRoutineSupabaseSync() {
-    if (!window.supabase?.auth || initRoutineSupabaseSync._done) return;
-    initRoutineSupabaseSync._done = true;
-    window.supabase.auth.getSession().then(async ({ data: { session } }) => {
-      _routineSbUserId = session?.user?.id || null;
-      if (_routineSbUserId) {
-        await migrateLocalRoutineToSupabase();
-        await refreshRoutinesFromSupabase();
-        refreshRoutineViews();
-      }
-    }).catch(err => console.error('routine supabase auth init', err));
-    window.supabase.auth.onAuthStateChange(async (_evt, session) => {
-      _routineSbUserId = session?.user?.id || null;
-      _routineListCache = null;
-      if (_routineSbUserId) {
-        await migrateLocalRoutineToSupabase();
-        await refreshRoutinesFromSupabase();
-        refreshRoutineViews();
-      } else {
-        refreshRoutineViews();
-      }
-    });
   }
 
   function hideInsightPages() {
@@ -265,7 +72,7 @@
     document.getElementById('logsPage')?.classList.add('hidden');
     hideInsightPages();
     document.querySelector('.right')?.classList.add('hidden');
-    ensureRoutinesLoaded().then(() => initRoutinePage());
+    initRoutinePage();
   }
 
 /* ── 루틴 페이지 ── */
@@ -1157,6 +964,4 @@ function showColorPickerModal(currentColor,onSave){
   window.showRepeatDayModal = showRepeatDayModal;
   window.showEmojiModal = showEmojiModal;
   window.showColorPickerModal = showColorPickerModal;
-
-  initRoutineSupabaseSync();
 })();

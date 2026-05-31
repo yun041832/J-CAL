@@ -26,141 +26,6 @@
   const kMemo = (d) => 'memo2.memos.' + d;
   const JAY_MEMO_LIST_KEY = 'jay_memo_list';
   const JAY_MEMO_MIGRATED_KEY = 'memo2.jay_memo_migrated';
-  const MEMO_SB_MIGRATED_KEY = 'memo2.jay_memo_migrated_supabase';
-  let _memoListCache = null;
-  let _memoSbUserId = null;
-  let _memoListLoadPromise = null;
-
-  async function getSupabaseMemoList() {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return null;
-    const { data, error } = await window.supabase
-      .from('memo')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-    if (error) { console.error('memo fetch error', error); return null; }
-    return data.map(r => ({
-      id: r.id,
-      title: r.title || '',
-      content: r.content || '',
-      date: r.date || '',
-      emoji: r.emoji || '',
-      color: r.color || '',
-      createdAt: new Date(r.created_at).getTime(),
-    }));
-  }
-
-  async function saveSupabaseMemo(memo) {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return false;
-    const payload = {
-      id: memo.id,
-      user_id: session.user.id,
-      title: memo.title || '',
-      content: memo.content || '',
-      date: memo.date || '',
-      emoji: memo.emoji || '',
-      color: memo.color || '',
-      updated_at: new Date().toISOString(),
-    };
-    if (memo.createdAt) payload.created_at = new Date(memo.createdAt).toISOString();
-    const { error } = await window.supabase.from('memo').upsert(payload, { onConflict: 'id' });
-    if (error) { console.error('memo save error', error); return false; }
-    return true;
-  }
-
-  async function deleteSupabaseMemo(id) {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) return false;
-    const { error } = await window.supabase.from('memo').delete().eq('id', id).eq('user_id', session.user.id);
-    if (error) { console.error('memo delete error', error); return false; }
-    return true;
-  }
-
-  async function migrateLocalMemoToSupabase() {
-    const migrated = localStorage.getItem(MEMO_SB_MIGRATED_KEY);
-    if (migrated) return;
-    const list = JSON.parse(localStorage.getItem(JAY_MEMO_LIST_KEY) || '[]');
-    if (!list.length) { localStorage.setItem(MEMO_SB_MIGRATED_KEY, 'true'); return; }
-    for (const memo of list) { await saveSupabaseMemo(memo); }
-    localStorage.setItem(MEMO_SB_MIGRATED_KEY, 'true');
-    console.log('memo migration done', list.length);
-  }
-
-  function setLocalJayMemoList(list) {
-    set(JAY_MEMO_LIST_KEY, list);
-    syncJayMemoListToDateKeys(list);
-    invalidateStoreCache(JAY_MEMO_LIST_KEY);
-  }
-
-  async function refreshJayMemoListFromSupabase() {
-    let list = await getSupabaseMemoList();
-    if (list === null) return null;
-    if (!list.length) {
-      migrateJayMemoListIfNeeded();
-      const localList = get(JAY_MEMO_LIST_KEY, []);
-      if (Array.isArray(localList) && localList.length) {
-        list = localList.slice();
-        for (const memo of list) {
-          await saveSupabaseMemo(memo);
-        }
-        console.log('memo fallback migration done', list.length);
-      }
-    }
-    _memoListCache = list;
-    setLocalJayMemoList(list);
-    return list;
-  }
-
-  function refreshMemoViews() {
-    if (typeof renderMemos === 'function') renderMemos();
-    if (typeof renderMemoPageList === 'function') renderMemoPageList();
-    if (typeof renderCalendar === 'function') renderCalendar();
-    if (typeof renderRight === 'function') renderRight();
-  }
-
-  async function ensureJayMemoListLoaded() {
-    if (!window.supabase?.auth) return getJayMemoList();
-    const { data: { session } } = await window.supabase.auth.getSession();
-    _memoSbUserId = session?.user?.id || null;
-    if (!_memoSbUserId) {
-      _memoListCache = null;
-      return getJayMemoList();
-    }
-    if (_memoListCache) return _memoListCache.slice();
-    if (!_memoListLoadPromise) {
-      _memoListLoadPromise = refreshJayMemoListFromSupabase().finally(() => {
-        _memoListLoadPromise = null;
-      });
-    }
-    await _memoListLoadPromise;
-    return getJayMemoList();
-  }
-
-  function initMemoSupabaseSync() {
-    if (!window.supabase?.auth || initMemoSupabaseSync._done) return;
-    initMemoSupabaseSync._done = true;
-    window.supabase.auth.getSession().then(async ({ data: { session } }) => {
-      _memoSbUserId = session?.user?.id || null;
-      if (_memoSbUserId) {
-        await migrateLocalMemoToSupabase();
-        await refreshJayMemoListFromSupabase();
-        refreshMemoViews();
-      }
-    }).catch(err => console.error('memo supabase auth init', err));
-    window.supabase.auth.onAuthStateChange(async (_evt, session) => {
-      _memoSbUserId = session?.user?.id || null;
-      _memoListCache = null;
-      if (_memoSbUserId) {
-        await migrateLocalMemoToSupabase();
-        await refreshJayMemoListFromSupabase();
-        refreshMemoViews();
-      } else {
-        refreshMemoViews();
-      }
-    });
-  }
   function getMemoSelectedDateStr() {
     if (typeof ST !== 'undefined' && ST.selected) return fmtLocalDate(ST.selected);
     const saved = localStorage.getItem('memo2.selected');
@@ -197,11 +62,10 @@
     document.getElementById('logsPage')?.classList.add('hidden');
     hideInsightPages();
     document.querySelector('.right')?.classList.add('hidden');
-    ensureJayMemoListLoaded().then(() => {
-      initMemoPage();
-      const savedView = localStorage.getItem('memoViewMode') || 'grid';
-      setTimeout(() => { if (typeof setMemoView === 'function') setMemoView(savedView); }, 50);
-    });
+    getJayMemoList();
+    initMemoPage();
+    const savedView = localStorage.getItem('memoViewMode') || 'grid';
+    setTimeout(() => { if (typeof setMemoView === 'function') setMemoView(savedView); }, 50);
   }
 
   function showMemoWritePage(editMode = false, itemId = null, idx = null, dstr = null) {
@@ -257,7 +121,7 @@ function migrateJayMemoListIfNeeded(){
       if(!seen.has(m.id)){ seen.add(m.id); merged.push(m); }
     });
   }
-  setLocalJayMemoList(merged);
+  setJayMemoList(merged);
   localStorage.setItem(JAY_MEMO_MIGRATED_KEY,'true');
 }
 function syncJayMemoListToDateKeys(list){
@@ -278,28 +142,16 @@ function syncJayMemoListToDateKeys(list){
 }
 function getJayMemoList(){
   migrateJayMemoListIfNeeded();
-  if (_memoSbUserId && _memoListCache) return _memoListCache.slice();
   const list=get(JAY_MEMO_LIST_KEY,[]);
-  return Array.isArray(list)?list.slice():[];
+  return Array.isArray(list)?list:[];
 }
 function setJayMemoList(list){
-  const arr=Array.isArray(list)?list.slice():[];
-  const prev=getJayMemoList();
-  setLocalJayMemoList(arr);
-  if (_memoSbUserId) _memoListCache=arr.slice();
-  if (!window.supabase?.auth) return;
-  window.supabase.auth.getSession().then(async ({ data: { session } }) => {
-    if (!session?.user?.id) return;
-    const newIds=new Set(arr.map(m=>m.id));
-    for (const m of prev) {
-      if (m.id && !newIds.has(m.id)) await deleteSupabaseMemo(m.id);
-    }
-    for (const m of arr) await saveSupabaseMemo(m);
-  }).catch(err=>console.error('setJayMemoList supabase',err));
+  set(JAY_MEMO_LIST_KEY,list);
+  syncJayMemoListToDateKeys(list);
+  invalidateStoreCache(JAY_MEMO_LIST_KEY);
 }
 function deleteJayMemoById(id){
-  const list=getJayMemoList().filter(m=>m.id!==id);
-  setJayMemoList(list);
+  setJayMemoList(getJayMemoList().filter(m=>m.id!==id));
 }
 
 function getMemosForDate(dstr){
@@ -1329,6 +1181,4 @@ function widgetMemo(){
   window.openMemoWidget = openMemoWidget;
   window.openMemoWidgetPopup = openMemoWidgetPopup;
   window.renderMemoHtml = renderMemoHtml;
-
-  initMemoSupabaseSync();
 })();
