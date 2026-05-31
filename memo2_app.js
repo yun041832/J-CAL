@@ -173,8 +173,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   window.JCal?.getJayMemoList?.();
 
   // 마지막으로 열었던 페이지 복원
-  const lastPage = localStorage.getItem('memo2.lastPage') || 'home';
-  if(lastPage === 'calendar') showCalendarPage();
+  const lastPage = localStorage.getItem('memo2.lastPage') || 'calendar';
+  if(lastPage === 'calendar' || lastPage === 'home') showCalendarPage();
   else if(lastPage === 'memo') window.JCal?.showMemoPage?.();
   else if(lastPage === 'routine') window.JCal?.showRoutinePage?.();
   else if(lastPage === 'daily') window.JCal?.showDailyPage?.();
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   else if(lastPage === 'stopwatch') window.JCal?.showTimerPage?.('stopwatch');
   else if(lastPage === 'insight') showInsightPage();
   else if(lastPage === 'logs') showLogsPage();
-  else showHomeIntro();
+  else showCalendarPage();
 
   window.JCal?.initTimerSettingModal?.();
 
@@ -613,8 +613,8 @@ function setupFabButton(){
   fab.type='button';
   const menu=document.createElement('div'); menu.className='fab-menu';
   Object.assign(menu.style,{position:'absolute',right:'16px',bottom:'84px',zIndex:'4999'});
-  const addEvent=el('button','fab-action','일정 추가');
-  const addTodo=el('button','fab-action','TODO 추가');
+  const addEvent=el('button','fab-action','Add Event');
+  const addTodo=el('button','fab-action','Add Task');
   menu.append(addEvent,addTodo);
   host.append(fab,menu);
   // 만약 다른 요소에 가려지면 위치/디스플레이를 재보정
@@ -1320,7 +1320,7 @@ function showEventDetailModal(item,ref,dstr){
   titleInput.type='text';
   titleInput.className='event-detail-title';
   titleInput.value=item.text;
-  titleInput.placeholder='제목';
+  titleInput.placeholder='Title';
   
   // 이모티콘과 색상 버튼
   const toolRow=el('div','event-detail-tools');
@@ -1422,7 +1422,7 @@ function showEventDetailModal(item,ref,dstr){
   // 삭제 버튼
   const deleteRow=el('div','event-detail-row delete-row');
   const deleteIcon=el('span','row-icon','🗑');
-  const deleteLabel=el('span','row-label','삭제');
+  const deleteLabel=el('span','row-label','Delete');
   deleteRow.append(deleteIcon,deleteLabel);
   deleteRow.onclick=()=>{
     if(confirm('이 일정을 삭제하시겠습니까?')){
@@ -1990,7 +1990,7 @@ function initInsightWritePage(editMode=false,editItemId=null){
     const title=titleInput.value.trim();
     const content=textarea.value.trim();
     if(!title&&!content){
-      alert('제목 또는 내용을 입력하세요.');
+      alert('Please enter a title or content.');
       return;
     }
     const dateVal=dateInput.value||fmtLocalDate(new Date());
@@ -2064,10 +2064,10 @@ function createInsightCard(item){
   titleEl.style.textOverflow='ellipsis';
   titleEl.style.whiteSpace='nowrap';
   const delBtn=el('button','memo-card__btn','✕');
-  delBtn.title='삭제';
+  delBtn.title='Delete';
   delBtn.onclick=(e)=>{
     e.stopPropagation();
-    if(confirm('삭제할까요?')&&item.id){
+    if(confirm('Delete this memo?')&&item.id){
       deleteJayInsightById(item.id);
       renderInsightPageList();
     }
@@ -2558,31 +2558,31 @@ function widgetTodo(){
 const usageTexts = {
   calendar: {
     intro: `
-      <p><strong>달력 기능</strong>은 Jay 캘린더의 핵심 기능으로, 월간 일정을 한눈에 볼 수 있는 직관적인 인터페이스를 제공합니다. 구글 캘린더와 유사한 디자인으로 누구나 쉽게 사용할 수 있으며, 일정과 할 일을 체계적으로 관리할 수 있습니다.</p>
-      <p>달력은 메인 화면에 항상 표시되어 있어 별도로 열 필요가 없습니다. 각 날짜 칸에는 해당 날짜의 일정과 할 일이 표시되며, 색상과 이모티콘으로 시각적으로 구분할 수 있습니다.</p>
-      <p>이달의 목표 기능을 통해 매달 달성하고자 하는 목표를 설정하고, 달력을 통해 진행 상황을 확인할 수 있습니다.</p>
+      <p><strong>Calendar</strong> is the core feature of Jay Calendar. View your monthly schedule at a glance with an intuitive interface similar to Google Calendar.</p>
+      <p>The calendar is always visible on the main screen. Each date cell shows events and tasks, color-coded and labeled with emoji for easy recognition.</p>
+      <p>Set your monthly goal and track your progress directly on the calendar.</p>
     `,
     method: `
-      <p><strong>달력 사용 방법:</strong></p>
+      <p><strong>How to use Calendar:</strong></p>
       <ul>
-        <li><strong>날짜 선택:</strong> 달력에서 원하는 날짜를 클릭하면 우측 패널에 해당 날짜의 상세 정보가 표시됩니다</li>
-        <li><strong>월 이동:</strong> ◀ ▶ 버튼을 클릭하여 이전 달, 다음 달로 이동할 수 있습니다</li>
-        <li><strong>오늘로 이동:</strong> 화면 상단의 "7" 버튼(오늘 날짜)을 클릭하면 현재 날짜로 바로 이동합니다</li>
-        <li><strong>이달의 목표 설정:</strong> 상단의 입력창에 이달의 목표를 입력하고 Enter를 누르면 저장됩니다</li>
-        <li><strong>일정 확인:</strong> 각 날짜 칸에는 최대 6줄의 일정이 표시되며, 체크박스로 완료 여부를 표시할 수 있습니다</li>
-        <li><strong>색상 구분:</strong> 일정마다 다른 색상을 지정하여 업무, 개인 일정 등을 구분할 수 있습니다</li>
-        <li><strong>이모티콘 활용:</strong> 각 일정에 이모티콘을 추가하여 내용을 더 직관적으로 표현할 수 있습니다</li>
+        <li><strong>Select a date:</strong> Click a date on the calendar to view details in the right panel</li>
+        <li><strong>Navigate months:</strong> Use ◀ ▶ buttons to move to previous or next month</li>
+        <li><strong>Go to today:</strong> Click the "Today" button at the top to jump to the current date</li>
+        <li><strong>Set monthly goal:</strong> Enter your goal in the top input field and press Enter to save</li>
+        <li><strong>Check events:</strong> Up to 6 items appear in each date cell; use checkboxes to mark completion</li>
+        <li><strong>Color coding:</strong> Assign different colors to events to distinguish work, personal, and other categories</li>
+        <li><strong>Use emoji:</strong> Add emoji to events for quick visual recognition</li>
       </ul>
     `,
     widget: `
-      <p><strong>달력 위젯</strong>은 별도의 팝업 창으로 달력을 표시하는 기능입니다. 왼쪽 사이드바의 "🗓 달력" 버튼을 클릭하면 위젯이 열립니다.</p>
+      <p>The calendar widget opens as a floating popup. Click the '▣ Cal' button in the sidebar to open it.</p>
       <ul>
-        <li><strong>위젯 열기:</strong> 사이드바에서 "🗓 달력" 버튼 클릭</li>
-        <li><strong>위젯 이동:</strong> 위젯 상단의 제목 부분을 마우스로 드래그하여 원하는 위치로 이동</li>
-        <li><strong>크기 조절:</strong> 위젯 오른쪽 하단 모서리를 드래그하여 크기를 자유롭게 조절</li>
-        <li><strong>위젯 닫기:</strong> 위젯 상단의 X 버튼을 클릭하여 닫기</li>
-        <li><strong>다중 위젯:</strong> 여러 개의 위젯을 동시에 열어 비교하며 사용 가능</li>
-        <li><strong>미니 달력:</strong> 위젯의 달력은 메인 화면과 동기화되어 같은 데이터를 공유합니다</li>
+        <li><strong>Open widget:</strong> Click '▣ Cal' in the sidebar</li>
+        <li><strong>Move widget:</strong> Drag the widget header to reposition</li>
+        <li><strong>Resize widget:</strong> Drag the bottom-right corner to resize</li>
+        <li><strong>Close widget:</strong> Click X in the widget header to close</li>
+        <li><strong>Multiple widgets:</strong> Open multiple widgets side by side</li>
+        <li><strong>Mini calendar:</strong> Widget calendar syncs with the main view and shares the same data</li>
       </ul>
     `
   },
@@ -2907,7 +2907,7 @@ function showGoalStyleMenu(anchor,options={}){
   const menu=document.createElement('div'); menu.className='goal-style-menu';
 
   const rowColor=document.createElement('div'); rowColor.className='row';
-  const lblColor=document.createElement('span'); lblColor.className='label'; lblColor.textContent='색상';
+  const lblColor=document.createElement('span'); lblColor.className='label'; lblColor.textContent='Color';
   const colorBtn=document.createElement('button'); colorBtn.type='button'; colorBtn.className='swatch-btn';
   const swatch=document.createElement('span'); swatch.className='swatch'; swatch.style.background=st.color||'#1f2937';
   const colorTxt=document.createElement('span'); colorTxt.textContent='변경';

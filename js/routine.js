@@ -733,7 +733,7 @@ function showRepeatDayModal(currentDays,onSave){
   const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
-  const saveBtn=el('button','btn-confirm','확인');
+  const saveBtn=el('button','btn-confirm','Confirm');
   saveBtn.onclick=()=>{
     onSave(selectedDays);
     modal.remove();
@@ -844,7 +844,7 @@ function showEmojiModal(currentEmoji,onSave){
   const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
-  const saveBtn=el('button','btn-confirm','확인');
+  const saveBtn=el('button','btn-confirm','Confirm');
   saveBtn.onclick=()=>{
     onSave(selectedEmoji);
     modal.remove();
@@ -925,7 +925,7 @@ function showColorPickerModal(currentColor,onSave){
   const cancelBtn=el('button','btn','Cancel');
   cancelBtn.onclick=()=> modal.remove();
   
-  const saveBtn=el('button','btn-confirm','확인');
+  const saveBtn=el('button','btn-confirm','Confirm');
   saveBtn.onclick=()=>{
     onSave(selectedColor);
     modal.remove();

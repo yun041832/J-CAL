@@ -1413,7 +1413,7 @@ function renderDailyList(){
     const editBtn = el('button');
     editBtn.innerHTML = DAILY_TASK_EDIT_SVG;
     editBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;opacity:0.6;';
-    editBtn.title = '수정';
+    editBtn.title = 'Edit';
 
     const delBtn = el('button', null, '✕');
     delBtn.style.cssText = 'background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0;';

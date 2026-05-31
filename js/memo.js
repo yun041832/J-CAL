@@ -41,9 +41,9 @@
 
   // ── 기본 섹션 3개 ──────────────────────────────────
   const DEFAULT_SECTIONS = [
-    { name: '오늘작업', emoji: '📝', color: '#f0fdf4', sort_order: 0 },
-    { name: '생각들',   emoji: '💭', color: '#eff6ff', sort_order: 1 },
-    { name: '일기',     emoji: '📔', color: '#fdf4ff', sort_order: 2 },
+    { name: 'Today\'s Work', emoji: '📝', color: '#f0fdf4', sort_order: 0 },
+    { name: 'Thoughts',   emoji: '💭', color: '#eff6ff', sort_order: 1 },
+    { name: 'Journal',     emoji: '📔', color: '#fdf4ff', sort_order: 2 },
   ];
 
   let _sections = []; // { id, name, emoji, color, sort_order }
@@ -171,7 +171,7 @@
     header.innerHTML = `
       <span style="font-weight:700;font-size:16px;">Memo</span>
       <div style="display:flex;gap:6px;">
-        ${['일', '월', '전체'].map((v, i) => {
+        ${['Day', 'Month', 'All'].map((v, i) => {
           const modes = ['day', 'month', 'all'];
           const active = _viewMode === modes[i];
           return `<button data-view="${modes[i]}" style="padding:4px 10px;border-radius:6px;border:1px solid ${active ? '#5C8DFF' : '#e5e7eb'};background:${active ? '#5C8DFF' : '#fff'};color:${active ? '#fff' : '#374151'};font-size:12px;cursor:pointer;">${v}</button>`;
@@ -192,7 +192,7 @@
     panels.style.cssText = 'display:flex;flex:1;overflow:hidden;';
 
     if (_sections.length === 0) {
-      panels.innerHTML = '<div style="padding:24px;color:#9ca3af;">로그인 후 사용 가능합니다.</div>';
+      panels.innerHTML = '<div style="padding:24px;color:#9ca3af;">Please log in to continue.</div>';
       page.appendChild(panels);
       return;
     }
@@ -206,7 +206,7 @@
       secHeader.style.cssText = 'display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
       secHeader.innerHTML = `
         <span style="font-size:16px;">${sec.emoji || '📝'}</span>
-        <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="클릭해서 이름 변경">${sec.name}</span>
+        <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="Click to rename">${sec.name}</span>
         <button data-add="${sec.id}" style="font-size:18px;background:none;border:none;cursor:pointer;color:#5C8DFF;line-height:1;">+</button>
       `;
       // 섹션명 클릭 → 인라인 편집
@@ -244,7 +244,7 @@
       if (filtered.length === 0) {
         const empty = document.createElement('div');
         empty.style.cssText = 'color:#d1d5db;font-size:12px;text-align:center;padding:24px 0;';
-        empty.textContent = '메모 없음';
+        empty.textContent = 'No memos yet.';
         list.appendChild(empty);
       } else {
         filtered.forEach(memo => {
@@ -271,7 +271,7 @@
     dateInput.style.cssText = 'font-size:11px;border:1px solid #e5e7eb;border-radius:4px;padding:2px 6px;';
 
     const ta = document.createElement('textarea');
-    ta.placeholder = '내용을 입력하세요...';
+    ta.placeholder = 'Write something...';
     ta.rows = 4;
     ta.style.cssText = 'resize:none;border:none;outline:none;font-size:13px;width:100%;box-sizing:border-box;';
 
@@ -315,7 +315,7 @@
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
     delBtn.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;color:#d1d5db;font-size:16px;cursor:pointer;line-height:1;';
-    delBtn.onclick = () => { if (confirm('삭제할까요?')) deleteMemo(memo.id); };
+    delBtn.onclick = () => { if (confirm('Delete this memo?')) deleteMemo(memo.id); };
 
     // 카드 클릭 → 인라인 편집
     content.ondblclick = () => {

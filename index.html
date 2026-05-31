@@ -219,7 +219,7 @@
   <div class="app">
     <div class="sidebar-stack">
     <aside class="sidebar">
-      <button class="menu-btn" id="homeBtn" title="Home"><span class="menu-icon">🏠</span><span class="menu-label">Home</span></button>
+      <button class="menu-btn" id="homeBtn" title="Home" style="display:none;"><span class="menu-icon">🏠</span><span class="menu-label">Home</span></button>
       <button class="menu-btn" data-widget="calendar" title="Calendar"><span class="menu-icon">📅</span><span class="menu-label">Cal</span></button>
       <button class="menu-btn" data-widget="routine" title="Routine"><span class="menu-icon">✅</span><span class="menu-label">Rout</span></button>
       <button class="menu-btn" data-widget="daily" title="Daily"><span class="menu-icon">📋</span><span class="menu-label">Daily</span></button>
@@ -601,7 +601,7 @@
           <div id="insightLangToggle" class="insight-lang-toggle"></div>
           <input type="text" id="insightTitleInput" placeholder="Title" class="insight-write-input insight-write-input--title">
           <input type="date" id="insightDateInput" class="insight-write-input">
-          <textarea id="insightTextarea" placeholder="내용" class="insight-write-textarea"></textarea>
+          <textarea id="insightTextarea" placeholder="Content" class="insight-write-textarea"></textarea>
         </div>
       </div>
 
@@ -742,18 +742,18 @@
 
         <!-- 사용법 안내 섹션 (메뉴 클릭 시만 보임) -->
         <div id="usageSection" class="usage-section" style="display:none;">
-          <h3 class="usage-title">사용법</h3>
+          <h3 class="usage-title">How to use</h3>
           <div class="usage-grid">
             <div class="usage-column">
-              <h4 class="usage-subtitle">메뉴 소개</h4>
+              <h4 class="usage-subtitle">Menu Guide</h4>
               <div id="usageIntro" class="usage-text"></div>
             </div>
             <div class="usage-column">
-              <h4 class="usage-subtitle">사용 방법</h4>
+              <h4 class="usage-subtitle">How to Use</h4>
               <div id="usageMethod" class="usage-text"></div>
             </div>
             <div class="usage-column">
-              <h4 class="usage-subtitle">위젯 사용법</h4>
+              <h4 class="usage-subtitle">Widget Guide</h4>
               <div id="usageWidget" class="usage-text"></div>
             </div>
           </div>
@@ -899,7 +899,7 @@
 
     function setHomeTabVisible(visible) {
       const homeBtn = document.getElementById('homeBtn')
-      if (homeBtn) homeBtn.style.display = visible ? '' : 'none'
+      if (homeBtn) homeBtn.style.display = 'none'
     }
 
     function applyPostLoginPage() {
@@ -911,9 +911,9 @@
     }
 
     function applyPostLogoutPage() {
-      localStorage.setItem(LAST_PAGE_KEY, 'home')
-      setHomeTabVisible(true)
-      if (typeof showHomeIntro === 'function') showHomeIntro()
+      localStorage.setItem(LAST_PAGE_KEY, 'calendar')
+      setHomeTabVisible(false)
+      if (typeof showCalendarPage === 'function') showCalendarPage()
     }
 
     // 로그아웃
