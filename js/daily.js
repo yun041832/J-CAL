@@ -69,9 +69,10 @@ let dailySectionTaskInputSectionId = null;
 let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
+let dailySectionRenameId = null;
 const SECTION_COLORS=[
   {bg:'#dcfce7',text:'#166534'}, // Green
-  {bg:'#EEF2FF',text:'#5C8DFF'}, // Blue
+  {bg:'#dbeafe',text:'#1e40af'}, // Blue
   {bg:'#fef9c3',text:'#854d0e'}, // Amber
   {bg:'#ffedd5',text:'#9a3412'}, // Orange
   {bg:'#ede9fe',text:'#4c1d95'}, // Purple
@@ -495,16 +496,77 @@ function isDailySectionDeletable(section){
   return true;
 }
 function deleteDailySection(dstr,sectionId){
-  const sections=getDailySections(dstr);
-  const target=sections.find(s=>s.id===sectionId);
-  if(!target||!isDailySectionDeletable(target)) return;
-  setDailySections(dstr,sections.filter(s=>s.id!==sectionId));
-  saveDailyTasks(dstr,getDailyTasks(dstr).filter(t=>t.sectionId!==sectionId));
-  if(dailySectionTaskInputSectionId===sectionId){
-    dailySectionTaskInputSectionId=null;
-    dailySectionTaskInputText='';
-  }
-  renderDailyDayWorkspace();
+  (async ()=>{
+    const sections=getDailySections(dstr);
+    const target=sections.find(s=>s.id===sectionId);
+    if(!target||!isDailySectionDeletable(target)) return;
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      console.error('deleteDailySection: not logged in');
+      return;
+    }
+    const sb=getDailySupabaseClient();
+    try{
+      const {error:taskErr}=await sb.from('daily_tasks')
+        .delete()
+        .eq('user_id',userId)
+        .eq('section_id',sectionId);
+      if(taskErr) throw taskErr;
+      const {error:secErr}=await sb.from('daily_sections')
+        .delete()
+        .eq('id',sectionId)
+        .eq('user_id',userId);
+      if(secErr) throw secErr;
+    }catch(err){
+      console.error('deleteDailySection',err);
+      return;
+    }
+    const nextSections=sections.filter(s=>s.id!==sectionId);
+    const nextTasks=getDailyTasks(dstr).filter(t=>t.sectionId!==sectionId);
+    _dailySectionsCache.set(dstr,nextSections);
+    _dailyTasksCache.set(dstr,nextTasks);
+    set(kDailySections(dstr),nextSections);
+    set(kDaily(dstr),nextTasks);
+    if(dailySectionTaskInputSectionId===sectionId){
+      dailySectionTaskInputSectionId=null;
+      dailySectionTaskInputText='';
+    }
+    if(dailySectionRenameId===sectionId) dailySectionRenameId=null;
+    renderDailyDayWorkspace();
+  })();
+}
+function patchDailySection(dstr,sectionId,patch){
+  return (async ()=>{
+    const sections=getDailySections(dstr);
+    const idx=sections.findIndex(s=>s.id===sectionId);
+    if(idx<0) return;
+    const normalized={...patch};
+    if(normalized.color!=null) normalized.color=findSectionColorEntry(normalized.color).bg;
+    if(normalized.title!=null){
+      const value=(normalized.title||'').trim();
+      if(!value) return;
+      normalized.title=value;
+    }
+    sections[idx]={...sections[idx],...normalized};
+    _dailySectionsCache.set(dstr,sections);
+    set(kDailySections(dstr),sections);
+    refreshDailyTaskViews();
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      console.error('patchDailySection: not logged in');
+      return;
+    }
+    const sb=getDailySupabaseClient();
+    const dbPatch={};
+    if(patch.title!=null) dbPatch.title=normalized.title;
+    if(patch.emoji!=null) dbPatch.emoji=normalized.emoji;
+    if(patch.color!=null) dbPatch.color=normalized.color;
+    const {error}=await sb.from('daily_sections')
+      .update(dbPatch)
+      .eq('id',sectionId)
+      .eq('user_id',userId);
+    if(error) console.error('patchDailySection',error);
+  })();
 }
 function appendDailySectionTitleInput(host,opts){
   const inp=document.createElement('input');
@@ -669,21 +731,134 @@ function formatDailyMemoSavedAt(ts){
   const mm=String(d.getMinutes()).padStart(2,'0');
   return `Saved ${hh}:${mm}`;
 }
+function positionDailyMenuPopup(pop,anchor,popupWidth=160){
+  const win=(anchor.ownerDocument||document).defaultView||window;
+  const rect=anchor.getBoundingClientRect();
+  const left=(rect.right+popupWidth>win.innerWidth)
+    ?rect.left-popupWidth
+    :rect.right;
+  pop.style.position='fixed';
+  pop.style.left=left+'px';
+  pop.style.top=(rect.bottom+4)+'px';
+  pop.style.zIndex='10000';
+}
+function bindDailyMenuOutsideClose(pop,anchor,close){
+  const doc=anchor.ownerDocument||document;
+  const onDocDown=(e)=>{
+    if(!pop.contains(e.target)&&e.target!==anchor) close();
+  };
+  setTimeout(()=>doc.addEventListener('mousedown',onDocDown),10);
+  return onDocDown;
+}
+function showDailySectionColorPicker(anchor,dstr,section){
+  const doc=anchor.ownerDocument||document;
+  if(dailyOpenPop) dailyOpenPop.remove();
+  const pop=doc.createElement('div');
+  pop.className='event-menu-popup daily-section-color-popup';
+  let onDocDown=null;
+  const close=()=>{
+    pop.remove();
+    dailyOpenPop=null;
+    if(onDocDown) doc.removeEventListener('mousedown',onDocDown);
+  };
+  onDocDown=bindDailyMenuOutsideClose(pop,anchor,close);
+  const currentBg=resolveDailySectionPalette(section).bg;
+  const grid=el('div','daily-section-color-grid');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px;';
+  SECTION_COLORS.forEach((opt,i)=>{
+    const sw=doc.createElement('button');
+    sw.type='button';
+    sw.title=SECTION_COLOR_LABELS[i]||opt.bg;
+    sw.style.cssText=`width:36px;height:36px;border-radius:8px;border:2px solid ${opt.bg.toLowerCase()===currentBg.toLowerCase()?'#5C8DFF':'#e5e7eb'};background:${opt.bg};cursor:pointer;padding:0;`;
+    sw.onclick=(e)=>{
+      e.stopPropagation();
+      close();
+      patchDailySection(dstr,section.id,{color:opt.bg});
+    };
+    grid.appendChild(sw);
+  });
+  pop.appendChild(grid);
+  doc.body.appendChild(pop);
+  dailyOpenPop=pop;
+  positionDailyMenuPopup(pop,anchor,140);
+}
+function showDailySectionEmojiInput(anchor,dstr,section){
+  const doc=anchor.ownerDocument||document;
+  if(dailyOpenPop) dailyOpenPop.remove();
+  const pop=doc.createElement('div');
+  pop.className='event-menu-popup daily-section-emoji-popup';
+  let onDocDown=null;
+  const close=()=>{
+    pop.remove();
+    dailyOpenPop=null;
+    if(onDocDown) doc.removeEventListener('mousedown',onDocDown);
+  };
+  onDocDown=bindDailyMenuOutsideClose(pop,anchor,close);
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.placeholder='Enter emoji';
+  inp.value=section.emoji||'';
+  inp.maxLength=8;
+  inp.style.cssText='width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;font-size:18px;box-sizing:border-box;';
+  const okBtn=el('button','menu-item','OK');
+  okBtn.type='button';
+  const submit=()=>{
+    const emoji=inp.value.trim();
+    if(!emoji) return;
+    close();
+    patchDailySection(dstr,section.id,{emoji});
+  };
+  okBtn.onclick=(e)=>{ e.stopPropagation(); submit(); };
+  inp.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); submit(); }
+    if(e.key==='Escape'){ e.preventDefault(); close(); }
+  });
+  pop.append(inp,okBtn);
+  doc.body.appendChild(pop);
+  dailyOpenPop=pop;
+  positionDailyMenuPopup(pop,anchor,180);
+  setTimeout(()=>{ inp.focus(); inp.select(); },10);
+}
 function showDailySectionMenu(anchor,dstr,section){
   const doc=anchor.ownerDocument||document;
   if(dailyOpenPop) dailyOpenPop.remove();
   const pop=doc.createElement('div');
   pop.className='event-menu-popup daily-section-menu-popup';
-  const close=()=>{ pop.remove(); dailyOpenPop=null; doc.removeEventListener('mousedown',onDocDown); };
-  const onDocDown=(e)=>{ if(!pop.contains(e.target)&&e.target!==anchor) close(); };
-  const editBtn=el('button','menu-item','✏️ Edit');
-  editBtn.type='button';
-  editBtn.onclick=(e)=>{
+  let onDocDown=null;
+  const close=()=>{
+    pop.remove();
+    dailyOpenPop=null;
+    if(onDocDown) doc.removeEventListener('mousedown',onDocDown);
+  };
+  onDocDown=bindDailyMenuOutsideClose(pop,anchor,close);
+
+  const colorBtn=el('button','menu-item','🎨 Change Color');
+  colorBtn.type='button';
+  colorBtn.onclick=(e)=>{
     e.stopPropagation();
     close();
-    showDailySectionEditPopup(anchor,dstr,section);
+    showDailySectionColorPicker(anchor,dstr,section);
   };
-  pop.appendChild(editBtn);
+
+  const emojiBtn=el('button','menu-item','😊 Change Emoji');
+  emojiBtn.type='button';
+  emojiBtn.onclick=(e)=>{
+    e.stopPropagation();
+    close();
+    showDailySectionEmojiInput(anchor,dstr,section);
+  };
+
+  const renameBtn=el('button','menu-item','✏️ Rename');
+  renameBtn.type='button';
+  renameBtn.onclick=(e)=>{
+    e.stopPropagation();
+    close();
+    dailySectionRenameId=section.id;
+    renderDailyDayWorkspace();
+  };
+
+  pop.append(colorBtn,emojiBtn,renameBtn);
+
   if(isDailySectionDeletable(section)){
     const delBtn=el('button','menu-item del','🗑️ Delete');
     delBtn.type='button';
@@ -694,96 +869,10 @@ function showDailySectionMenu(anchor,dstr,section){
     };
     pop.appendChild(delBtn);
   }
+
   doc.body.appendChild(pop);
   dailyOpenPop=pop;
-  const r=anchor.getBoundingClientRect();
-  pop.style.position='fixed';
-  pop.style.left=`${Math.min(r.left,window.innerWidth-pop.offsetWidth-8)}px`;
-  pop.style.top=`${r.bottom+6}px`;
-  pop.style.zIndex='10000';
-  setTimeout(()=>doc.addEventListener('mousedown',onDocDown),10);
-}
-function showDailySectionEditPopup(anchor,dstr,section){
-  const doc=anchor.ownerDocument||document;
-  if(dailyOpenPop) dailyOpenPop.remove();
-  const draft={
-    title:section.title||'',
-    emoji:section.emoji||'📌',
-    color:resolveDailySectionPalette(section).bg,
-  };
-  const pop=doc.createElement('div');
-  pop.className='daily-section-edit-popup';
-  const close=()=>{ pop.remove(); dailyOpenPop=null; doc.removeEventListener('mousedown',onDocDown); };
-  const onDocDown=(e)=>{ if(!pop.contains(e.target)&&e.target!==anchor) close(); };
-
-  const titleLabel=el('div','daily-section-edit-label','Section name');
-  const titleInp=document.createElement('input');
-  titleInp.type='text';
-  titleInp.className='daily-section-edit-title';
-  titleInp.value=draft.title;
-  titleInp.placeholder='Section name';
-  titleInp.addEventListener('input',()=>{ draft.title=titleInp.value; });
-
-  const emojiLabel=el('div','daily-section-edit-label','Choose emoji');
-  const emojiGrid=el('div','daily-section-edit-emoji-grid');
-  const emojiBtns=[];
-  DAILY_SECTION_EMOJI_OPTIONS.forEach((emo)=>{
-    const btn=el('button','daily-section-edit-emoji-btn',emo);
-    btn.type='button';
-    if(emo===draft.emoji) btn.classList.add('is-selected');
-    btn.onclick=(e)=>{
-      e.stopPropagation();
-      draft.emoji=emo;
-      emojiBtns.forEach(b=>b.classList.toggle('is-selected',b.textContent===emo));
-    };
-    emojiBtns.push(btn);
-    emojiGrid.appendChild(btn);
-  });
-
-  const colorLabel=el('div','daily-section-edit-label','Choose color');
-  const colorGrid=el('div','daily-section-edit-color-grid');
-  const colorBtns=[];
-  SECTION_COLORS.forEach((opt,i)=>{
-    const btn=el('button','daily-section-edit-color-btn section-dot');
-    btn.type='button';
-    btn.title=SECTION_COLOR_LABELS[i]||opt.bg;
-    btn.style.background=opt.bg;
-    if(opt.bg===draft.color) btn.classList.add('is-selected');
-    btn.onclick=(e)=>{
-      e.stopPropagation();
-      draft.color=opt.bg;
-      colorBtns.forEach(b=>b.classList.toggle('is-selected',b===btn));
-    };
-    colorBtns.push(btn);
-    colorGrid.appendChild(btn);
-  });
-
-  const actions=el('div','daily-section-edit-actions');
-  const cancelBtn=el('button','daily-section-edit-cancel','Cancel');
-  cancelBtn.type='button';
-  cancelBtn.onclick=(e)=>{ e.stopPropagation(); close(); };
-  const saveBtn=el('button','daily-section-edit-save','Save');
-  saveBtn.type='button';
-  saveBtn.onclick=(e)=>{
-    e.stopPropagation();
-    close();
-    saveDailySection(dstr,section.id,draft);
-  };
-  actions.append(cancelBtn,saveBtn);
-
-  pop.append(titleLabel,titleInp,emojiLabel,emojiGrid,colorLabel,colorGrid,actions);
-  doc.body.appendChild(pop);
-  dailyOpenPop=pop;
-  const r=anchor.getBoundingClientRect();
-  pop.style.position='fixed';
-  pop.style.left=`${Math.min(r.left,window.innerWidth-280)}px`;
-  pop.style.top=`${Math.min(r.bottom+6,window.innerHeight-pop.offsetHeight-8)}px`;
-  pop.style.zIndex='10001';
-  setTimeout(()=>{
-    doc.addEventListener('mousedown',onDocDown);
-    titleInp.focus();
-    titleInp.select();
-  },10);
+  positionDailyMenuPopup(pop,anchor);
 }
 function updateDailyViewButtons(){
   const map=[
@@ -1031,7 +1120,32 @@ function renderDailyDayWorkspace(){
     const leftHead=el('div','daily-day-section-left');
     const emo=el('span','daily-day-section-emoji',theme.emoji);
     leftHead.append(emo);
-    leftHead.appendChild(el('span','daily-day-section-title',section.title||'Section'));
+    if(section.id!=='__none__'&&dailySectionRenameId===section.id){
+      appendDailySectionTitleInput(leftHead,{
+        placeholder:'Section name',
+        value:section.title||'',
+        onInput:()=>{},
+        onSubmit:(v)=>{
+          dailySectionRenameId=null;
+          patchDailySection(dstr,section.id,{title:v});
+        },
+        onCancel:()=>{
+          dailySectionRenameId=null;
+          renderDailyDayWorkspace();
+        },
+        onBlur:(v)=>{
+          dailySectionRenameId=null;
+          const value=(v||'').trim();
+          if(value&&(value!==(section.title||''))){
+            patchDailySection(dstr,section.id,{title:value});
+          }else{
+            renderDailyDayWorkspace();
+          }
+        },
+      });
+    }else{
+      leftHead.appendChild(el('span','daily-day-section-title',section.title||'Section'));
+    }
 
     const rightHead=el('div','daily-day-section-actions');
     if(section.id!=='__none__'){
