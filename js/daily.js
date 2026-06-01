@@ -70,36 +70,58 @@ let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 let dailySectionRenameId = null;
-const SECTION_COLORS=[
-  {bg:'#dcfce7',text:'#166534'}, // Green
-  {bg:'#dbeafe',text:'#1e40af'}, // Blue
-  {bg:'#fef9c3',text:'#854d0e'}, // Amber
-  {bg:'#ffedd5',text:'#9a3412'}, // Orange
-  {bg:'#ede9fe',text:'#4c1d95'}, // Purple
-  {bg:'#fce7f3',text:'#9d174d'}, // Pink
+const PALETTE_EXTENDED_COLUMN_9=[
+  '#fb923c','#d9f99d','#059669','#60a5fa','#ddd6fe','#a21caf',
 ];
-const SECTION_COLOR_LABELS=['Green','Blue','Amber','Orange','Purple','Pink'];
+function hexToRgb(hex){
+  const h=(hex||'').replace('#','').trim();
+  const full=h.length===3?h.split('').map(c=>c+c).join(''):h;
+  if(full.length!==6) return null;
+  return {
+    r:parseInt(full.slice(0,2),16),
+    g:parseInt(full.slice(2,4),16),
+    b:parseInt(full.slice(4,6),16),
+  };
+}
+function contrastTextForBg(bg){
+  const rgb=hexToRgb(bg);
+  if(!rgb) return '#111827';
+  const luminance=(0.2126*rgb.r+0.7152*rgb.g+0.0722*rgb.b)/255;
+  return luminance>0.62?'#111827':'#ffffff';
+}
+function sectionColorFromBg(bg){
+  return {bg,text:contrastTextForBg(bg)};
+}
+const SECTION_COLORS=PALETTE_EXTENDED_COLUMN_9.map(sectionColorFromBg);
+const SECTION_COLOR_LABELS=['Orange','Lime','Green','Blue','Lavender','Magenta'];
 const LEGACY_DAILY_SECTION_COLOR_IDS={
-  yellow:'#fef9c3',
-  green:'#dcfce7',
-  blue:'#EEF2FF',
-  purple:'#ede9fe',
-  red:'#fce7f3',
+  yellow:PALETTE_EXTENDED_COLUMN_9[1],
+  green:PALETTE_EXTENDED_COLUMN_9[2],
+  blue:PALETTE_EXTENDED_COLUMN_9[3],
+  purple:PALETTE_EXTENDED_COLUMN_9[4],
+  red:PALETTE_EXTENDED_COLUMN_9[5],
   gray:'#f1f5f9',
 };
 const LEGACY_DAILY_SECTION_HEX={
-  '#4ADE80':'#dcfce7',
-  '#60A5FA':'#EEF2FF',
-  '#FCD34D':'#fef9c3',
-  '#FB923C':'#ffedd5',
-  '#A78BFA':'#ede9fe',
-  '#F472B6':'#fce7f3',
-  '#10B981':'#dcfce7',
-  '#185FA5':'#EEF2FF',
-  '#F59E0B':'#fef9c3',
-  '#F97316':'#ffedd5',
-  '#8B5CF6':'#ede9fe',
-  '#EC4899':'#fce7f3',
+  '#dcfce7':PALETTE_EXTENDED_COLUMN_9[2],
+  '#dbeafe':PALETTE_EXTENDED_COLUMN_9[3],
+  '#EEF2FF':PALETTE_EXTENDED_COLUMN_9[3],
+  '#fef9c3':PALETTE_EXTENDED_COLUMN_9[1],
+  '#ffedd5':PALETTE_EXTENDED_COLUMN_9[0],
+  '#ede9fe':PALETTE_EXTENDED_COLUMN_9[4],
+  '#fce7f3':PALETTE_EXTENDED_COLUMN_9[5],
+  '#4ADE80':PALETTE_EXTENDED_COLUMN_9[2],
+  '#60A5FA':PALETTE_EXTENDED_COLUMN_9[3],
+  '#FCD34D':PALETTE_EXTENDED_COLUMN_9[1],
+  '#FB923C':PALETTE_EXTENDED_COLUMN_9[0],
+  '#A78BFA':PALETTE_EXTENDED_COLUMN_9[4],
+  '#F472B6':PALETTE_EXTENDED_COLUMN_9[5],
+  '#10B981':PALETTE_EXTENDED_COLUMN_9[2],
+  '#185FA5':PALETTE_EXTENDED_COLUMN_9[3],
+  '#F59E0B':PALETTE_EXTENDED_COLUMN_9[1],
+  '#F97316':PALETTE_EXTENDED_COLUMN_9[0],
+  '#8B5CF6':PALETTE_EXTENDED_COLUMN_9[4],
+  '#EC4899':PALETTE_EXTENDED_COLUMN_9[5],
 };
 function findSectionColorEntry(colorValue){
   const raw=(colorValue||'').trim();
@@ -107,15 +129,14 @@ function findSectionColorEntry(colorValue){
   const byBg=SECTION_COLORS.find(c=>c.bg.toLowerCase()===raw.toLowerCase());
   if(byBg) return byBg;
   if(LEGACY_DAILY_SECTION_COLOR_IDS[raw]){
-    const legacyBg=LEGACY_DAILY_SECTION_COLOR_IDS[raw];
-    return SECTION_COLORS.find(c=>c.bg===legacyBg)||SECTION_COLORS[0];
+    return sectionColorFromBg(LEGACY_DAILY_SECTION_COLOR_IDS[raw]);
   }
   const mappedBg=LEGACY_DAILY_SECTION_HEX[raw]||LEGACY_DAILY_SECTION_HEX[raw.toUpperCase()];
   if(mappedBg){
-    return SECTION_COLORS.find(c=>c.bg===mappedBg)||SECTION_COLORS[0];
+    return sectionColorFromBg(mappedBg);
   }
   if(/^#[0-9a-f]{3,8}$/i.test(raw)){
-    return {bg:raw,text:'#1f2937'};
+    return sectionColorFromBg(raw);
   }
   return SECTION_COLORS[0];
 }
