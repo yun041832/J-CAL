@@ -382,11 +382,16 @@ if(!localStorage.getItem('memo2.selected')) localStorage.setItem('memo2.selected
 
 /* ── 달력 ── */
 const dim=(y,m)=>new Date(y,m+1,0).getDate();
-function calcCellHeight(){
+function getCalendarWeekCount(y,m){
+  const start=new Date(y,m,1).getDay();
+  const total=dim(y,m);
+  return Math.ceil((start+total)/7);
+}
+function calcCellHeight(rows){
   const weekdays=$.calWrap?.querySelector('.calendar__weekdays');
   const wrapH=$.calWrap?.clientHeight||0;
   const widthBase=$.grid?.clientWidth||$.calWrap?.clientWidth||0;
-  const rows=6;
+  const rowCount=rows!=null?rows:(ST.calendarRows||getCalendarWeekCount(ST.viewYear,ST.viewMonth));
   // Reduced min height further so ads below calendar stay visible on desktop
   const minHeight=isMobileViewport()?80:90;
   let candidate=minHeight;
@@ -397,7 +402,7 @@ function calcCellHeight(){
   if(wrapH){
     const usable=wrapH-(weekdays?.offsetHeight||0)-12;
     if(usable>0){
-      candidate=Math.max(candidate, Math.floor(usable/rows));
+      candidate=Math.max(candidate, Math.floor(usable/rowCount));
     }
   }
   return Math.min(Math.max(candidate,minHeight),125);
@@ -412,9 +417,12 @@ function renderCalendar(){
   if($.ym) $.ym.textContent=`${ymLabel(y,m)}`;
   $.grid.innerHTML='';
   const first=new Date(y,m,1),start=first.getDay(),total=dim(y,m);
-  const prevTotal=new Date(y,m,0).getDate(),cells=42; // 6주 고정
+  const prevTotal=new Date(y,m,0).getDate();
+  const rows=Math.ceil((start+total)/7);
+  const cells=rows*7;
+  ST.calendarRows=rows;
   
-  const cellH=calcCellHeight();
+  const cellH=calcCellHeight(rows);
   ST.cellHeight=cellH;
 
   for(let i=0;i<cells;i++){

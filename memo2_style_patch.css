@@ -4912,8 +4912,10 @@ input[type="checkbox"],
   position: relative;
   z-index: 1;
   padding-bottom: 0 !important;
+  overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  height: 100% !important;
   min-height: 0 !important;
 }
 aside.right:not(.hidden) {
@@ -4928,14 +4930,22 @@ aside.right:not(.hidden) .card {
   position: relative;
   z-index: 1;
   flex: 1 !important;
-  height: 100% !important;
+  overflow: hidden !important;
   min-height: 0 !important;
 }
 
 #calendarPage .calendar {
   height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
   flex: 1 !important;
   min-height: 0 !important;
+}
+
+#calendarPage .calendar__grid {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
 }
 .todo-options-panel {
   position: relative;
