@@ -1330,7 +1330,6 @@ function renderDailyDayWorkspace(){
 function renderDailyWeekCalendar(){
   const container = document.getElementById('dailyWeekCalendar');
   if(!container) return;
-  renderDailyWeekGoal();
   container.innerHTML = '';
 
   const today = dailySelectedDate;
@@ -1366,6 +1365,13 @@ function renderDailyWeekCalendar(){
   navBtns.append(prevBtn, nextBtn);
   yearMonthRow.append(yearMonth, navBtns);
   container.appendChild(yearMonthRow);
+
+  // Week tab 상단: REMINDER / MONTHLY 2컬럼 블록
+  const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
+  const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
+  weeklyNotesWrap.style.cssText = 'margin:0 12px 10px;background:#1e1e2e;border-radius:14px;padding:10px 12px;display:none;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.06);';
+  container.appendChild(weeklyNotesWrap);
+  renderDailyWeeklyNotesBlock(weeklyNotesWrap, weekStartMonday);
 
   const weekdays = WEEKDAY_LABELS_EN;
 
@@ -1458,7 +1464,6 @@ function renderDailyWeekCalendar(){
 function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
-  renderDailyWeekGoal();
   container.innerHTML = '';
 
   const y = dailySelectedDate.getFullYear();
@@ -1679,6 +1684,266 @@ function widgetDaily(){
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - d.getDay());
     return fmtLocalDate(d);
+  }
+
+  // weekly_notes 테이블은 "해당 주 월요일" 기준 week_start 저장
+  function getWeekStartMondayDateStr(date) {
+    const d = new Date(date || new Date());
+    d.setHours(0, 0, 0, 0);
+    // JS getDay(): 0(Sun)~6(Sat) => Mon 기준으로 offset 보정
+    const offset = (d.getDay() + 6) % 7; // Mon=0, Tue=1, ... , Sun=6
+    d.setDate(d.getDate() - offset);
+    return fmtLocalDate(d);
+  }
+
+  function safeJsonParseStringArray(v) {
+    try {
+      if (Array.isArray(v)) return v.map(String);
+      if (typeof v !== 'string') return null;
+      const parsed = JSON.parse(v);
+      if (!Array.isArray(parsed)) return null;
+      return parsed.map(String);
+    } catch {
+      return null;
+    }
+  }
+
+  async function loadWeeklyNotesFromSupabase(weekStartStr) {
+    const userId = await resolveDailyUserId();
+    if (!userId) return null;
+    const sb = getDailySupabaseClient();
+    const { data, error } = await sb
+      .from('weekly_notes')
+      .select('id,reminder,monthly')
+      .eq('user_id', userId)
+      .eq('week_start', weekStartStr);
+    if (error) throw error;
+
+    const row = (data || [])[0] || null;
+    const reminderArr = safeJsonParseStringArray(row?.reminder) || [''];
+    const monthlyArr = safeJsonParseStringArray(row?.monthly) || [''];
+    return {
+      reminder: reminderArr.length ? reminderArr : [''],
+      monthly: monthlyArr.length ? monthlyArr : [''],
+    };
+  }
+
+  function ensureUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return `wn_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  async function upsertWeeklyNotesToSupabase(weekStartStr, reminderArr, monthlyArr) {
+    const userId = await resolveDailyUserId();
+    if (!userId) return;
+    const sb = getDailySupabaseClient();
+    const rows = [
+      {
+        id: ensureUUID(),
+        user_id: userId,
+        week_start: weekStartStr,
+        reminder: JSON.stringify(reminderArr),
+        monthly: JSON.stringify(monthlyArr),
+      },
+    ];
+    const { error } = await sb.from('weekly_notes').upsert(rows, { onConflict: 'user_id,week_start' });
+    if (error) throw error;
+  }
+
+  function renderDailyWeeklyNotesBlock(hostEl, weekStartStr) {
+    const doc = hostEl.ownerDocument || document;
+
+    // 로그인 안 됐을 때는 블록 숨김
+    hostEl.style.display = 'none';
+    hostEl.innerHTML = '';
+
+    const renderHidden = () => {
+      hostEl.style.display = 'none';
+    };
+
+    // 방어적으로 로딩 표시
+    hostEl.style.display = 'flex';
+    hostEl.style.justifyContent = 'space-between';
+    hostEl.style.flexWrap = 'nowrap';
+    hostEl.style.alignItems = 'flex-start';
+    hostEl.innerHTML = '<div style="color:#94a3b8;font-size:12px;line-height:1.4;padding:6px 0;">Loading...</div>';
+
+    (async () => {
+      const userId = await resolveDailyUserId();
+      if (!userId) {
+        renderHidden();
+        return;
+      }
+
+      let reminderItems = [''];
+      let monthlyItems = [''];
+      try {
+        const loaded = await loadWeeklyNotesFromSupabase(weekStartStr);
+        if (loaded) {
+          reminderItems = loaded.reminder || [''];
+          monthlyItems = loaded.monthly || [''];
+        }
+      } catch (err) {
+        console.error('loadWeeklyNotesFromSupabase', err);
+      }
+
+      // debounce: 500ms 후 upsert
+      let saveTimer = null;
+      const scheduleSave = () => {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          try {
+            await upsertWeeklyNotesToSupabase(weekStartStr, reminderItems, monthlyItems);
+          } catch (err) {
+            console.error('upsertWeeklyNotesToSupabase', err);
+          }
+        }, 500);
+      };
+
+      const pending = { reminder: null, monthly: null };
+
+      const renderBulletList = (listEl, items, autoEditIndex, onItemsChange) => {
+        listEl.innerHTML = '';
+        const makeInput = (rowEl, spanEl, idx) => {
+          const input = doc.createElement('input');
+          input.type = 'text';
+          input.value = items[idx] || '';
+          input.maxLength = 200;
+          input.autocomplete = 'off';
+          input.spellcheck = false;
+          input.style.cssText =
+            'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(148,163,184,0.35);border-radius:8px;color:#e5e7eb;padding:6px 8px;font-size:13px;outline:none;font-family:inherit;';
+
+          rowEl.replaceChild(input, spanEl);
+          input.focus();
+          input.select();
+
+          const original = items[idx] || '';
+          let isFinished = false;
+          const commitBlur = () => {
+            if(isFinished) return;
+            isFinished = true;
+            const next = items.slice();
+            next[idx] = (input.value || '').trim();
+            onItemsChange(next, null);
+          };
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              isFinished = true;
+              const next = items.slice();
+              next[idx] = original;
+              onItemsChange(next, null);
+              return;
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              isFinished = true;
+              const next = items.slice();
+              next[idx] = (input.value || '').trim();
+              next.splice(idx + 1, 0, '');
+              onItemsChange(next, idx + 1);
+              return;
+            }
+            if (e.key === 'Backspace') {
+              const atStart = input.selectionStart === 0;
+              if (atStart && (input.value || '').trim() === '' && items.length > 1) {
+                e.preventDefault();
+                isFinished = true;
+                const next = items.slice();
+                next.splice(idx, 1);
+                if (!next.length) next.push('');
+                const focusIdx = Math.min(idx, next.length - 1);
+                onItemsChange(next, focusIdx);
+              }
+            }
+          });
+
+          input.addEventListener('blur', commitBlur);
+        };
+
+        items.forEach((val, idx) => {
+          const row = doc.createElement('div');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:4px 0;';
+
+          const bullet = doc.createElement('span');
+          bullet.textContent = '•';
+          bullet.style.cssText = 'color:#cbd5e1;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
+
+          const span = doc.createElement('span');
+          span.textContent = val || '';
+          span.tabIndex = 0;
+          span.style.cssText =
+            'color:#e5e7eb;font-size:13px;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;';
+          if (!val) span.style.color = '#94a3b8';
+
+          span.addEventListener('click', (e) => {
+            e.stopPropagation();
+            makeInput(row, span, idx);
+          });
+          span.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              makeInput(row, span, idx);
+            }
+          });
+
+          row.append(bullet, span);
+          listEl.appendChild(row);
+
+          if (autoEditIndex === idx) {
+            // renderAll 이후 DOM이 완전히 구성된 뒤 편집 시작
+            setTimeout(() => makeInput(row, span, idx), 0);
+          }
+        });
+      };
+
+      const reminderListEl = doc.createElement('div');
+      const monthlyListEl = doc.createElement('div');
+
+      const leftCol = doc.createElement('div');
+      leftCol.style.cssText = 'flex:1;min-width:0;';
+      const rightCol = doc.createElement('div');
+      rightCol.style.cssText = 'flex:1;min-width:0;';
+
+      const leftTitle = doc.createElement('div');
+      leftTitle.textContent = '📝 REMINDER';
+      leftTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
+      const rightTitle = doc.createElement('div');
+      rightTitle.textContent = '📅 MONTHLY';
+      rightTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
+
+      const listWrapStyle = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px 10px;';
+      leftCol.append(leftTitle, reminderListEl);
+      rightCol.append(rightTitle, monthlyListEl);
+      reminderListEl.style.cssText = listWrapStyle;
+      monthlyListEl.style.cssText = listWrapStyle;
+
+      hostEl.innerHTML = '';
+      hostEl.append(leftCol, rightCol);
+
+      const renderAll = () => {
+        reminderListEl.style.cssText = listWrapStyle;
+        monthlyListEl.style.cssText = listWrapStyle;
+        renderBulletList(reminderListEl, reminderItems, pending.reminder, (nextArr, focusIdx) => {
+          reminderItems = nextArr.length ? nextArr : [''];
+          pending.reminder = focusIdx;
+          scheduleSave();
+          renderAll();
+        });
+        renderBulletList(monthlyListEl, monthlyItems, pending.monthly, (nextArr, focusIdx) => {
+          monthlyItems = nextArr.length ? nextArr : [''];
+          pending.monthly = focusIdx;
+          scheduleSave();
+          renderAll();
+        });
+        pending.reminder = null;
+        pending.monthly = null;
+      };
+
+      renderAll();
+    })();
   }
 
   function renderDailyWeekGoal() {
