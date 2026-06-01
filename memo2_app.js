@@ -903,66 +903,193 @@ function positionEventMenuPopup(pop,anchor,popupWidth=140){
   pop.style.left=left+'px';
   pop.style.top=rect.bottom+'px';
 }
+const EMOJI_CATEGORY_ALIASES={
+  '자주 사용':['자주','인기','favorite','frequent','recent','popular'],
+  '얼굴':['얼굴','face','smile','표정','감정','happy','sad'],
+  '활동':['활동','sport','운동','놀이','activity','ball'],
+  '음식':['음식','food','eat','먹','과일','fruit'],
+  '여행':['여행','travel','car','교통','transport','plane','비행'],
+  '기호':['기호','symbol','heart','사랑','별','star','love'],
+};
+const EMOJI_TAB_SHORT={
+  '자주 사용':'자주',
+  '얼굴':'얼굴',
+  '활동':'활동',
+  '음식':'음식',
+  '여행':'여행',
+  '기호':'기호',
+};
+let EMOJI_FLAT_LIST=null;
+function getEmojiFlatList(){
+  if(EMOJI_FLAT_LIST) return EMOJI_FLAT_LIST;
+  const seen=new Set();
+  EMOJI_FLAT_LIST=[];
+  Object.entries(EMOJI_CATEGORIES).forEach(([category,emojis])=>{
+    emojis.forEach(emoji=>{
+      if(seen.has(emoji)) return;
+      seen.add(emoji);
+      EMOJI_FLAT_LIST.push({emoji,category});
+    });
+  });
+  return EMOJI_FLAT_LIST;
+}
+function filterEmojisByQuery(query){
+  const q=query.trim().toLowerCase();
+  if(!q) return null;
+  return getEmojiFlatList().filter(({emoji,category})=>{
+    if(emoji.includes(q)) return true;
+    if(category.toLowerCase().includes(q)) return true;
+    const aliases=EMOJI_CATEGORY_ALIASES[category]||[];
+    return aliases.some(a=>{
+      const al=a.toLowerCase();
+      return al.includes(q)||q.includes(al);
+    });
+  });
+}
+function appendEmojiGrid(parent,emojis,doc,onPick,closePop){
+  if(!emojis.length){
+    const empty=doc.createElement('div');
+    empty.className='emoji-picker-empty';
+    empty.textContent='No matching emoji';
+    parent.appendChild(empty);
+    return;
+  }
+  const grid=doc.createElement('div');
+  grid.className='emoji-grid';
+  emojis.forEach(emoji=>{
+    const btn=doc.createElement('button');
+    btn.type='button';
+    btn.className='emoji-item';
+    btn.textContent=emoji;
+    btn.onclick=(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      onPick(emoji);
+      closePop();
+    };
+    grid.appendChild(btn);
+  });
+  parent.appendChild(grid);
+}
 function showEmojiPicker(anchor,onPick){
   const doc=anchor.ownerDocument||document;
   const win=doc.defaultView||window;
   if(openPop) openPop.remove();
-  
-  const pop=doc.createElement('div'); pop.className='emoji-picker';
-  
-  Object.keys(EMOJI_CATEGORIES).forEach(category=>{
+
+  const categories=Object.keys(EMOJI_CATEGORIES);
+  let activeCategory=categories[0]||'자주 사용';
+
+  const pop=doc.createElement('div');
+  pop.className='emoji-picker';
+
+  const header=doc.createElement('div');
+  header.className='emoji-picker-header';
+
+  const searchInp=doc.createElement('input');
+  searchInp.type='search';
+  searchInp.className='emoji-picker-search';
+  searchInp.placeholder='Search emoji (e.g. heart, food)';
+  searchInp.setAttribute('autocomplete','off');
+
+  const tabs=doc.createElement('div');
+  tabs.className='emoji-picker-tabs';
+
+  const body=doc.createElement('div');
+  body.className='emoji-picker-body';
+
+  let closeOnOutside=null;
+  const closePop=()=>{
+    pop.remove();
+    openPop=null;
+    if(closeOnOutside) doc.removeEventListener('mousedown',closeOnOutside);
+  };
+
+  const renderBody=()=>{
+    body.innerHTML='';
+    const q=searchInp.value.trim();
+    if(q){
+      tabs.style.display='none';
+      const title=doc.createElement('div');
+      title.className='emoji-category-title';
+      title.textContent='Search results';
+      body.appendChild(title);
+      const filtered=filterEmojisByQuery(q)||[];
+      appendEmojiGrid(body,filtered.map(x=>x.emoji),doc,onPick,closePop);
+      return;
+    }
+    tabs.style.display='';
     const title=doc.createElement('div');
     title.className='emoji-category-title';
-    title.textContent=category;
-    pop.appendChild(title);
-    
-    const grid=doc.createElement('div');
-    grid.className='emoji-grid';
-    EMOJI_CATEGORIES[category].forEach(emoji=>{
-      const btn=doc.createElement('button');
-      btn.className='emoji-item';
-      btn.textContent=emoji;
-      btn.onclick=(e)=>{
-        e.preventDefault();
-        e.stopPropagation();
-        onPick(emoji);
-        pop.remove();
-        openPop=null;
-      };
-      grid.appendChild(btn);
-    });
-    pop.appendChild(grid);
+    title.textContent=activeCategory;
+    body.appendChild(title);
+    appendEmojiGrid(body,EMOJI_CATEGORIES[activeCategory]||[],doc,onPick,closePop);
+  };
+
+  categories.forEach(cat=>{
+    const tab=doc.createElement('button');
+    tab.type='button';
+    tab.className='emoji-picker-tab'+(cat===activeCategory?' is-active':'');
+    tab.textContent=EMOJI_TAB_SHORT[cat]||cat;
+    tab.title=cat;
+    tab.onclick=(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      activeCategory=cat;
+      searchInp.value='';
+      tabs.querySelectorAll('.emoji-picker-tab').forEach(t=>t.classList.remove('is-active'));
+      tab.classList.add('is-active');
+      renderBody();
+    };
+    tabs.appendChild(tab);
   });
-  
+
+  searchInp.addEventListener('input',renderBody);
+  searchInp.addEventListener('keydown',(e)=>{
+    if(e.key==='Escape'){
+      e.preventDefault();
+      if(searchInp.value){
+        searchInp.value='';
+        renderBody();
+      }else{
+        closePop();
+      }
+    }
+  });
+
+  header.append(searchInp,tabs);
+  pop.append(header,body);
   doc.body.appendChild(pop);
+  renderBody();
+
   const r=anchor.getBoundingClientRect();
-  
   let left=r.left+(win.scrollX||0);
   let top=r.bottom+6+(win.scrollY||0);
-  
   pop.style.left=`${left}px`;
   pop.style.top=`${top}px`;
   pop.style.visibility='hidden';
-  
+
   requestAnimationFrame(()=>{
     const popRect=pop.getBoundingClientRect();
     const viewWidth=win.innerWidth;
     const viewHeight=win.innerHeight;
-    
     if(popRect.right>viewWidth){
-      left=Math.max(0, viewWidth-popRect.width-10);
+      left=Math.max(0,viewWidth-popRect.width-10);
     }
     if(popRect.bottom>viewHeight){
       top=r.top-popRect.height-6+(win.scrollY||0);
     }
-    
     pop.style.left=`${left}px`;
     pop.style.top=`${top}px`;
     pop.style.visibility='visible';
+    searchInp.focus();
   });
-  
-  const close=(e)=>{ if(!pop.contains(e.target)&&e.target!==anchor){pop.remove();openPop=null;doc.removeEventListener('mousedown',close);} };
-  doc.addEventListener('mousedown',close);
+
+  closeOnOutside=(e)=>{
+    if(!pop.contains(e.target)&&e.target!==anchor){
+      closePop();
+    }
+  };
+  setTimeout(()=>doc.addEventListener('mousedown',closeOnOutside),10);
   openPop=pop;
 }
 function showPalette(anchor,onPick){

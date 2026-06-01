@@ -869,42 +869,15 @@ function showDailySectionColorPicker(anchor,dstr,section){
   dailyOpenPop=pop;
   positionDailyMenuPopup(pop,anchor,140);
 }
-function showDailySectionEmojiInput(anchor,dstr,section){
-  const doc=anchor.ownerDocument||document;
-  if(dailyOpenPop) dailyOpenPop.remove();
-  const pop=doc.createElement('div');
-  pop.className='event-menu-popup daily-section-emoji-popup';
-  let onDocDown=null;
-  const close=()=>{
-    pop.remove();
-    dailyOpenPop=null;
-    if(onDocDown) doc.removeEventListener('mousedown',onDocDown);
-  };
-  onDocDown=bindDailyMenuOutsideClose(pop,anchor,close);
-  const inp=document.createElement('input');
-  inp.type='text';
-  inp.placeholder='Enter emoji';
-  inp.value=section.emoji||'';
-  inp.maxLength=8;
-  inp.style.cssText='width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;font-size:18px;box-sizing:border-box;';
-  const okBtn=el('button','menu-item','OK');
-  okBtn.type='button';
-  const submit=()=>{
-    const emoji=inp.value.trim();
-    if(!emoji) return;
-    close();
+function showDailySectionEmojiPicker(anchor,dstr,section){
+  const pick=typeof window.showEmojiPicker==='function'?window.showEmojiPicker:null;
+  if(!pick){
+    console.error('showEmojiPicker not available');
+    return;
+  }
+  pick(anchor,(emoji)=>{
     patchDailySection(dstr,section.id,{emoji});
-  };
-  okBtn.onclick=(e)=>{ e.stopPropagation(); submit(); };
-  inp.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'){ e.preventDefault(); submit(); }
-    if(e.key==='Escape'){ e.preventDefault(); close(); }
   });
-  pop.append(inp,okBtn);
-  doc.body.appendChild(pop);
-  dailyOpenPop=pop;
-  positionDailyMenuPopup(pop,anchor,180);
-  setTimeout(()=>{ inp.focus(); inp.select(); },10);
 }
 function showDailySectionMenu(anchor,dstr,section){
   const doc=anchor.ownerDocument||document;
@@ -932,7 +905,7 @@ function showDailySectionMenu(anchor,dstr,section){
   emojiBtn.onclick=(e)=>{
     e.stopPropagation();
     close();
-    showDailySectionEmojiInput(anchor,dstr,section);
+    showDailySectionEmojiPicker(anchor,dstr,section);
   };
 
   const renameBtn=el('button','menu-item','✏️ Rename');
