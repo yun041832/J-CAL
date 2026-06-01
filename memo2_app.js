@@ -605,7 +605,6 @@ function renderCalendar(){
       ST.selected=dObj;
       setGlobalSelected(dObj);
       renderCalendar();
-      showAddEventPopup(dstr);
     });
     $.grid.appendChild(cell);
   }
