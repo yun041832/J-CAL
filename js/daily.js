@@ -152,12 +152,29 @@ const DAILY_SECTION_EMOJI_OPTIONS=['☀️','🌤️','🌙','📌','🗂️','�
 const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 const DAILY_SB_URL='https://kwiwsjvuvmwtfboxtfij.supabase.co';
 const DAILY_SB_KEY='sb_publishable_c6617EGJLrdzmJvt_tlAnA_dmYkHJTD';
+const DAILY_NOTES_SETUP_SQL=`CREATE TABLE daily_notes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  date date NOT NULL,
+  content text DEFAULT '',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, date)
+);
+ALTER TABLE daily_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own daily_notes"
+ON daily_notes FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+GRANT SELECT, INSERT, UPDATE, DELETE ON daily_notes TO authenticated;`;
 let _dailySbClient=null;
 let _dailySbUserId=null;
 const _dailyTasksCache=new Map();
 const _dailySectionsCache=new Map();
+const _dailyNotesCache=new Map();
 const _dailyTasksLoadPromises=new Map();
 const _dailySectionsLoadPromises=new Map();
+let _dailyNotesMissingTableWarned=false;
 
 function getDailySupabaseClient(){
   if(!_dailySbClient && typeof window!=='undefined' && window.supabase?.auth){
@@ -166,6 +183,7 @@ function getDailySupabaseClient(){
       _dailySbUserId=session?.user?.id||null;
       _dailyTasksCache.clear();
       _dailySectionsCache.clear();
+      _dailyNotesCache.clear();
       _dailyTasksLoadPromises.clear();
       _dailySectionsLoadPromises.clear();
       if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
@@ -308,6 +326,72 @@ async function loadDailySectionsFromSupabase(dstr){
   }catch(err){
     console.error('loadDailySectionsFromSupabase',err);
     return readDailySectionsLocal(dstr);
+  }
+}
+
+function isDailyNotesTableMissingError(err){
+  if(!err) return false;
+  return err.code==='42P01'||/daily_notes/i.test(err.message||'');
+}
+
+function printDailyNotesSetupGuide(err){
+  if(_dailyNotesMissingTableWarned) return;
+  _dailyNotesMissingTableWarned=true;
+  console.error('daily_notes table missing. Run SQL below to create it.', err);
+  console.info(DAILY_NOTES_SETUP_SQL);
+}
+
+async function loadDailyNoteFromSupabase(dstr){
+  const userId=await resolveDailyUserId();
+  if(!userId) return null;
+  if(_dailyNotesCache.has(dstr)) return _dailyNotesCache.get(dstr);
+  const sb=getDailySupabaseClient();
+  try{
+    const {data,error}=await sb.from('daily_notes')
+      .select('content,updated_at')
+      .eq('user_id',userId)
+      .eq('date',dstr)
+      .maybeSingle();
+    if(error) throw error;
+    const out={
+      content:data?.content||'',
+      updatedAt:data?.updated_at||null,
+    };
+    _dailyNotesCache.set(dstr,out);
+    return out;
+  }catch(err){
+    if(isDailyNotesTableMissingError(err)) printDailyNotesSetupGuide(err);
+    else console.error('loadDailyNoteFromSupabase',err);
+    return null;
+  }
+}
+
+async function upsertDailyNoteToSupabase(dstr,content){
+  const userId=await resolveDailyUserId();
+  if(!userId) return null;
+  const sb=getDailySupabaseClient();
+  try{
+    const row={
+      user_id:userId,
+      date:dstr,
+      content:content||'',
+      updated_at:new Date().toISOString(),
+    };
+    const {data,error}=await sb.from('daily_notes')
+      .upsert(row,{onConflict:'user_id,date'})
+      .select('content,updated_at')
+      .maybeSingle();
+    if(error) throw error;
+    const out={
+      content:data?.content??row.content,
+      updatedAt:data?.updated_at??row.updated_at,
+    };
+    _dailyNotesCache.set(dstr,out);
+    return out;
+  }catch(err){
+    if(isDailyNotesTableMissingError(err)) printDailyNotesSetupGuide(err);
+    else console.error('upsertDailyNoteToSupabase',err);
+    return null;
   }
 }
 
@@ -856,9 +940,9 @@ function getDailySectionTheme(section){
   };
 }
 function formatDailyMemoSavedAt(ts){
-  if(!ts) return 'No save history';
+  if(!ts) return '';
   const d=new Date(ts);
-  if(Number.isNaN(d.getTime())) return 'No save history';
+  if(Number.isNaN(d.getTime())) return '';
   const hh=String(d.getHours()).padStart(2,'0');
   const mm=String(d.getMinutes()).padStart(2,'0');
   return `Saved ${hh}:${mm}`;
@@ -1274,11 +1358,10 @@ function renderDailyDayWorkspace(){
   });
   left.appendChild(listWrap);
 
-  const latestDailyMemo=getJayMemoList()
-    .filter(m=>m.date===dstr)
-    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
+  const noteSection=el('div','daily-note-section');
+  noteSection.style.display='none';
   const memoHead=el('div','daily-memo-head');
-  const memoHeadLeft=el('div','daily-memo-head-title','📝 Write memo');
+  const memoHeadLeft=el('div','daily-memo-head-title','📝 Daily Note');
   const memoHeadActions=el('div','daily-memo-head-actions');
   const pinBtn=el('button','daily-memo-icon-btn','📌');
   pinBtn.type='button';
@@ -1293,57 +1376,51 @@ function renderDailyDayWorkspace(){
 
   const memoInput=document.createElement('textarea');
   memoInput.className='daily-memo-textarea';
-  memoInput.placeholder="Write today's memo...";
+  memoInput.placeholder='Write a note...';
 
-  const savedAtEl=el('div','daily-memo-saved-at',formatDailyMemoSavedAt(latestDailyMemo?.createdAt));
+  const savedAtEl=el('div','daily-memo-saved-at','');
 
   const memoActions=el('div','daily-memo-actions');
   const saveMemoBtn=el('button','daily-day-section-btn daily-memo-save-btn','Save');
   saveMemoBtn.type='button';
-  const goMemoBtn=el('button','daily-day-section-btn daily-memo-all-btn','View all');
-  goMemoBtn.type='button';
-  goMemoBtn.onclick=()=>{ window.JCal?.showMemoPage?.(); };
-  memoActions.append(saveMemoBtn,goMemoBtn);
+  memoActions.append(saveMemoBtn);
 
-  const memoList=el('div','daily-memo-linked-list');
-  const renderMemoList=()=>{
-    memoList.innerHTML='';
-    const memos=getJayMemoList()
-      .filter(m=>m.date===dstr)
-      .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))
-      .slice(0,6);
-    if(!memos.length){
-      memoList.appendChild(el('div','daily-day-empty','No linked memos'));
+  let noteSaveTimer=null;
+  let isSaving=false;
+  const saveDailyNote=async()=>{
+    if(isSaving) return;
+    isSaving=true;
+    try{
+      const out=await upsertDailyNoteToSupabase(dstr,memoInput.value||'');
+      if(out?.updatedAt){
+        savedAtEl.textContent=formatDailyMemoSavedAt(new Date(out.updatedAt).getTime());
+      }
+    }finally{
+      isSaving=false;
+    }
+  };
+  saveMemoBtn.onclick=()=>{ saveDailyNote(); };
+  memoInput.addEventListener('input',()=>{
+    if(noteSaveTimer) clearTimeout(noteSaveTimer);
+    noteSaveTimer=setTimeout(()=>{ saveDailyNote(); },1000);
+  });
+
+  noteSection.append(memoHead,memoInput,savedAtEl,memoActions);
+  (async ()=>{
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      noteSection.style.display='none';
       return;
     }
-    memos.forEach((m)=>{
-      const item=el('div','daily-memo-item');
-      const t=el('div','daily-memo-item-title',m.title||'Untitled');
-      const c=el('div','daily-memo-item-content');
-      renderMemoHtml(c,m.content||m.text||'');
-      item.append(t,c);
-      memoList.appendChild(item);
-    });
-  };
-  saveMemoBtn.onclick=()=>{
-    const val=memoInput.value.trim();
-    if(!val) return;
-    const list=getJayMemoList();
-    list.push({
-      id:createMemoId(),
-      title:`Daily memo ${dstr}`,
-      content:val,
-      date:dstr,
-      createdAt:Date.now(),
-      emoji:'',
-      color:'',
-    });
-    setJayMemoList(list);
-    memoInput.value='';
-    savedAtEl.textContent=formatDailyMemoSavedAt(Date.now());
-    renderMemoList();
-  };
-  renderMemoList();
+    noteSection.style.removeProperty('display');
+    const loaded=await loadDailyNoteFromSupabase(dstr);
+    memoInput.value=loaded?.content||'';
+    if(loaded?.updatedAt){
+      savedAtEl.textContent=formatDailyMemoSavedAt(new Date(loaded.updatedAt).getTime());
+    }else{
+      savedAtEl.textContent='';
+    }
+  })();
 
   const miniCal=buildDailyMiniCalendar();
   const widgetRow=el('div','daily-panel-widget-row');
@@ -1352,7 +1429,7 @@ function renderDailyDayWorkspace(){
   dailyWidgetBtn.onclick=()=>{ widgetDaily?.(); };
   widgetRow.appendChild(dailyWidgetBtn);
 
-  right.append(miniCal,memoHead,memoInput,savedAtEl,memoActions,memoList,widgetRow);
+  right.append(miniCal,noteSection,widgetRow);
   wrap.append(left,right);
   host.appendChild(wrap);
   renderMiniCal();
