@@ -420,6 +420,7 @@ function renderCalendar(){
   for(let i=0;i<cells;i++){
     const cell=el('div','day'); let dNum,dObj,out=false;
     cell.style.height=cellH+'px';
+    cell.style.position='relative';
     cell.style.overflow='hidden';
     if(i<start){dNum=prevTotal-start+1+i; dObj=new Date(y,m-1,dNum); out=true;}
     else if(i>=start+total){dNum=i-(start+total)+1; dObj=new Date(y,m+1,dNum); out=true;}
@@ -455,9 +456,12 @@ function renderCalendar(){
     if(combined.length){
       // 일정/투두 분리 표시
       const labels=el('div','labels');
+      labels.style.position='absolute';
       labels.style.gap='0';
-      labels.style.padding='0 2px 0';
+      labels.style.padding='0 2px';
       labels.style.top='24px';
+      labels.style.left='0';
+      labels.style.right='0';
       labels.style.bottom='0';
       labels.style.overflow='hidden';
       labels.style.maxHeight='calc(100% - 24px)';
