@@ -4989,6 +4989,16 @@ aside.right:not(.hidden) .card {
   z-index: 50 !important;
 }
 
+.fab-add {
+  background: #5C8DFF !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.fab-add:hover {
+  background: #4A7AEE !important;
+}
+
 /* 캘린더 셀 크게 + 여백 제거 (틱틱 스타일) */
 .calendar__grid {
   gap: 0 !important;
