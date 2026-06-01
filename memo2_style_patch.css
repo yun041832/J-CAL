@@ -4632,7 +4632,10 @@ input[type="checkbox"],
   overflow: hidden !important;
   max-height: none !important;
   inset: 32px 0 0 0 !important;
-  padding: 0 2px !important;
+  padding: 2px 3px 0 3px !important;
+  gap: 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .day.day--today .labels {
@@ -4643,6 +4646,13 @@ input[type="checkbox"],
 .day .label {
   position: relative !important;
   z-index: 1 !important;
+  margin-bottom: 1px !important;
+}
+
+.day .label-content {
+  padding: 1px 4px !important;
+  margin: 0 !important;
+  border-radius: 3px !important;
 }
 
 /* Logs page */
