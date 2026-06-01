@@ -250,7 +250,6 @@ if($.eventStartDate) $.eventStartDate.value = initDateStr;
 if($.eventEndDate) $.eventEndDate.value = initDateStr;
 if($.todoStartDate) $.todoStartDate.value = initDateStr;
 if($.todoEndDate) $.todoEndDate.value = initDateStr;
-if($.memoDate) $.memoDate.value = initDateStr;
 if($.selText) $.selText.textContent = initDateStr;
 
 const kTodo=(d)=>`memo2.todos.${d}`;
@@ -594,7 +593,6 @@ function renderRight(){
   if($.eventEndDate) $.eventEndDate.value=dstr;
   if($.todoStartDate) $.todoStartDate.value=dstr;
   if($.todoEndDate) $.todoEndDate.value=dstr;
-  if($.memoDate) $.memoDate.value=dstr;
   // 일정/투두 리스트 분리 렌더링
   const eventLabel = document.getElementById('eventListLabel');
   const todoLabel = document.getElementById('todoListLabel');
@@ -602,7 +600,13 @@ function renderRight(){
   if(todoLabel) todoLabel.innerHTML = '<span class="tab-icon">✅</span>TODO';
   renderEvents();
   renderTodos();
-  window.JCal?.renderMemos?.();
+}
+
+function hideCalendarMemoPanel(){
+  const memoDateEl=document.getElementById('memoDate');
+  if(!memoDateEl) return;
+  const card=memoDateEl.closest('.card');
+  if(card) card.style.display='none';
 }
 
 let fabInitScheduled=false;
@@ -737,6 +741,7 @@ function renderEvents(){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  hideCalendarMemoPanel();
   document.documentElement.style.fontFamily='"Noto Sans KR","Noto Sans",sans-serif';
   if(document.body) document.body.style.fontFamily='"Noto Sans KR","Noto Sans",sans-serif';
   const tabEvent = document.getElementById('tabEvent');
@@ -767,6 +772,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 // 페이지가 이미 로드된 상태에서 스크립트가 삽입되는 경우를 대비한 안전 호출
 if(document.readyState!=='loading'){
+  hideCalendarMemoPanel();
   scheduleFabButton();
 }
 window.addEventListener('load',()=>scheduleFabButton());
@@ -3237,5 +3243,5 @@ if(appBC){
 }
 window.addEventListener('storage',(e)=>{
   if(e.key==='memo2.selected' && e.newValue){ ST.selected=new Date(e.newValue); renderCalendar(); renderRight(); }
-  if(e.key && (e.key.startsWith('memo2.todos.')||e.key.startsWith('memo2.memos.'))){ renderCalendar(); renderRight(); }
+  if(e.key && e.key.startsWith('memo2.todos.')){ renderCalendar(); renderRight(); }
 });
