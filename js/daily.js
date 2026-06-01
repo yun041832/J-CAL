@@ -152,21 +152,6 @@ const DAILY_SECTION_EMOJI_OPTIONS=['☀️','🌤️','🌙','📌','🗂️','�
 const DAILY_TASK_EDIT_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 const DAILY_SB_URL='https://kwiwsjvuvmwtfboxtfij.supabase.co';
 const DAILY_SB_KEY='sb_publishable_c6617EGJLrdzmJvt_tlAnA_dmYkHJTD';
-const DAILY_NOTES_SETUP_SQL=`CREATE TABLE daily_notes (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  date date NOT NULL,
-  content text DEFAULT '',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, date)
-);
-ALTER TABLE daily_notes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own daily_notes"
-ON daily_notes FOR ALL
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
-GRANT SELECT, INSERT, UPDATE, DELETE ON daily_notes TO authenticated;`;
 let _dailySbClient=null;
 let _dailySbUserId=null;
 const _dailyTasksCache=new Map();
@@ -337,8 +322,7 @@ function isDailyNotesTableMissingError(err){
 function printDailyNotesSetupGuide(err){
   if(_dailyNotesMissingTableWarned) return;
   _dailyNotesMissingTableWarned=true;
-  console.error('daily_notes table missing. Run SQL below to create it.', err);
-  console.info(DAILY_NOTES_SETUP_SQL);
+  console.error('daily_notes table missing.', err);
 }
 
 async function loadDailyNoteFromSupabase(dstr){
@@ -1240,7 +1224,7 @@ function renderDailyDayWorkspace(){
   const right=el('div','daily-day-memo-panel');
 
   const sectionHead=el('div','daily-day-sections-head');
-  sectionHead.style.justifyContent='flex-end';
+  sectionHead.style.cssText='display:flex;justify-content:flex-end;align-items:center;width:100%;';
   const addSectionBtn=el('button','daily-day-add-section-btn','+ Add section');
   addSectionBtn.type='button';
   addSectionBtn.onclick=()=>{
