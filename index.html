@@ -626,10 +626,10 @@
             <span class="daily-header-title-main">📋 Daily</span>
             <span id="dailyPeriodNavWrap" class="daily-period-nav-wrap" style="display:none;">
               <span class="daily-period-divider">·</span>
-              <span id="dailyPeriodLabel" class="daily-period-label">June 2026</span>
+              <button id="dailyGoTodayBtn" type="button" class="daily-period-nav-btn" style="display:none;" aria-label="Go to today">1</button>
               <button id="dailyPeriodPrevBtn" type="button" class="daily-period-nav-btn" aria-label="Previous period">◀</button>
+              <span id="dailyPeriodLabel" class="daily-period-label">June 2026</span>
               <button id="dailyPeriodNextBtn" type="button" class="daily-period-nav-btn" aria-label="Next period">▶</button>
-              <button id="dailyGoTodayBtn" type="button" class="daily-period-today-btn" style="display:none;" aria-label="Go to today">Today</button>
             </span>
           </div>
           <div class="view-segment daily-view-segment" role="tablist" aria-label="Daily view switcher">
@@ -792,12 +792,12 @@
             JustDoc
           </a>
 
-          <div class="nav-controls brand-header__nav" style="align-items:center;gap:6px;">
+          <div class="nav-controls brand-header__nav" style="align-items:center;gap:6px;margin-left:auto;">
+            <button id="todayBtn" class="icon-btn" type="button" aria-label="Go to today">Today</button>
             <button id="prevMonth" class="icon-btn">◀</button>
             <div id="headerYmLabel" class="header-ym-compact"></div>
             <button id="nextMonth" class="icon-btn">▶</button>
           </div>
-          <button id="todayBtn" class="btn-today" type="button">Today</button>
         </div>
         <div class="card__header-unified">
           <div class="goal-bar">

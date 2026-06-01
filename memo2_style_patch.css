@@ -1307,8 +1307,10 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 #brand-header .brand-header__nav{
   margin-left:0;
 }
-#brand-header #todayBtn{
-  margin-left:auto;
+#brand-header #todayBtn.icon-btn{
+  font-size:14px;
+  font-weight:700;
+  min-width:32px;
 }
 #dailyPage .daily-period-today-btn{
   border:1px solid #e2e8f0;

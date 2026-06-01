@@ -827,6 +827,12 @@ function setDailyViewMode(mode){
   saveDailyViewMode();
   applyDailyView();
 }
+function updateDailyGoTodayBtnLabel(){
+  const todayBtn=document.getElementById('dailyGoTodayBtn');
+  if(!todayBtn) return;
+  todayBtn.textContent=String(new Date().getDate());
+}
+
 function bindDailyGoTodayBtn(){
   const todayBtn=document.getElementById('dailyGoTodayBtn');
   if(!todayBtn||todayBtn.dataset.bound==='1') return;
@@ -851,7 +857,10 @@ function updateDailyHeaderPeriodNav(){
 
   const show=(dailyViewMode==='week'||dailyViewMode==='month');
   wrap.style.display=show?'inline-flex':'none';
-  if(goTodayBtn) goTodayBtn.style.display=show?'inline-block':'none';
+  if(goTodayBtn){
+    goTodayBtn.style.display=show?'inline-block':'none';
+    if(show) updateDailyGoTodayBtnLabel();
+  }
   if(!show) return;
 
   label.textContent=formatYearMonth(dailySelectedDate.getFullYear(),dailySelectedDate.getMonth());

@@ -412,8 +412,17 @@ function calcMaxLines(){
   const usable=cellH-34;
   return Math.max(1,Math.floor(usable/18));
 }
+function updateTodayBtn(){
+  if(!$.todayBtn) return;
+  const txt=($.todayBtn.textContent||'').trim();
+  const dayNum=String(new Date().getDate());
+  if(txt==='Today' || /^\d{1,2}$/.test(txt) || !txt){
+    $.todayBtn.textContent=dayNum;
+  }
+}
 function renderCalendar(){
   const y=ST.viewYear,m=ST.viewMonth;
+  updateTodayBtn();
   if($.ym) $.ym.textContent=`${ymLabel(y,m)}`;
   $.grid.innerHTML='';
   const first=new Date(y,m,1),start=first.getDay(),total=dim(y,m);
@@ -2993,8 +3002,9 @@ function hideUsage() {
   if (siteIntro) siteIntro.style.display = 'block';
 }
 
-/* ── 네비 (todayBtn은 index.html에서 숨김, prev/ym/next는 brand-header 우측) ── */
+/* ── 네비 (todayBtn: brand-header, ◀ 월 ▶ 앞 날짜 숫자) ── */
 if($.todayBtn){
+  updateTodayBtn();
   $.todayBtn.onclick=()=>{const t=new Date(); ST.viewYear=t.getFullYear(); ST.viewMonth=t.getMonth(); ST.selected=t; setGlobalSelected(t); renderCalendar(); renderRight(); renderMonthlyGoals(); trackMenuPV('nav:today');};
 }
   if($.prev) $.prev.onclick=()=>{const d=new Date(ST.viewYear,ST.viewMonth-1,1); ST.viewYear=d.getFullYear(); ST.viewMonth=d.getMonth(); renderCalendar(); renderMonthlyGoals(); trackMenuPV('nav:prevMonth');};
