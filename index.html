@@ -38,11 +38,9 @@
     .app:has(> .right:not(.hidden)){grid-template-columns:168px minmax(0,1fr) minmax(300px,360px)}
     .main{min-width:0;width:100%}
     .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-    .calendar__grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-    .day{position:relative;min-height:110px;border:1px solid var(--line);border-radius:8px;background:#fff}
+    .calendar__grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0}
+    .calendar__grid .day{position:relative;margin:0;border:none;border-radius:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;box-sizing:border-box}
     @media(max-width:1024px){.app,.app:has(> .right:not(.hidden)){grid-template-columns:1fr;padding:4px;gap:8px}.sidebar{display:none}}
-    @media(max-width:768px){.day{min-height:100px}}
-    @media(max-width:480px){.day{min-height:80px}}
 
     .open-app-inline img{
     height: 26px;
