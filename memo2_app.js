@@ -3002,7 +3002,7 @@ function hideUsage() {
   if (siteIntro) siteIntro.style.display = 'block';
 }
 
-/* ── 네비 (todayBtn: brand-header, ◀ 월 ▶ 앞 날짜 숫자) ── */
+/* ── 네비 (todayBtn + ◀ 월 ▶ + Widget: card__header-unified 한 줄) ── */
 if($.todayBtn){
   updateTodayBtn();
   $.todayBtn.onclick=()=>{const t=new Date(); ST.viewYear=t.getFullYear(); ST.viewMonth=t.getMonth(); ST.selected=t; setGlobalSelected(t); renderCalendar(); renderRight(); renderMonthlyGoals(); trackMenuPV('nav:today');};

@@ -5040,11 +5040,48 @@ aside.right:not(.hidden) .card {
   background: #fafafa !important;
 }
 
+/* 캘린더 헤더 한 줄 컴팩트 */
+#calendarPage .card__header-unified {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 12px !important;
+  border-bottom: 1px solid #e9ecf2 !important;
+  flex-shrink: 0 !important;
+}
+
+#calendarPage .card__header-unified .goal-emoji {
+  position: static !important;
+  flex-shrink: 0 !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+#calendarPage #monthlyGoalInput {
+  flex: 1 !important;
+  min-width: 0 !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 13px !important;
+  background: transparent !important;
+  padding: 4px 6px !important;
+  box-shadow: none !important;
+}
+
+#calendarPage .card__header-unified .goal-style-btn,
+#calendarPage .card__header-unified .icon-btn,
+#calendarPage .card__header-unified .icon-btn-ghost {
+  flex-shrink: 0 !important;
+}
+
+#calendarPage .card__header-unified .header-ym-compact {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
 /* 반응형: 캘린더 헤더 · JustDoc 사이드바 */
 @media (max-width: 768px) {
-  .brand-title {
-    display: none !important;
-  }
   #openCalendarWidgetBtn {
     display: none !important;
   }
@@ -5052,7 +5089,7 @@ aside.right:not(.hidden) .card {
     display: none !important;
   }
   #calendarPage {
-    height: calc(100dvh - 52px - 48px) !important;
+    height: calc(100dvh - 52px - 40px) !important;
   }
   .day {
     min-height: 60px !important;
