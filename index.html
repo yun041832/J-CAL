@@ -319,7 +319,7 @@
       <button class="menu-btn" data-widget="routine" title="Routine"><span class="menu-icon">✅</span><span class="menu-label">Rout</span></button>
       <button class="menu-btn" data-widget="daily" title="Daily"><span class="menu-icon">📋</span><span class="menu-label">Daily</span></button>
       <button class="menu-btn" data-widget="memo" title="Memo"><span class="menu-icon">💬</span><span class="menu-label">Memo</span></button>
-      <button class="menu-btn" data-widget="todo" style="display:none;">✅ To-do</button>
+      <button class="menu-btn" data-widget="todo" style="display:none !important;">✅ To-do</button>
       <button class="menu-btn" data-widget="timer" title="Timer"><span class="menu-icon">⏲️</span><span class="menu-label">Timer</span></button>
       <button class="menu-btn" data-widget="logs" title="Logs"><span class="menu-icon">📓</span><span class="menu-label">Logs</span></button>
       <!-- <button class="menu-btn" id="noteBtn">📓 노트</button> -->
@@ -508,8 +508,9 @@
         <span style="font-size:20px;line-height:1.2;">💬</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Memo</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="todo" aria-label="To-do" style="display:none;">
-        ✅
+      <button type="button" class="mobile-tab-btn" data-widget="todo" aria-label="To-do" style="display:none !important;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+        <span style="font-size:20px;line-height:1.2;">✅</span>
+        <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">To-do</span>
       </button>
       <button type="button" class="mobile-tab-btn" data-widget="timer" aria-label="Timer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">⏲️</span>
