@@ -883,16 +883,6 @@ const saveRecentColor=(col)=>{
   set('memo2.recentColors',recent);
 };
 
-/* ── 이모티콘 선택기 ── */
-const EMOJI_CATEGORIES={
-  '자주 사용': ['😊','😂','❤️','🎉','👍','🔥','✨','💯','🎯','⭐'],
-  '얼굴': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫢','🫣','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','😮‍💨','🤥'],
-  '활동': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂'],
-  '음식': ['🍎','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨'],
-  '여행': ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️'],
-  '기호': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓']
-};
-
 let openPop=null;
 function positionEventMenuPopup(pop,anchor,popupWidth=140){
   const win=(anchor.ownerDocument||document).defaultView||window;
@@ -903,48 +893,55 @@ function positionEventMenuPopup(pop,anchor,popupWidth=140){
   pop.style.left=left+'px';
   pop.style.top=rect.bottom+'px';
 }
-const EMOJI_CATEGORY_ALIASES={
-  '자주 사용':['자주','인기','favorite','frequent','recent','popular'],
-  '얼굴':['얼굴','face','smile','표정','감정','happy','sad'],
-  '활동':['활동','sport','운동','놀이','activity','ball'],
-  '음식':['음식','food','eat','먹','과일','fruit'],
-  '여행':['여행','travel','car','교통','transport','plane','비행'],
-  '기호':['기호','symbol','heart','사랑','별','star','love'],
-};
-const EMOJI_TAB_SHORT={
-  '자주 사용':'자주',
-  '얼굴':'얼굴',
-  '활동':'활동',
-  '음식':'음식',
-  '여행':'여행',
-  '기호':'기호',
-};
-let EMOJI_FLAT_LIST=null;
-function getEmojiFlatList(){
-  if(EMOJI_FLAT_LIST) return EMOJI_FLAT_LIST;
-  const seen=new Set();
-  EMOJI_FLAT_LIST=[];
-  Object.entries(EMOJI_CATEGORIES).forEach(([category,emojis])=>{
-    emojis.forEach(emoji=>{
-      if(seen.has(emoji)) return;
-      seen.add(emoji);
-      EMOJI_FLAT_LIST.push({emoji,category});
-    });
-  });
-  return EMOJI_FLAT_LIST;
+/* ── 이모티콘 선택기 (Unicode / emojibase) ── */
+const EMOJI_DATA_URL='https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/data.json';
+const EMOJI_FREQUENT=[
+  '📌','📅','✅','📝','⏲️','📓','🏠','💡','🔥','⭐',
+  '💪','🎯','📊','💼','🗂️','✏️','🗒️','💬','🔔','🎉',
+  '🌟','💡','🔑','📌','🚀','💎','🧩','🎨','🔧','⚙️',
+];
+let _emojiDataCache=null;
+let _emojiDataPromise=null;
+function normalizeEmojiRecord(item){
+  if(!item?.emoji) return null;
+  const parts=[item.label,item.text,item.emoticon,...(item.tags||[])].filter(Boolean);
+  return {
+    emoji:item.emoji,
+    label:item.label||'',
+    searchText:parts.join(' ').toLowerCase(),
+  };
 }
-function filterEmojisByQuery(query){
+function loadEmojiData(){
+  if(_emojiDataCache) return Promise.resolve(_emojiDataCache);
+  if(_emojiDataPromise) return _emojiDataPromise;
+  _emojiDataPromise=fetch(EMOJI_DATA_URL)
+    .then(res=>{
+      if(!res.ok) throw new Error(`emoji data fetch failed: ${res.status}`);
+      return res.json();
+    })
+    .then(raw=>{
+      const seen=new Set();
+      _emojiDataCache=(Array.isArray(raw)?raw:[])
+        .map(normalizeEmojiRecord)
+        .filter(item=>{
+          if(!item||seen.has(item.emoji)) return false;
+          seen.add(item.emoji);
+          return true;
+        });
+      return _emojiDataCache;
+    })
+    .catch(err=>{
+      console.error('loadEmojiData',err);
+      _emojiDataPromise=null;
+      throw err;
+    });
+  return _emojiDataPromise;
+}
+function filterUnicodeEmojis(data,query){
   const q=query.trim().toLowerCase();
   if(!q) return null;
-  return getEmojiFlatList().filter(({emoji,category})=>{
-    if(emoji.includes(q)) return true;
-    if(category.toLowerCase().includes(q)) return true;
-    const aliases=EMOJI_CATEGORY_ALIASES[category]||[];
-    return aliases.some(a=>{
-      const al=a.toLowerCase();
-      return al.includes(q)||q.includes(al);
-    });
-  });
+  const terms=q.split(/\s+/).filter(Boolean);
+  return data.filter(item=>terms.every(term=>item.searchText.includes(term)));
 }
 function appendEmojiGrid(parent,emojis,doc,onPick,closePop){
   if(!emojis.length){
@@ -961,6 +958,7 @@ function appendEmojiGrid(parent,emojis,doc,onPick,closePop){
     btn.type='button';
     btn.className='emoji-item';
     btn.textContent=emoji;
+    btn.title=emoji;
     btn.onclick=(e)=>{
       e.preventDefault();
       e.stopPropagation();
@@ -976,9 +974,6 @@ function showEmojiPicker(anchor,onPick){
   const win=doc.defaultView||window;
   if(openPop) openPop.remove();
 
-  const categories=Object.keys(EMOJI_CATEGORIES);
-  let activeCategory=categories[0]||'자주 사용';
-
   const pop=doc.createElement('div');
   pop.className='emoji-picker';
 
@@ -988,15 +983,13 @@ function showEmojiPicker(anchor,onPick){
   const searchInp=doc.createElement('input');
   searchInp.type='search';
   searchInp.className='emoji-picker-search';
-  searchInp.placeholder='Search emoji (e.g. heart, food)';
+  searchInp.placeholder='Search emoji...';
   searchInp.setAttribute('autocomplete','off');
-
-  const tabs=doc.createElement('div');
-  tabs.className='emoji-picker-tabs';
 
   const body=doc.createElement('div');
   body.className='emoji-picker-body';
 
+  let emojiData=[];
   let closeOnOutside=null;
   const closePop=()=>{
     pop.remove();
@@ -1006,42 +999,25 @@ function showEmojiPicker(anchor,onPick){
 
   const renderBody=()=>{
     body.innerHTML='';
-    const q=searchInp.value.trim();
-    if(q){
-      tabs.style.display='none';
-      const title=doc.createElement('div');
-      title.className='emoji-category-title';
-      title.textContent='Search results';
-      body.appendChild(title);
-      const filtered=filterEmojisByQuery(q)||[];
-      appendEmojiGrid(body,filtered.map(x=>x.emoji),doc,onPick,closePop);
+    if(!emojiData.length){
+      const loading=doc.createElement('div');
+      loading.className='emoji-picker-empty';
+      loading.textContent='Loading...';
+      body.appendChild(loading);
       return;
     }
-    tabs.style.display='';
+    const q=searchInp.value.trim();
+    if(!q){
+      appendEmojiGrid(body,EMOJI_FREQUENT,doc,onPick,closePop);
+      return;
+    }
     const title=doc.createElement('div');
     title.className='emoji-category-title';
-    title.textContent=activeCategory;
+    title.textContent='Search results';
     body.appendChild(title);
-    appendEmojiGrid(body,EMOJI_CATEGORIES[activeCategory]||[],doc,onPick,closePop);
+    const filtered=filterUnicodeEmojis(emojiData,q)||[];
+    appendEmojiGrid(body,filtered.map(item=>item.emoji),doc,onPick,closePop);
   };
-
-  categories.forEach(cat=>{
-    const tab=doc.createElement('button');
-    tab.type='button';
-    tab.className='emoji-picker-tab'+(cat===activeCategory?' is-active':'');
-    tab.textContent=EMOJI_TAB_SHORT[cat]||cat;
-    tab.title=cat;
-    tab.onclick=(e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      activeCategory=cat;
-      searchInp.value='';
-      tabs.querySelectorAll('.emoji-picker-tab').forEach(t=>t.classList.remove('is-active'));
-      tab.classList.add('is-active');
-      renderBody();
-    };
-    tabs.appendChild(tab);
-  });
 
   searchInp.addEventListener('input',renderBody);
   searchInp.addEventListener('keydown',(e)=>{
@@ -1056,7 +1032,7 @@ function showEmojiPicker(anchor,onPick){
     }
   });
 
-  header.append(searchInp,tabs);
+  header.appendChild(searchInp);
   pop.append(header,body);
   doc.body.appendChild(pop);
   renderBody();
@@ -1068,7 +1044,7 @@ function showEmojiPicker(anchor,onPick){
   pop.style.top=`${top}px`;
   pop.style.visibility='hidden';
 
-  requestAnimationFrame(()=>{
+  const positionPop=()=>{
     const popRect=pop.getBoundingClientRect();
     const viewWidth=win.innerWidth;
     const viewHeight=win.innerHeight;
@@ -1082,7 +1058,22 @@ function showEmojiPicker(anchor,onPick){
     pop.style.top=`${top}px`;
     pop.style.visibility='visible';
     searchInp.focus();
-  });
+  };
+
+  loadEmojiData()
+    .then(data=>{
+      emojiData=data;
+      renderBody();
+      requestAnimationFrame(positionPop);
+    })
+    .catch(()=>{
+      body.innerHTML='';
+      const errEl=doc.createElement('div');
+      errEl.className='emoji-picker-empty';
+      errEl.textContent='Failed to load emoji data';
+      body.appendChild(errEl);
+      requestAnimationFrame(positionPop);
+    });
 
   closeOnOutside=(e)=>{
     if(!pop.contains(e.target)&&e.target!==anchor){
@@ -1092,6 +1083,8 @@ function showEmojiPicker(anchor,onPick){
   setTimeout(()=>doc.addEventListener('mousedown',closeOnOutside),10);
   openPop=pop;
 }
+window.showEmojiPicker=showEmojiPicker;
+window.loadEmojiData=loadEmojiData;
 function showPalette(anchor,onPick){
   const doc=anchor.ownerDocument||document;
   const win=doc.defaultView||window;
