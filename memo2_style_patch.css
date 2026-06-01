@@ -4958,3 +4958,34 @@ aside.right:not(.hidden) .card {
 .fab-menu {
   z-index: 50 !important;
 }
+
+/* 캘린더 셀 크게 + 여백 제거 (틱틱 스타일) */
+.calendar__grid {
+  gap: 0 !important;
+}
+
+.day {
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid #e9ecf2 !important;
+  border-bottom: 1px solid #e9ecf2 !important;
+  min-height: 120px !important;
+  padding: 4px 6px !important;
+}
+
+.day:nth-child(7n+1) {
+  border-left: 1px solid #e9ecf2 !important;
+}
+
+.calendar__weekdays {
+  border-bottom: 2px solid #e9ecf2 !important;
+  padding: 6px 0 !important;
+}
+
+.calendar {
+  border-top: 1px solid #e9ecf2 !important;
+}
+
+.day--outside {
+  background: #fafafa !important;
+}
