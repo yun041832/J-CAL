@@ -629,6 +629,7 @@
               <span id="dailyPeriodLabel" class="daily-period-label">June 2026</span>
               <button id="dailyPeriodPrevBtn" type="button" class="daily-period-nav-btn" aria-label="Previous period">◀</button>
               <button id="dailyPeriodNextBtn" type="button" class="daily-period-nav-btn" aria-label="Next period">▶</button>
+              <button id="dailyGoTodayBtn" type="button" class="daily-period-today-btn" style="display:none;" aria-label="Go to today">Today</button>
             </span>
           </div>
           <div class="view-segment daily-view-segment" role="tablist" aria-label="Daily view switcher">
@@ -772,6 +773,7 @@
   height:38px; padding:0 16px;
   display:flex; align-items:center; gap:10px;
   border-bottom:1px solid #f0f0f0; background:#fff; flex-shrink:0;
+  width:100%; box-sizing:border-box;
 ">
           <span onclick="location.reload()" style="
     font-size:15px; font-weight:700; color:#111; cursor:pointer;
@@ -789,6 +791,13 @@
       style="width:13px;height:13px;border-radius:3px;vertical-align:middle;">
             JustDoc
           </a>
+
+          <div class="nav-controls brand-header__nav" style="align-items:center;gap:6px;margin-left:auto;">
+            <button id="todayBtn" class="btn-today" style="display:none !important;" aria-hidden="true">Today</button>
+            <button id="prevMonth" class="icon-btn">◀</button>
+            <div id="headerYmLabel" class="header-ym-compact">🗓</div>
+            <button id="nextMonth" class="icon-btn">▶</button>
+          </div>
         </div>
         <div class="card__header-unified">
           <div class="goal-bar">
@@ -796,11 +805,7 @@
             <input type="text" id="monthlyGoalInput" class="monthly-goal-input-unified" placeholder="Enter this month's goal and press Enter">
             <button type="button" id="goalStyleBtn" class="goal-style-btn" aria-label="Goal style">⋮</button>
           </div>
-          <div class="nav-controls" style="align-items:center;gap:6px;">
-            <button id="todayBtn" class="btn-today">Today</button>
-            <button id="prevMonth" class="icon-btn">◀</button>
-            <div id="headerYmLabel" class="header-ym-compact">🗓</div>
-            <button id="nextMonth" class="icon-btn">▶</button>
+          <div class="nav-controls nav-controls--widget-only" style="align-items:center;gap:6px;flex-shrink:0;">
             <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>

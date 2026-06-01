@@ -2852,14 +2852,9 @@ function hideUsage() {
   if (siteIntro) siteIntro.style.display = 'block';
 }
 
-/* ── 네비 ── */
+/* ── 네비 (todayBtn은 index.html에서 숨김, prev/ym/next는 brand-header 우측) ── */
 if($.todayBtn){
-  const updateTodayBtn=()=>{
-    const t=new Date();
-    $.todayBtn.textContent=`${t.getDate()}`;
-  };
-  updateTodayBtn();
-    $.todayBtn.onclick=()=>{const t=new Date(); ST.viewYear=t.getFullYear(); ST.viewMonth=t.getMonth(); ST.selected=t; setGlobalSelected(t); renderCalendar(); renderRight(); renderMonthlyGoals(); trackMenuPV('nav:today');};
+  $.todayBtn.onclick=()=>{const t=new Date(); ST.viewYear=t.getFullYear(); ST.viewMonth=t.getMonth(); ST.selected=t; setGlobalSelected(t); renderCalendar(); renderRight(); renderMonthlyGoals(); trackMenuPV('nav:today');};
 }
   if($.prev) $.prev.onclick=()=>{const d=new Date(ST.viewYear,ST.viewMonth-1,1); ST.viewYear=d.getFullYear(); ST.viewMonth=d.getMonth(); renderCalendar(); renderMonthlyGoals(); trackMenuPV('nav:prevMonth');};
   if($.next) $.next.onclick=()=>{const d=new Date(ST.viewYear,ST.viewMonth+1,1); ST.viewYear=d.getFullYear(); ST.viewMonth=d.getMonth(); renderCalendar(); renderMonthlyGoals(); trackMenuPV('nav:nextMonth');};

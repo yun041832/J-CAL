@@ -827,15 +827,31 @@ function setDailyViewMode(mode){
   saveDailyViewMode();
   applyDailyView();
 }
+function bindDailyGoTodayBtn(){
+  const todayBtn=document.getElementById('dailyGoTodayBtn');
+  if(!todayBtn||todayBtn.dataset.bound==='1') return;
+  todayBtn.dataset.bound='1';
+  todayBtn.onclick=()=>{
+    const t=new Date();
+    t.setHours(0,0,0,0);
+    dailySelectedDate=t;
+    setDailyViewMode('day');
+  };
+}
+
 function updateDailyHeaderPeriodNav(){
   const wrap=document.getElementById('dailyPeriodNavWrap');
   const label=document.getElementById('dailyPeriodLabel');
   const prev=document.getElementById('dailyPeriodPrevBtn');
   const next=document.getElementById('dailyPeriodNextBtn');
+  const goTodayBtn=document.getElementById('dailyGoTodayBtn');
   if(!wrap||!label||!prev||!next) return;
+
+  bindDailyGoTodayBtn();
 
   const show=(dailyViewMode==='week'||dailyViewMode==='month');
   wrap.style.display=show?'inline-flex':'none';
+  if(goTodayBtn) goTodayBtn.style.display=show?'inline-block':'none';
   if(!show) return;
 
   label.textContent=formatYearMonth(dailySelectedDate.getFullYear(),dailySelectedDate.getMonth());

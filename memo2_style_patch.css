@@ -1304,6 +1304,26 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   gap:8px;
   flex-shrink:0;
 }
+#brand-header .brand-header__nav{
+  margin-left:auto;
+}
+#dailyPage .daily-period-today-btn{
+  border:1px solid #e2e8f0;
+  background:var(--card);
+  color:#475569;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:600;
+  line-height:1;
+  padding:2px 8px;
+  margin-left:4px;
+  cursor:pointer;
+}
+#dailyPage .daily-period-today-btn:hover{
+  background:#f8fafc;
+  color:#5C8DFF;
+  border-color:#bfdbfe;
+}
 .header-ym-compact{
   font-size:15px;
   font-weight:700;
@@ -4583,12 +4603,10 @@ input[type="checkbox"],
 
 .day--today .day__num,
 .day--selected .day__num {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 24px !important;
+  display: block !important;
+  width: auto !important;
   height: 24px !important;
-  margin: 2px auto 0 !important;
+  margin: 0 !important;
 }
 
 .day .labels {
