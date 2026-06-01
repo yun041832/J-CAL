@@ -4539,6 +4539,28 @@ input[type="checkbox"],
   align-items:center;
   justify-content:center;
 }
+.day__num {
+  height: 24px;
+  line-height: 24px;
+  position: relative;
+  z-index: 2;
+}
+.day__labels,
+.labels {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+.day__label,
+.label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
 #login-btn:hover,
 #login-btn-mobile:hover{
   border-color:var(--color-primary) !important;
