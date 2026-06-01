@@ -1369,7 +1369,7 @@ function renderDailyWeekCalendar(){
   // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
-  weeklyNotesWrap.style.cssText = 'margin:0 12px 10px;background:#1e1e2e;border-radius:14px;padding:10px 12px;display:none;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.06);';
+  weeklyNotesWrap.style.cssText = 'margin:0 12px 10px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:12px;align-items:flex-start;border:1px solid #e9ecef;';
   container.appendChild(weeklyNotesWrap);
   renderDailyWeeklyNotesBlock(weeklyNotesWrap, weekStartMonday);
 
@@ -1812,7 +1812,7 @@ function widgetDaily(){
           input.autocomplete = 'off';
           input.spellcheck = false;
           input.style.cssText =
-            'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(148,163,184,0.35);border-radius:8px;color:#e5e7eb;padding:6px 8px;font-size:13px;outline:none;font-family:inherit;';
+            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:6px 8px;font-size:0.9rem;outline:none;font-family:inherit;';
 
           rowEl.replaceChild(input, spanEl);
           input.focus();
@@ -1869,13 +1869,13 @@ function widgetDaily(){
 
           const bullet = doc.createElement('span');
           bullet.textContent = '•';
-          bullet.style.cssText = 'color:#cbd5e1;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
+          bullet.style.cssText = 'color:#6b7280;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
 
           const span = doc.createElement('span');
           span.textContent = val || '';
           span.tabIndex = 0;
           span.style.cssText =
-            'color:#e5e7eb;font-size:13px;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;';
+            'color:#374151;font-size:0.9rem;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;';
           if (!val) span.style.color = '#94a3b8';
 
           span.addEventListener('click', (e) => {
@@ -1908,13 +1908,13 @@ function widgetDaily(){
       rightCol.style.cssText = 'flex:1;min-width:0;';
 
       const leftTitle = doc.createElement('div');
-      leftTitle.textContent = '📝 WEEKLY FOCUS';
-      leftTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
+      leftTitle.textContent = '📌 Weekly Focus';
+      leftTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
       const rightTitle = doc.createElement('div');
-      rightTitle.textContent = '📅 THIS MONTH';
-      rightTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
+      rightTitle.textContent = '🗓️ This Month';
+      rightTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
 
-      const listWrapStyle = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px 10px;';
+      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;';
       leftCol.append(leftTitle, reminderListEl);
       rightCol.append(rightTitle, monthlyListEl);
       reminderListEl.style.cssText = listWrapStyle;
