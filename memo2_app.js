@@ -597,6 +597,7 @@ function renderCalendar(){
       ST.selected=dObj;
       setGlobalSelected(dObj);
       renderCalendar();
+      showAddEventPopup(dstr);
     });
     $.grid.appendChild(cell);
   }
@@ -651,15 +652,9 @@ function setupFabButton(){
     cursor:'pointer',zIndex:'5000',display:'grid',placeItems:'center',opacity:'1',visibility:'visible'
   });
   fab.type='button';
-  const menu=document.createElement('div'); menu.className='fab-menu';
-  Object.assign(menu.style,{position:'absolute',right:'16px',bottom:'84px',zIndex:'4999'});
-  const addEvent=el('button','fab-action','Add Event');
-  menu.append(addEvent);
-  host.append(fab,menu);
-  // 만약 다른 요소에 가려지면 위치/디스플레이를 재보정
+  host.append(fab);
   const ensureVisible=()=>{
     if(!host.contains(fab)) host.appendChild(fab);
-    if(!host.contains(menu)) host.appendChild(menu);
     fab.style.display='grid';
     fab.style.position='absolute';
     fab.style.opacity='1';
@@ -668,16 +663,11 @@ function setupFabButton(){
   setTimeout(ensureVisible,50);
   setTimeout(ensureVisible,250);
   setTimeout(ensureVisible,800);
-  let open=false;
-  const close=()=>{ open=false; menu.classList.remove('fab-menu--open'); };
-  fab.addEventListener('click',(e)=>{ e.stopPropagation(); open=!open; menu.classList.toggle('fab-menu--open',open); });
-  document.addEventListener('click',(e)=>{ if(!open) return; if(!menu.contains(e.target) && !fab.contains(e.target)){ close(); } });
-  addEvent.onclick=(e)=>{
+  fab.addEventListener('click',(e)=>{
     e.stopPropagation();
-    close();
     scheduleTab='event';
-    showEventInputMenu(fab);
-  };
+    showAddEventPopup(fmtLocalDate(ST.selected));
+  });
 }
 
 // 일정 리스트 렌더링 함수 (체크박스 없음, 바탕색만 적용)
@@ -1592,6 +1582,148 @@ if($.eventMenuBtn){
     e.stopPropagation();
     showEventInputMenu($.eventMenuBtn);
   };
+}
+
+function showAddEventPopup(date){
+  document.querySelector('.add-event-overlay')?.remove();
+  if(openPop){ openPop.remove(); openPop=null; }
+
+  let selectedEmoji=ST.eventEmoji||'';
+  let selectedColor=ST.eventColor||DEFAULT_COLOR;
+
+  const overlay=el('div','repeat-modal-overlay add-event-overlay');
+  const modal=el('div','repeat-modal add-event-modal');
+  const fieldRowStyle='display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+  const labelStyle='flex:0 0 48px;font-size:13px;font-weight:600;color:#64748b;';
+  const inputStyle='flex:1;min-width:0;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;';
+
+  const titleRow=el('div','add-event-field');
+  titleRow.style.cssText=fieldRowStyle;
+  const titleLabel=el('label','add-event-field__label','제목');
+  titleLabel.style.cssText=labelStyle;
+  const titleInput=document.createElement('input');
+  titleInput.type='text';
+  titleInput.className='add-event-field__input';
+  titleInput.placeholder='Title';
+  titleInput.style.cssText=inputStyle;
+  titleRow.append(titleLabel,titleInput);
+
+  const dateRow=el('div','add-event-field');
+  dateRow.style.cssText=fieldRowStyle;
+  const dateLabel=el('label','add-event-field__label','날짜');
+  dateLabel.style.cssText=labelStyle;
+  const dateInput=document.createElement('input');
+  dateInput.type='date';
+  dateInput.value=date||fmtLocalDate(ST.selected);
+  dateInput.style.cssText=inputStyle;
+  dateRow.append(dateLabel,dateInput);
+
+  const timeRow=el('div','add-event-field');
+  timeRow.style.cssText=fieldRowStyle;
+  const timeLabel=el('label','add-event-field__label','시간');
+  timeLabel.style.cssText=labelStyle;
+  const timeInput=document.createElement('input');
+  timeInput.type='time';
+  timeInput.style.cssText=inputStyle;
+  timeRow.append(timeLabel,timeInput);
+
+  const colorRow=el('div','add-event-field');
+  colorRow.style.cssText=fieldRowStyle;
+  const colorLabel=el('span','add-event-field__label','색상');
+  colorLabel.style.cssText=labelStyle;
+  const colorBtn=el('button','tool-btn add-event-color-btn');
+  colorBtn.type='button';
+  colorBtn.title='색상 선택';
+  colorBtn.style.width='40px';
+  colorBtn.style.height='40px';
+  colorBtn.style.flexShrink='0';
+  const applyColorBtn=()=>{
+    if(selectedColor==='rainbow'){
+      colorBtn.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)';
+    }else if(selectedColor){
+      colorBtn.style.background=selectedColor;
+    }else{
+      colorBtn.style.background='#e5e7eb';
+    }
+  };
+  applyColorBtn();
+  colorBtn.onclick=(e)=>{
+    e.stopPropagation();
+    showPalette(colorBtn,(c)=>{
+      selectedColor=c;
+      ST.eventColor=c;
+      applyColorBtn();
+    });
+  };
+  colorRow.append(colorLabel,colorBtn);
+
+  const emojiRow=el('div','add-event-field');
+  emojiRow.style.cssText=fieldRowStyle;
+  const emojiLabel=el('span','add-event-field__label','이모지');
+  emojiLabel.style.cssText=labelStyle;
+  const emojiBtn=el('button','tool-btn add-event-emoji-btn');
+  emojiBtn.type='button';
+  emojiBtn.title='이모지 선택';
+  setEmojiIcon(emojiBtn,selectedEmoji);
+  emojiBtn.onclick=(e)=>{
+    e.stopPropagation();
+    showEmojiPicker(emojiBtn,(emoji)=>{
+      selectedEmoji=emoji;
+      ST.eventEmoji=emoji;
+      setEmojiIcon(emojiBtn,emoji);
+    });
+  };
+  emojiRow.append(emojiLabel,emojiBtn);
+
+  const footer=el('div','repeat-modal-footer');
+  const cancelBtn=el('button','btn-cancel','Cancel');
+  const saveBtn=el('button','btn-confirm','Save');
+
+  const closePopup=()=>{
+    document.removeEventListener('keydown',onKeyDown);
+    overlay.remove();
+  };
+
+  const saveEvent=()=>{
+    const text=titleInput.value.trim();
+    if(!text){
+      titleInput.focus();
+      return;
+    }
+    const dstr=dateInput.value||fmtLocalDate(ST.selected);
+    const list=get(kTodo(dstr));
+    list.push({
+      text,
+      emoji:selectedEmoji,
+      color:selectedColor,
+      done:false,
+      time:timeInput.value||'',
+    });
+    set(kTodo(dstr),list);
+    renderCalendar();
+    postApp({type:'refresh'});
+    closePopup();
+  };
+
+  const onKeyDown=(e)=>{
+    if(e.key==='Escape') closePopup();
+    if(e.key==='Enter' && e.target!==timeInput){
+      e.preventDefault();
+      saveEvent();
+    }
+  };
+
+  cancelBtn.onclick=closePopup;
+  saveBtn.onclick=saveEvent;
+  overlay.onclick=(e)=>{ if(e.target===overlay) closePopup(); };
+  modal.onclick=(e)=> e.stopPropagation();
+
+  footer.append(cancelBtn,saveBtn);
+  modal.append(titleRow,dateRow,timeRow,colorRow,emojiRow,footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  document.addEventListener('keydown',onKeyDown);
+  setTimeout(()=> titleInput.focus(),0);
 }
 
 function showEventInputMenu(anchor){
