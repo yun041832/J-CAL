@@ -1351,7 +1351,7 @@ function renderDailyWeekCalendar(){
   // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
-  weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:14px;display:none;gap:14px;align-items:stretch;border:1px solid #e9ecef;min-height:170px;';
+  weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:10px;align-items:stretch;border:1px solid #e9ecef;';
   container.appendChild(weeklyNotesWrap);
   renderDailyWeeklyNotesBlock(weeklyNotesWrap, weekStartMonday);
 
@@ -1786,7 +1786,7 @@ function widgetDaily(){
           input.autocomplete = 'off';
           input.spellcheck = false;
           input.style.cssText =
-            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:8px 10px;font-size:0.9rem;line-height:1.9;outline:none;font-family:inherit;';
+            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:2px 8px;font-size:0.875rem;line-height:1.4;outline:none;font-family:inherit;';
 
           rowEl.replaceChild(input, spanEl);
           input.focus();
@@ -1840,7 +1840,7 @@ function widgetDaily(){
         items.forEach((val, idx) => {
           const row = doc.createElement('div');
           row.className = 'daily-weekly-note-row';
-          row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 0;cursor:text;';
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:3px 0;cursor:text;';
 
           const bullet = doc.createElement('span');
           bullet.textContent = '•';
@@ -1851,7 +1851,7 @@ function widgetDaily(){
           span.textContent = val || '\u00A0';
           span.tabIndex = 0;
           span.style.cssText =
-            'color:#374151;font-size:0.9rem;line-height:1.9;word-break:break-word;flex:1;min-width:0;cursor:text;min-height:1.9em;';
+            'color:#374151;font-size:0.9rem;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;min-height:1.4em;';
           if (!val) span.style.color = '#94a3b8';
 
           const startEdit = (e) => {
@@ -1898,7 +1898,7 @@ function widgetDaily(){
       rightTitle.textContent = '🗓️ This Month';
       rightTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
 
-      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:12px 14px;min-height:130px;';
+      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;';
       leftCol.append(leftTitle, reminderListEl);
       rightCol.append(rightTitle, monthlyListEl);
       reminderListEl.style.cssText = listWrapStyle;
