@@ -325,7 +325,15 @@
     </aside>
     <div class="sidebar-footer-pc">
       <hr style="margin: 12px 8px; border-color: #eee;">
-      <!-- JustDoc PC 사이드바 배너 삭제 — 브랜드헤더로 이동 -->
+      <a href="https://justdoc.net" target="_blank" rel="noopener noreferrer" style="
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px;margin:4px 6px;
+  background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;
+  text-decoration:none;font-size:11px;font-weight:600;color:#1a56db;
+">
+        <img src="images/j-metal.jpg" alt="JustDoc" style="width:18px;height:18px;border-radius:4px;">
+        JustDoc
+      </a>
       <!-- 글쓰기노트 PC 숨김 2026-05-26 -->
       <a href="#" target="_blank" style="
   display: none;
@@ -767,34 +775,23 @@
 
       <!-- 달력 페이지 (기본 숨김) -->
       <div id="calendarPage" class="card hidden">
-        <div id="brand-header" style="
+        <div id="brand-header" class="brand-header" style="
   height:38px; padding:0 16px;
   display:flex; align-items:center; gap:10px;
   border-bottom:1px solid #f0f0f0; background:#fff; flex-shrink:0;
   width:100%; box-sizing:border-box;
 ">
-          <span onclick="location.reload()" style="
+          <span class="brand-title" onclick="location.reload()" style="
     font-size:15px; font-weight:700; color:#111; cursor:pointer;
-    letter-spacing:-0.3px;
+    letter-spacing:-0.3px; flex-shrink:0;
   ">Jay Planner</span>
 
-          <span style="color:#e0e0e0;">|</span>
-
-          <a href="https://justdoc.net" target="_blank" rel="noopener noreferrer"
-            style="display:flex;align-items:center;gap:4px;font-size:11px;
-    color:#1a56db;font-weight:600;text-decoration:none;
-    background:#eff6ff;padding:3px 10px;border-radius:20px;
-    border:1px solid #bfdbfe;">
-            <img src="images/j-metal.jpg" alt=""
-      style="width:13px;height:13px;border-radius:3px;vertical-align:middle;">
-            JustDoc
-          </a>
-
-          <div class="nav-controls brand-header__nav" style="align-items:center;gap:6px;margin-left:auto;">
+          <div class="nav-controls brand-header__nav" style="align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
             <button id="todayBtn" class="icon-btn" type="button" aria-label="Go to today">Today</button>
             <button id="prevMonth" class="icon-btn">◀</button>
             <div id="headerYmLabel" class="header-ym-compact"></div>
             <button id="nextMonth" class="icon-btn">▶</button>
+            <button id="openCalendarWidgetBtn" class="icon-btn-ghost brand-header__widget-btn" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>
         <div class="card__header-unified">
@@ -802,9 +799,6 @@
             <span class="goal-emoji" id="goalEmojiBadge"></span>
             <input type="text" id="monthlyGoalInput" class="monthly-goal-input-unified" placeholder="Enter this month's goal and press Enter">
             <button type="button" id="goalStyleBtn" class="goal-style-btn" aria-label="Goal style">⋮</button>
-          </div>
-          <div class="nav-controls nav-controls--widget-only" style="align-items:center;gap:6px;flex-shrink:0;">
-            <button id="openCalendarWidgetBtn" class="icon-btn-ghost" title="Widget" aria-label="Widget">Widget</button>
           </div>
         </div>
 

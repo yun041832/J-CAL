@@ -393,7 +393,7 @@ function calcCellHeight(rows){
   const widthBase=$.grid?.clientWidth||$.calWrap?.clientWidth||0;
   const rowCount=rows!=null?rows:(ST.calendarRows||getCalendarWeekCount(ST.viewYear,ST.viewMonth));
   // Reduced min height further so ads below calendar stay visible on desktop
-  const minHeight=isMobileViewport()?80:90;
+  const minHeight=isMobileViewport()?60:90;
   let candidate=minHeight;
   if(widthBase){
     const perCol=Math.floor(widthBase/7);

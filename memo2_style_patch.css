@@ -5039,3 +5039,31 @@ aside.right:not(.hidden) .card {
 .day--outside {
   background: #fafafa !important;
 }
+
+/* 반응형: 캘린더 헤더 · JustDoc 사이드바 */
+@media (max-width: 768px) {
+  .brand-title {
+    display: none !important;
+  }
+  #openCalendarWidgetBtn {
+    display: none !important;
+  }
+  #mobile-tab-bar .mobile-tab-btn[data-widget="logs"] {
+    display: none !important;
+  }
+  #calendarPage {
+    height: calc(100dvh - 52px - 48px) !important;
+  }
+  .day {
+    min-height: 60px !important;
+  }
+  .day__num {
+    font-size: 11px !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  #openCalendarWidgetBtn {
+    display: none !important;
+  }
+}
