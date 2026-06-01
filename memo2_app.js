@@ -409,7 +409,7 @@ function calcMaxLines(){
 }
 function renderCalendar(){
   const y=ST.viewYear,m=ST.viewMonth;
-  if($.ym) $.ym.textContent=`🗓 ${ymLabel(y,m)}`;
+  if($.ym) $.ym.textContent=`${ymLabel(y,m)}`;
   $.grid.innerHTML='';
   const first=new Date(y,m,1),start=first.getDay(),total=dim(y,m);
   const prevTotal=new Date(y,m,0).getDate(),cells=42; // 6주 고정
@@ -476,8 +476,9 @@ function renderCalendar(){
           row.style.padding='0';
           row.style.width='100%';
           const content=el('div','label-content');
-          content.style.padding='0';
+          content.style.padding='1px 4px';
           content.style.margin='0';
+          content.style.marginBottom='1px';
           content.style.lineHeight='1.2';
           content.style.fontSize='10px';
           content.style.width='100%';
@@ -540,8 +541,9 @@ function renderCalendar(){
           };
           row.appendChild(chk);
           const content=el('div','label-content');
-          content.style.padding='0';
+          content.style.padding='1px 4px';
           content.style.margin='0';
+          content.style.marginBottom='1px';
           content.style.lineHeight='1.2';
           content.style.fontSize='10px';
           content.style.width='100%';
