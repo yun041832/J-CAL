@@ -70,8 +70,8 @@ let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 let dailySectionRenameId = null;
-const PALETTE_EXTENDED_COLUMN_9=[
-  '#fb923c','#d9f99d','#059669','#60a5fa','#ddd6fe','#a21caf',
+const SECTION_COLOR_BG=[
+  '#ffcdd2','#ffe0b2','#fff9c4','#c8e6c9','#bbdefb','#e1bee7',
 ];
 function hexToRgb(hex){
   const h=(hex||'').replace('#','').trim();
@@ -92,36 +92,42 @@ function contrastTextForBg(bg){
 function sectionColorFromBg(bg){
   return {bg,text:contrastTextForBg(bg)};
 }
-const SECTION_COLORS=PALETTE_EXTENDED_COLUMN_9.map(sectionColorFromBg);
-const SECTION_COLOR_LABELS=['Orange','Lime','Green','Blue','Lavender','Magenta'];
+const SECTION_COLORS=SECTION_COLOR_BG.map(sectionColorFromBg);
+const SECTION_COLOR_LABELS=['Rose','Orange','Yellow','Green','Blue','Lavender'];
 const LEGACY_DAILY_SECTION_COLOR_IDS={
-  yellow:PALETTE_EXTENDED_COLUMN_9[1],
-  green:PALETTE_EXTENDED_COLUMN_9[2],
-  blue:PALETTE_EXTENDED_COLUMN_9[3],
-  purple:PALETTE_EXTENDED_COLUMN_9[4],
-  red:PALETTE_EXTENDED_COLUMN_9[5],
+  yellow:SECTION_COLOR_BG[2],
+  green:SECTION_COLOR_BG[3],
+  blue:SECTION_COLOR_BG[4],
+  purple:SECTION_COLOR_BG[5],
+  red:SECTION_COLOR_BG[0],
   gray:'#f1f5f9',
 };
 const LEGACY_DAILY_SECTION_HEX={
-  '#dcfce7':PALETTE_EXTENDED_COLUMN_9[2],
-  '#dbeafe':PALETTE_EXTENDED_COLUMN_9[3],
-  '#EEF2FF':PALETTE_EXTENDED_COLUMN_9[3],
-  '#fef9c3':PALETTE_EXTENDED_COLUMN_9[1],
-  '#ffedd5':PALETTE_EXTENDED_COLUMN_9[0],
-  '#ede9fe':PALETTE_EXTENDED_COLUMN_9[4],
-  '#fce7f3':PALETTE_EXTENDED_COLUMN_9[5],
-  '#4ADE80':PALETTE_EXTENDED_COLUMN_9[2],
-  '#60A5FA':PALETTE_EXTENDED_COLUMN_9[3],
-  '#FCD34D':PALETTE_EXTENDED_COLUMN_9[1],
-  '#FB923C':PALETTE_EXTENDED_COLUMN_9[0],
-  '#A78BFA':PALETTE_EXTENDED_COLUMN_9[4],
-  '#F472B6':PALETTE_EXTENDED_COLUMN_9[5],
-  '#10B981':PALETTE_EXTENDED_COLUMN_9[2],
-  '#185FA5':PALETTE_EXTENDED_COLUMN_9[3],
-  '#F59E0B':PALETTE_EXTENDED_COLUMN_9[1],
-  '#F97316':PALETTE_EXTENDED_COLUMN_9[0],
-  '#8B5CF6':PALETTE_EXTENDED_COLUMN_9[4],
-  '#EC4899':PALETTE_EXTENDED_COLUMN_9[5],
+  '#dcfce7':SECTION_COLOR_BG[3],
+  '#dbeafe':SECTION_COLOR_BG[4],
+  '#EEF2FF':SECTION_COLOR_BG[4],
+  '#fef9c3':SECTION_COLOR_BG[2],
+  '#ffedd5':SECTION_COLOR_BG[1],
+  '#ede9fe':SECTION_COLOR_BG[5],
+  '#fce7f3':SECTION_COLOR_BG[0],
+  '#fb923c':SECTION_COLOR_BG[1],
+  '#d9f99d':SECTION_COLOR_BG[2],
+  '#059669':SECTION_COLOR_BG[3],
+  '#60a5fa':SECTION_COLOR_BG[4],
+  '#ddd6fe':SECTION_COLOR_BG[5],
+  '#a21caf':SECTION_COLOR_BG[5],
+  '#4ADE80':SECTION_COLOR_BG[3],
+  '#60A5FA':SECTION_COLOR_BG[4],
+  '#FCD34D':SECTION_COLOR_BG[2],
+  '#FB923C':SECTION_COLOR_BG[1],
+  '#A78BFA':SECTION_COLOR_BG[5],
+  '#F472B6':SECTION_COLOR_BG[0],
+  '#10B981':SECTION_COLOR_BG[3],
+  '#185FA5':SECTION_COLOR_BG[4],
+  '#F59E0B':SECTION_COLOR_BG[2],
+  '#F97316':SECTION_COLOR_BG[1],
+  '#8B5CF6':SECTION_COLOR_BG[5],
+  '#EC4899':SECTION_COLOR_BG[0],
 };
 function findSectionColorEntry(colorValue){
   const raw=(colorValue||'').trim();
