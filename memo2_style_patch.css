@@ -4421,6 +4421,10 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   line-height: 1.45 !important;
 }
 
+#dailyPage .daily-day-sections-head {
+  justify-content: flex-end !important;
+}
+
 #dailyPage .daily-day-empty {
   padding: 16px !important;
   font-size: 13px !important;
@@ -4433,7 +4437,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border: 1px solid #f1dca8 !important;
   border-radius: 14px !important;
   background: #fffaf0 !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
 }
 
@@ -4454,16 +4458,18 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 
 #dailyPage .daily-memo-textarea {
   width: calc(100% - 20px) !important;
-  min-height: 170px !important;
+  min-height: 80px !important;
+  max-height: none !important;
   margin: 10px !important;
-  padding: 12px !important;
+  padding: 8px 10px !important;
   border: 1px solid #e6eaf0 !important;
   border-radius: 10px !important;
   background: #ffffff !important;
-  resize: vertical !important;
+  resize: none !important;
   font-family: inherit !important;
-  font-size: 13px !important;
-  line-height: 1.55 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.4 !important;
+  overflow: hidden !important;
 }
 
 #dailyPage .daily-memo-actions {

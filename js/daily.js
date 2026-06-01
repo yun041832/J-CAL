@@ -1361,6 +1361,13 @@ function renderDailyDayWorkspace(){
   const memoInput=document.createElement('textarea');
   memoInput.className='daily-memo-textarea';
   memoInput.placeholder='Write a note...';
+  memoInput.style.minHeight='80px';
+  memoInput.style.maxHeight='none';
+  memoInput.style.height='80px';
+  const autoResizeDailyNote=()=>{
+    memoInput.style.height='auto';
+    memoInput.style.height=`${memoInput.scrollHeight}px`;
+  };
 
   const savedAtEl=el('div','daily-memo-saved-at','');
 
@@ -1385,6 +1392,7 @@ function renderDailyDayWorkspace(){
   };
   saveMemoBtn.onclick=()=>{ saveDailyNote(); };
   memoInput.addEventListener('input',()=>{
+    autoResizeDailyNote();
     if(noteSaveTimer) clearTimeout(noteSaveTimer);
     noteSaveTimer=setTimeout(()=>{ saveDailyNote(); },1000);
   });
@@ -1399,6 +1407,7 @@ function renderDailyDayWorkspace(){
     noteSection.style.removeProperty('display');
     const loaded=await loadDailyNoteFromSupabase(dstr);
     memoInput.value=loaded?.content||'';
+    autoResizeDailyNote();
     if(loaded?.updatedAt){
       savedAtEl.textContent=formatDailyMemoSavedAt(new Date(loaded.updatedAt).getTime());
     }else{
