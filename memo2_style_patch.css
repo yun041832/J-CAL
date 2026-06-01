@@ -1305,6 +1305,9 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   flex-shrink:0;
 }
 #brand-header .brand-header__nav{
+  margin-left:0;
+}
+#brand-header #todayBtn{
   margin-left:auto;
 }
 #dailyPage .daily-period-today-btn{
@@ -4908,6 +4911,10 @@ input[type="checkbox"],
 #calendarPage {
   position: relative;
   z-index: 1;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
 }
 aside.right:not(.hidden) {
   position: relative;
@@ -4920,6 +4927,15 @@ aside.right:not(.hidden) .card {
 .calendar-wrapper {
   position: relative;
   z-index: 1;
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+#calendarPage .calendar {
+  height: 100% !important;
+  flex: 1 !important;
+  min-height: 0 !important;
 }
 .todo-options-panel {
   position: relative;
