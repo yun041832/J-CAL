@@ -5080,6 +5080,12 @@ aside.right:not(.hidden) .card {
   white-space: nowrap !important;
 }
 
+#openCalendarWidgetBtn {
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+  color: #9ca3af !important;
+}
+
 /* 반응형: 캘린더 헤더 · JustDoc 사이드바 */
 @media (max-width: 768px) {
   #openCalendarWidgetBtn {
