@@ -4352,6 +4352,20 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background: #f8f9fa !important;
   border: 1px solid #e9ecef !important;
   border-radius: 12px !important;
+  min-height: 170px !important;
+  padding: 14px !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+#dailyPage .daily-weekly-notes-col > div:last-child {
+  min-height: 130px !important;
+  padding: 12px 14px !important;
+}
+
+#dailyPage .daily-weekly-note-row,
+#dailyPage .daily-weekly-note-text {
+  line-height: 1.9 !important;
 }
 
 #dailyPage .daily-day-task-text {

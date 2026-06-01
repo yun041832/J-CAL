@@ -743,7 +743,6 @@ function saveDailyViewMode(){
 }
 function applyDailyView(){
   setDailyModeLayout();
-  renderDailyWeekGoal();
   if(dailyViewMode === 'day'){
     renderDailyDayWorkspace();
   }else if(dailyViewMode === 'week'){
@@ -955,7 +954,6 @@ function setDailyModeLayout(){
   const dayWrap=document.getElementById('dailyDayWorkspace');
   const weekWrap=document.getElementById('dailyWeekCalendar');
   const monthWrap=document.getElementById('dailyMonthCalendar');
-  const inputSection=document.getElementById('dailyInputSection');
   const listSection=document.getElementById('dailyList');
   const show=(el,visible)=>{
     if(!el) return;
@@ -965,9 +963,7 @@ function setDailyModeLayout(){
   show(dayWrap, mode==='day');
   show(weekWrap, mode==='week');
   show(monthWrap, mode==='month');
-  show(inputSection, mode==='week');
   show(listSection, mode==='week');
-  if(inputSection) inputSection.classList.toggle('is-day-mode',mode==='day');
   updateDailyViewButtons();
 }
 function setDailyItemDone(dstr,idx,checked){
@@ -990,20 +986,7 @@ function initDailyPage(){
   if(dailyPageEl.dataset.initialized === 'true') return;
   dailyPageEl.dataset.initialized = 'true';
 
-  const addBtn = document.getElementById('dailyAddBtn');
-  const input = document.getElementById('dailyInput');
   const openWidgetBtn = document.getElementById('openDailyWidgetBtn');
-
-  const addDaily = ()=>{
-    const text = input.value.trim();
-    if(!text) return;
-    const dstr = fmtLocalDate(dailySelectedDate);
-    addDailyTask(dstr,{text,done:false});
-    input.value = '';
-  };
-
-  addBtn?.addEventListener('click', addDaily);
-  input?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addDaily(); } });
 
   openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
 }
@@ -1113,7 +1096,6 @@ function miniCalToday(){
 function renderDailyDayWorkspace(){
   const host=document.getElementById('dailyDayWorkspace');
   if(!host) return;
-  renderDailyWeekGoal();
   const dstr=fmtLocalDate(dailySelectedDate);
   const allTasks=getDailyTasks(dstr);
   const sections=ensureDailySections(dstr);
@@ -1369,7 +1351,7 @@ function renderDailyWeekCalendar(){
   // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
-  weeklyNotesWrap.style.cssText = 'margin:0 12px 10px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:12px;align-items:flex-start;border:1px solid #e9ecef;';
+  weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:14px;display:none;gap:14px;align-items:stretch;border:1px solid #e9ecef;min-height:170px;';
   container.appendChild(weeklyNotesWrap);
   renderDailyWeeklyNotesBlock(weeklyNotesWrap, weekStartMonday);
 
@@ -1678,14 +1660,6 @@ function widgetDaily(){
   }, 'widget--daily');
 }
 
-  const kDailyWeekGoal = (weekStartDate) => `memo2.dailyWeekGoal.${weekStartDate}`;
-  function getWeekStartDateStr(date) {
-    const d = new Date(date || new Date());
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - d.getDay());
-    return fmtLocalDate(d);
-  }
-
   // weekly_notes 테이블은 "해당 주 월요일" 기준 week_start 저장
   function getWeekStartMondayDateStr(date) {
     const d = new Date(date || new Date());
@@ -1812,7 +1786,7 @@ function widgetDaily(){
           input.autocomplete = 'off';
           input.spellcheck = false;
           input.style.cssText =
-            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:6px 8px;font-size:0.9rem;outline:none;font-family:inherit;';
+            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:8px 10px;font-size:0.9rem;line-height:1.9;outline:none;font-family:inherit;';
 
           rowEl.replaceChild(input, spanEl);
           input.focus();
@@ -1865,27 +1839,35 @@ function widgetDaily(){
 
         items.forEach((val, idx) => {
           const row = doc.createElement('div');
-          row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:4px 0;';
+          row.className = 'daily-weekly-note-row';
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 0;cursor:text;';
 
           const bullet = doc.createElement('span');
           bullet.textContent = '•';
           bullet.style.cssText = 'color:#6b7280;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
 
           const span = doc.createElement('span');
-          span.textContent = val || '';
+          span.className = 'daily-weekly-note-text';
+          span.textContent = val || '\u00A0';
           span.tabIndex = 0;
           span.style.cssText =
-            'color:#374151;font-size:0.9rem;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;';
+            'color:#374151;font-size:0.9rem;line-height:1.9;word-break:break-word;flex:1;min-width:0;cursor:text;min-height:1.9em;';
           if (!val) span.style.color = '#94a3b8';
 
-          span.addEventListener('click', (e) => {
+          const startEdit = (e) => {
             e.stopPropagation();
+            if (row.querySelector('input')) return;
             makeInput(row, span, idx);
+          };
+          span.addEventListener('click', startEdit);
+          row.addEventListener('click', (e) => {
+            if (e.target.closest('input')) return;
+            startEdit(e);
           });
           span.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              makeInput(row, span, idx);
+              startEdit(e);
             }
           });
 
@@ -1903,8 +1885,10 @@ function widgetDaily(){
       const monthlyListEl = doc.createElement('div');
 
       const leftCol = doc.createElement('div');
+      leftCol.className = 'daily-weekly-notes-col';
       leftCol.style.cssText = 'flex:1;min-width:0;';
       const rightCol = doc.createElement('div');
+      rightCol.className = 'daily-weekly-notes-col';
       rightCol.style.cssText = 'flex:1;min-width:0;';
 
       const leftTitle = doc.createElement('div');
@@ -1914,7 +1898,7 @@ function widgetDaily(){
       rightTitle.textContent = '🗓️ This Month';
       rightTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
 
-      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;';
+      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:12px 14px;min-height:130px;';
       leftCol.append(leftTitle, reminderListEl);
       rightCol.append(rightTitle, monthlyListEl);
       reminderListEl.style.cssText = listWrapStyle;
@@ -1944,39 +1928,6 @@ function widgetDaily(){
 
       renderAll();
     })();
-  }
-
-  function renderDailyWeekGoal() {
-    const input = document.getElementById('dailyWeekGoalInput');
-    if (!input) return;
-    const weekStart = getWeekStartDateStr(dailySelectedDate);
-    const key = kDailyWeekGoal(weekStart);
-    input.value = get(key, '');
-    if (typeof applyGoalStyle === 'function') {
-      applyGoalStyle(input, 'dailyGoalEmojiBadge', 'daily-week');
-    }
-    input.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        set(key, input.value.trim());
-        input.blur();
-      }
-    };
-    input.onblur = () => set(key, input.value.trim());
-  }
-
-  const dailyGoalStyleBtn = document.getElementById('dailyGoalStyleBtn');
-  if (dailyGoalStyleBtn) {
-    dailyGoalStyleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (typeof showGoalStyleMenu === 'function') {
-        showGoalStyleMenu(dailyGoalStyleBtn, {
-          scope: 'daily-week',
-          inputId: 'dailyWeekGoalInput',
-          badgeId: 'dailyGoalEmojiBadge',
-        });
-      }
-    });
   }
 
   const dailyApi = {
