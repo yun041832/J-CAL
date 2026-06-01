@@ -1156,8 +1156,7 @@ function renderDailyDayWorkspace(){
   const right=el('div','daily-day-memo-panel');
 
   const sectionHead=el('div','daily-day-sections-head');
-  const sectionTitle=el('div','daily-day-head-title',formatDailyTasksTitle(dailySelectedDate));
-  sectionTitle.id='daily-date-label';
+  sectionHead.style.justifyContent='flex-end';
   const addSectionBtn=el('button','daily-day-add-section-btn','+ Add section');
   addSectionBtn.type='button';
   addSectionBtn.onclick=()=>{
@@ -1165,7 +1164,7 @@ function renderDailyDayWorkspace(){
     dailyNewSectionTitle='';
     renderDailyDayWorkspace();
   };
-  sectionHead.append(sectionTitle,addSectionBtn);
+  sectionHead.append(addSectionBtn);
   left.appendChild(sectionHead);
   if(dailyIsAddingSection){
     const addWrap=el('div','daily-section-add-wrap');
