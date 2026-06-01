@@ -418,7 +418,12 @@ function renderCalendar(){
     if(i<start){dNum=prevTotal-start+1+i; dObj=new Date(y,m-1,dNum); out=true;}
     else if(i>=start+total){dNum=i-(start+total)+1; dObj=new Date(y,m+1,dNum); out=true;}
     else{dNum=i-start+1; dObj=new Date(y,m,dNum);}
-    cell.append(el('div','day__num',dNum));
+    const dayNumEl=el('div','day__num',dNum);
+    dayNumEl.style.position='relative';
+    dayNumEl.style.zIndex='2';
+    dayNumEl.style.display='block';
+    dayNumEl.style.minHeight='18px';
+    cell.append(dayNumEl);
     if(out) cell.classList.add('day--outside');
     if(fmtLocalDate(dObj)===fmtLocalDate(new Date())) cell.classList.add('day--today');
     if(fmtLocalDate(dObj)===fmtLocalDate(ST.selected)) cell.classList.add('day--selected');
@@ -443,7 +448,11 @@ function renderCalendar(){
       // 일정/투두 분리 표시
       const labels=el('div','labels');
       labels.style.gap='0';
-      labels.style.padding='0';
+      labels.style.padding='2px 2px 0';
+      labels.style.top='22px';
+      labels.style.bottom='0';
+      labels.style.overflow='hidden';
+      labels.style.maxHeight='calc(100% - 22px)';
       const MAX_LINES=7;
       let linesLeft=MAX_LINES;
       const eventItems = linesLeft>0 ? events.slice(0,linesLeft) : [];
@@ -467,6 +476,11 @@ function renderCalendar(){
           }
           const txt=el('span','label-text',t.text);
           content.appendChild(txt);
+          txt.style.overflow='hidden';
+          txt.style.textOverflow='ellipsis';
+          txt.style.whiteSpace='nowrap';
+          txt.style.display='block';
+          txt.style.minWidth='0';
           txt.style.color = '#000';
           if(t.color==='rainbow'){
             content.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)';
@@ -526,6 +540,11 @@ function renderCalendar(){
           }
           const txt=el('span','label-text',t.text);
           content.appendChild(txt);
+          txt.style.overflow='hidden';
+          txt.style.textOverflow='ellipsis';
+          txt.style.whiteSpace='nowrap';
+          txt.style.display='block';
+          txt.style.minWidth='0';
           content.style.backgroundColor='transparent';
           if(t.done) {
             txt.classList.add('done');
