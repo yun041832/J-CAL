@@ -44,9 +44,15 @@ function showCalendarPage(){
   timerPage?.classList.add('hidden');
   logsPage?.classList.add('hidden');
   hideInsightPages();
-  rightPane?.classList.remove('hidden');
+  if(rightPane && rightPane.parentNode){
+    rightPane.remove();
+  }
+  if(calendarPage){
+    calendarPage.style.width='100%';
+    calendarPage.style.maxWidth='100%';
+    calendarPage.style.flex='1 1 auto';
+  }
   renderCalendar?.();
-  renderRight?.();
   renderMonthlyGoals?.();
 }
 function showLogsPage(){
@@ -414,6 +420,7 @@ function renderCalendar(){
   for(let i=0;i<cells;i++){
     const cell=el('div','day'); let dNum,dObj,out=false;
     cell.style.height=cellH+'px';
+    cell.style.overflow='hidden';
     if(i<start){dNum=prevTotal-start+1+i; dObj=new Date(y,m-1,dNum); out=true;}
     else if(i>=start+total){dNum=i-(start+total)+1; dObj=new Date(y,m+1,dNum); out=true;}
     else{dNum=i-start+1; dObj=new Date(y,m,dNum);}
@@ -421,7 +428,9 @@ function renderCalendar(){
     dayNumEl.style.position='relative';
     dayNumEl.style.zIndex='2';
     dayNumEl.style.display='block';
-    dayNumEl.style.minHeight='18px';
+    dayNumEl.style.height='24px';
+    dayNumEl.style.lineHeight='24px';
+    dayNumEl.style.paddingTop='0';
     cell.append(dayNumEl);
     if(out) cell.classList.add('day--outside');
     if(fmtLocalDate(dObj)===fmtLocalDate(new Date())) cell.classList.add('day--today');
@@ -447,11 +456,11 @@ function renderCalendar(){
       // 일정/투두 분리 표시
       const labels=el('div','labels');
       labels.style.gap='0';
-      labels.style.padding='2px 2px 0';
-      labels.style.top='22px';
+      labels.style.padding='0 2px 0';
+      labels.style.top='24px';
       labels.style.bottom='0';
       labels.style.overflow='hidden';
-      labels.style.maxHeight='calc(100% - 22px)';
+      labels.style.maxHeight='calc(100% - 24px)';
       const MAX_LINES=7;
       let linesLeft=MAX_LINES;
       const eventItems = linesLeft>0 ? events.slice(0,linesLeft) : [];
@@ -579,7 +588,9 @@ function renderCalendar(){
     }
 
     cell.addEventListener('click',()=>{
-      ST.selected=dObj; setGlobalSelected(dObj); renderCalendar(); renderRight();
+      ST.selected=dObj;
+      setGlobalSelected(dObj);
+      renderCalendar();
     });
     $.grid.appendChild(cell);
   }
@@ -637,8 +648,7 @@ function setupFabButton(){
   const menu=document.createElement('div'); menu.className='fab-menu';
   Object.assign(menu.style,{position:'absolute',right:'16px',bottom:'84px',zIndex:'4999'});
   const addEvent=el('button','fab-action','Add Event');
-  const addTodo=el('button','fab-action','Add Task');
-  menu.append(addEvent,addTodo);
+  menu.append(addEvent);
   host.append(fab,menu);
   // 만약 다른 요소에 가려지면 위치/디스플레이를 재보정
   const ensureVisible=()=>{
@@ -656,25 +666,12 @@ function setupFabButton(){
   const close=()=>{ open=false; menu.classList.remove('fab-menu--open'); };
   fab.addEventListener('click',(e)=>{ e.stopPropagation(); open=!open; menu.classList.toggle('fab-menu--open',open); });
   document.addEventListener('click',(e)=>{ if(!open) return; if(!menu.contains(e.target) && !fab.contains(e.target)){ close(); } });
-  const activateTab=(mode)=>{
-    const tabEvent=document.getElementById('tabEvent');
-    const tabTodo=document.getElementById('tabTodo');
-    scheduleTab=mode;
-    if(tabEvent&&tabTodo){
-      tabEvent.classList.toggle('active',mode==='event');
-      tabTodo.classList.toggle('active',mode==='todo');
-      tabEvent.classList.toggle('is-active',mode==='event');
-      tabTodo.classList.toggle('is-active',mode==='todo');
-    }
-    const panel=document.getElementById('todoOptionsPanel');
-    if(panel){ panel.style.display=mode==='event'?'block':'none'; }
+  addEvent.onclick=(e)=>{
+    e.stopPropagation();
+    close();
+    scheduleTab='event';
+    showEventInputMenu(fab);
   };
-  const focusForm=()=>{
-    document.querySelector('.right')?.scrollIntoView({behavior:'smooth',block:'start'});
-    if($.todoInput){ $.todoInput.focus(); $.todoInput.select?.(); }
-  };
-  addEvent.onclick=(e)=>{ e.stopPropagation(); activateTab('event'); focusForm(); close(); };
-  addTodo.onclick=(e)=>{ e.stopPropagation(); activateTab('todo'); focusForm(); close(); };
 }
 
 // 일정 리스트 렌더링 함수 (체크박스 없음, 바탕색만 적용)
