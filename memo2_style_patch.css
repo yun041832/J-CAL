@@ -3252,6 +3252,41 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   flex-shrink:0;
   gap:12px;
 }
+#dailyPage .daily-header-title-wrap{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+#dailyPage .daily-period-nav-wrap{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  min-width:0;
+}
+#dailyPage .daily-period-divider{
+  color:#94a3b8;
+  margin:0 2px;
+}
+#dailyPage .daily-period-label{
+  font-size:13px;
+  font-weight:500;
+  color:#475569;
+  white-space:nowrap;
+}
+#dailyPage .daily-period-nav-btn{
+  border:1px solid #e2e8f0;
+  background:var(--card);
+  color:#475569;
+  border-radius:6px;
+  font-size:11px;
+  line-height:1;
+  padding:2px 6px;
+  cursor:pointer;
+}
+#dailyPage .daily-period-nav-btn:hover{
+  background:#f8fafc;
+}
 @media (max-width:640px){
   #dailyPage .daily-page-header{
     flex-wrap:wrap;

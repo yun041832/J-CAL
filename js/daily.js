@@ -743,6 +743,7 @@ function saveDailyViewMode(){
 }
 function applyDailyView(){
   setDailyModeLayout();
+  updateDailyHeaderPeriodNav();
   if(dailyViewMode === 'day'){
     renderDailyDayWorkspace();
   }else if(dailyViewMode === 'week'){
@@ -757,6 +758,51 @@ function setDailyViewMode(mode){
   dailyViewMode = mode;
   saveDailyViewMode();
   applyDailyView();
+}
+function updateDailyHeaderPeriodNav(){
+  const wrap=document.getElementById('dailyPeriodNavWrap');
+  const label=document.getElementById('dailyPeriodLabel');
+  const prev=document.getElementById('dailyPeriodPrevBtn');
+  const next=document.getElementById('dailyPeriodNextBtn');
+  if(!wrap||!label||!prev||!next) return;
+
+  const show=(dailyViewMode==='week'||dailyViewMode==='month');
+  wrap.style.display=show?'inline-flex':'none';
+  if(!show) return;
+
+  label.textContent=formatYearMonth(dailySelectedDate.getFullYear(),dailySelectedDate.getMonth());
+  prev.onclick=()=>{
+    if(dailyViewMode==='week'){
+      const d=new Date(dailySelectedDate);
+      d.setDate(d.getDate()-7);
+      dailySelectedDate=d;
+      renderDailyWeekCalendar();
+      renderDailyList();
+      updateDailyHeaderPeriodNav();
+      return;
+    }
+    if(dailyViewMode==='month'){
+      dailySelectedDate=new Date(dailySelectedDate.getFullYear(),dailySelectedDate.getMonth()-1,1);
+      renderDailyMonthCalendar();
+      updateDailyHeaderPeriodNav();
+    }
+  };
+  next.onclick=()=>{
+    if(dailyViewMode==='week'){
+      const d=new Date(dailySelectedDate);
+      d.setDate(d.getDate()+7);
+      dailySelectedDate=d;
+      renderDailyWeekCalendar();
+      renderDailyList();
+      updateDailyHeaderPeriodNav();
+      return;
+    }
+    if(dailyViewMode==='month'){
+      dailySelectedDate=new Date(dailySelectedDate.getFullYear(),dailySelectedDate.getMonth()+1,1);
+      renderDailyMonthCalendar();
+      updateDailyHeaderPeriodNav();
+    }
+  };
 }
 function bindDailyViewButtons(){
   if(dailyViewButtonsBound) return;
@@ -988,7 +1034,11 @@ function initDailyPage(){
 
   const openWidgetBtn = document.getElementById('openDailyWidgetBtn');
 
-  openWidgetBtn?.addEventListener('click', ()=>{ widgetDaily?.(); });
+  openWidgetBtn?.addEventListener('click', ()=>{
+    const periodWrap=document.getElementById('dailyPeriodNavWrap');
+    if(periodWrap) periodWrap.style.display='none';
+    widgetDaily?.();
+  });
 }
 
 const MINI_CAL_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1313,40 +1363,12 @@ function renderDailyWeekCalendar(){
   const container = document.getElementById('dailyWeekCalendar');
   if(!container) return;
   container.innerHTML = '';
+  updateDailyHeaderPeriodNav();
 
   const today = dailySelectedDate;
   const dayOfWeek = today.getDay();
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - dayOfWeek);
-
-  const yearMonthRow = el('div');
-  yearMonthRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px;';
-
-  const yearMonth = el('div', null, formatYearMonth(today.getFullYear(), today.getMonth()));
-  yearMonth.style.cssText = 'font-weight:500;font-size:14px;';
-
-  const navBtns = el('div');
-  navBtns.style.cssText = 'display:flex;gap:4px;';
-
-  const prevBtn = el('button', null, '◀');
-  prevBtn.style.cssText = 'padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:var(--card);cursor:pointer;font-size:12px;';
-  prevBtn.onclick = ()=>{
-    dailySelectedDate = new Date(today);
-    dailySelectedDate.setDate(today.getDate()-7);
-    renderDailyWeekCalendar();
-  };
-
-  const nextBtn = el('button', null, '▶');
-  nextBtn.style.cssText = prevBtn.style.cssText;
-  nextBtn.onclick = ()=>{
-    dailySelectedDate = new Date(today);
-    dailySelectedDate.setDate(today.getDate()+7);
-    renderDailyWeekCalendar();
-  };
-
-  navBtns.append(prevBtn, nextBtn);
-  yearMonthRow.append(yearMonth, navBtns);
-  container.appendChild(yearMonthRow);
 
   // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
@@ -1447,30 +1469,13 @@ function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
   container.innerHTML = '';
+  updateDailyHeaderPeriodNav();
 
   const y = dailySelectedDate.getFullYear();
   const m = dailySelectedDate.getMonth();
   const first = new Date(y, m, 1);
   const startDay = first.getDay();
   const totalDays = new Date(y, m+1, 0).getDate();
-
-  const monthHeader = el('div','daily-month-header');
-  const title = el('div','daily-month-title',formatYearMonth(y,m));
-  const nav = el('div','daily-month-nav');
-  const prevBtn = el('button','daily-month-nav-btn','◀');
-  prevBtn.type='button';
-  prevBtn.onclick=()=>{
-    dailySelectedDate = new Date(y, m-1, 1);
-    renderDailyMonthCalendar();
-  };
-  const nextBtn = el('button','daily-month-nav-btn','▶');
-  nextBtn.type='button';
-  nextBtn.onclick=()=>{
-    dailySelectedDate = new Date(y, m+1, 1);
-    renderDailyMonthCalendar();
-  };
-  nav.append(prevBtn,nextBtn);
-  monthHeader.append(title,nav);
 
   const view = el('div','daily-month-record-view');
   const weekdays=WEEKDAY_LABELS_EN;
@@ -1531,7 +1536,7 @@ function renderDailyMonthCalendar(){
     view.appendChild(row);
   }
 
-  container.append(monthHeader,view);
+  container.append(view);
 }
 
 function renderDailyList(){

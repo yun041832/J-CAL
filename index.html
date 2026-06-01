@@ -618,7 +618,15 @@
 
       <div id="dailyPage" class="card hidden" style="display:flex;flex-direction:column;height:100%;">
         <div class="card__header daily-page-header">
-          <div class="card__title">📋 Daily</div>
+          <div class="card__title daily-header-title-wrap">
+            <span class="daily-header-title-main">📋 Daily</span>
+            <span id="dailyPeriodNavWrap" class="daily-period-nav-wrap" style="display:none;">
+              <span class="daily-period-divider">·</span>
+              <span id="dailyPeriodLabel" class="daily-period-label">June 2026</span>
+              <button id="dailyPeriodPrevBtn" type="button" class="daily-period-nav-btn" aria-label="Previous period">◀</button>
+              <button id="dailyPeriodNextBtn" type="button" class="daily-period-nav-btn" aria-label="Next period">▶</button>
+            </span>
+          </div>
           <div class="view-segment daily-view-segment" role="tablist" aria-label="Daily view switcher">
             <button id="dailyDayViewBtn" type="button" class="view-tab-btn daily-view-btn" role="tab" title="Today" aria-label="Today">Today</button>
             <button id="dailyWeekViewBtn" type="button" class="view-tab-btn daily-view-btn" role="tab" title="Week" aria-label="Week">Week</button>
