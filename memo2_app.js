@@ -898,7 +898,7 @@ const EMOJI_DATA_URL='https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/data
 const EMOJI_FREQUENT=[
   '📌','📅','✅','📝','⏲️','📓','🏠','💡','🔥','⭐',
   '💪','🎯','📊','💼','🗂️','✏️','🗒️','💬','🔔','🎉',
-  '🌟','💡','🔑','📌','🚀','💎','🧩','🎨','🔧','⚙️',
+  '🌟','💡','🔑','🏆','🚀','💎','🧩','🎨','🔧','⚙️',
 ];
 let _emojiDataCache=null;
 let _emojiDataPromise=null;
