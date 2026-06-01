@@ -3653,11 +3653,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   gap:2px;
   margin-left:auto;
   flex-shrink:0;
-  opacity:0.35;
-  transition:opacity 0.15s ease;
-}
-.daily-task-row:hover .daily-day-task-actions,
-.daily-day-task-item:focus-within .daily-day-task-actions{
   opacity:1;
 }
 .daily-day-task-icon-btn{
@@ -3667,15 +3662,16 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   padding:3px;
   display:flex;
   align-items:center;
-  opacity:0.7;
+  opacity:1;
   line-height:1;
 }
 .daily-day-task-icon-btn:hover{
-  opacity:1;
+  opacity:0.85;
 }
 .daily-day-task-delete{
   color:#cbd5e1;
   font-size:14px;
+  opacity:1;
 }
 .daily-day-memo-panel{
   min-width:0;

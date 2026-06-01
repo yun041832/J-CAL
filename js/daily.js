@@ -65,8 +65,6 @@
 let dailyViewMode = 'day';
 let dailySelectedDate = new Date();
 let dailyViewButtonsBound = false;
-let dailySectionTaskInputSectionId = null;
-let dailySectionTaskInputText = '';
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 let dailySectionRenameId = null;
@@ -416,19 +414,99 @@ function refreshDailyTaskViews(){
 }
 function updateDailyTaskText(dstr,idx,newText){
   const list=getDailyTasks(dstr);
-  if(!list[idx]) return;
+  const task=list[idx];
+  if(!task) return;
   const value=(newText||'').trim();
   if(!value) return;
-  list[idx].text=value;
-  saveDailyTasks(dstr,list);
-  refreshDailyTaskViews();
+  if(task.id) patchDailyTask(dstr,task.id,{text:value});
+  else{
+    list[idx].text=value;
+    saveDailyTasks(dstr,list);
+    refreshDailyTaskViews();
+  }
 }
 function deleteDailyTaskAt(dstr,idx){
   const list=getDailyTasks(dstr);
-  if(!list[idx]) return;
+  const task=list[idx];
+  if(!task) return;
   list.splice(idx,1);
-  saveDailyTasks(dstr,list);
+  _dailyTasksCache.set(dstr,list);
+  set(kDaily(dstr),list);
   refreshDailyTaskViews();
+  (async ()=>{
+    const userId=await resolveDailyUserId();
+    if(!userId||!task.id) return;
+    const sb=getDailySupabaseClient();
+    const {error}=await sb.from('daily_tasks')
+      .delete()
+      .eq('id',task.id)
+      .eq('user_id',userId);
+    if(error) console.error('deleteDailyTaskAt',error);
+  })();
+}
+function insertDailyTask(dstr,{text,sectionId,done=false}){
+  return (async ()=>{
+    const value=(text||'').trim();
+    if(!value) return null;
+    const id=ensureDailyTaskId({});
+    const resolvedSectionId=sectionId==='__none__'?undefined:sectionId;
+    const task={id,text:value,done:!!done,sectionId:resolvedSectionId};
+    const list=getDailyTasks(dstr).slice();
+    list.push(task);
+    _dailyTasksCache.set(dstr,list);
+    set(kDaily(dstr),list);
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      console.error('insertDailyTask: not logged in');
+      return task;
+    }
+    const sb=getDailySupabaseClient();
+    const {error}=await sb.from('daily_tasks').insert({
+      id,
+      user_id:userId,
+      date:dstr,
+      text:value,
+      done:!!done,
+      section_id:resolvedSectionId||null,
+    });
+    if(error) console.error('insertDailyTask',error);
+    return task;
+  })();
+}
+function patchDailyTask(dstr,taskId,patch){
+  return (async ()=>{
+    const list=getDailyTasks(dstr);
+    const idx=list.findIndex(t=>t.id===taskId);
+    if(idx<0) return;
+    const normalized={...patch};
+    if(normalized.text!=null){
+      const value=(normalized.text||'').trim();
+      if(!value) return;
+      normalized.text=value;
+    }
+    if(normalized.sectionId!==undefined){
+      normalized.sectionId=normalized.sectionId||undefined;
+    }
+    list[idx]={...list[idx],...normalized};
+    _dailyTasksCache.set(dstr,list);
+    set(kDaily(dstr),list);
+    refreshDailyTaskViews();
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      console.error('patchDailyTask: not logged in');
+      return;
+    }
+    const sb=getDailySupabaseClient();
+    const dbPatch={};
+    if(patch.text!=null) dbPatch.text=normalized.text;
+    if(patch.done!=null) dbPatch.done=!!normalized.done;
+    if(patch.sectionId!==undefined) dbPatch.section_id=normalized.sectionId||null;
+    const {error}=await sb.from('daily_tasks')
+      .update(dbPatch)
+      .eq('id',taskId)
+      .eq('user_id',userId);
+    if(error) console.error('patchDailyTask',error);
+  })();
 }
 function addDailyTask(dstr,{text,sectionId,done=false}){
   const value=(text||'').trim();
@@ -443,25 +521,37 @@ function addDailyTask(dstr,{text,sectionId,done=false}){
   saveDailyTasks(dstr,list);
   refreshDailyTaskViews();
 }
-function startDailyTaskInlineEdit(dstr,idx,textEl,options={}){
+function startDailyTaskInlineEdit(dstr,taskId,textEl,options={}){
   const list=getDailyTasks(dstr);
-  if(!list[idx]) return;
+  const task=list.find(t=>t.id===taskId);
+  if(!task) return;
+  const originalText=task.text||'';
   const inp=document.createElement('input');
   inp.type='text';
-  inp.className=options.inputClass||'daily-section-task-input';
+  inp.className=options.inputClass||'daily-section-task-input daily-day-task-inline-input';
   if(options.inputStyle) inp.style.cssText=options.inputStyle;
-  inp.value=list[idx].text||'';
-  const save=()=> updateDailyTaskText(dstr,idx,inp.value);
+  inp.value=originalText;
+  let committed=false;
+  const finish=(fn)=>{ if(committed) return; committed=true; fn(); };
+  const save=()=> finish(()=>{
+    const value=inp.value.trim();
+    if(!value||value===originalText){
+      refreshDailyTaskViews();
+      return;
+    }
+    patchDailyTask(dstr,taskId,{text:value});
+  });
+  const cancel=()=> finish(()=> refreshDailyTaskViews());
   inp.addEventListener('keydown',(ev)=>{
     if(ev.key==='Enter'){ ev.preventDefault(); save(); }
-    if(ev.key==='Escape'){ ev.preventDefault(); refreshDailyTaskViews(); }
+    if(ev.key==='Escape'){ ev.preventDefault(); cancel(); }
   });
-  inp.addEventListener('blur',save);
+  inp.addEventListener('blur',()=> save());
   textEl.replaceWith(inp);
   inp.focus();
   inp.select();
 }
-function appendDailyDayTaskRow(body,dstr,idx,task){
+function appendDailyDayTaskRow(body,dstr,idx,task,beforeEl=null){
   const row=el('div','daily-task-row daily-day-task-row');
   const cb=document.createElement('input');
   cb.type='checkbox';
@@ -469,15 +559,12 @@ function appendDailyDayTaskRow(body,dstr,idx,task){
   cb.addEventListener('change',()=> setDailyItemDone(dstr,idx,cb.checked));
   const txt=el('span','daily-day-task-text',task.text||'');
   if(task.done) txt.classList.add('is-done');
-  const actions=el('div','daily-day-task-actions');
-  const editBtn=el('button','daily-day-task-icon-btn');
-  editBtn.type='button';
-  editBtn.title='Edit';
-  editBtn.innerHTML=DAILY_TASK_EDIT_SVG;
-  editBtn.addEventListener('click',(e)=>{
+  txt.title='Double-click to edit';
+  txt.addEventListener('dblclick',(e)=>{
     e.preventDefault();
-    startDailyTaskInlineEdit(dstr,idx,txt);
+    if(task.id) startDailyTaskInlineEdit(dstr,task.id,txt);
   });
+  const actions=el('div','daily-day-task-actions');
   const delBtn=el('button','daily-day-task-icon-btn daily-day-task-delete','✕');
   delBtn.type='button';
   delBtn.setAttribute('aria-label','Delete task');
@@ -485,9 +572,10 @@ function appendDailyDayTaskRow(body,dstr,idx,task){
     e.preventDefault();
     deleteDailyTaskAt(dstr,idx);
   });
-  actions.append(editBtn,delBtn);
+  actions.appendChild(delBtn);
   row.append(cb,txt,actions);
-  body.appendChild(row);
+  if(beforeEl) body.insertBefore(row,beforeEl);
+  else body.appendChild(row);
 }
 function addDailySection(dstr,title){
   const value=(title||'').trim();
@@ -554,10 +642,6 @@ function deleteDailySection(dstr,sectionId){
     _dailyTasksCache.set(dstr,nextTasks);
     set(kDailySections(dstr),nextSections);
     set(kDaily(dstr),nextTasks);
-    if(dailySectionTaskInputSectionId===sectionId){
-      dailySectionTaskInputSectionId=null;
-      dailySectionTaskInputText='';
-    }
     if(dailySectionRenameId===sectionId) dailySectionRenameId=null;
     renderDailyDayWorkspace();
   })();
@@ -627,52 +711,28 @@ function appendDailySectionTitleInput(host,opts){
   host.appendChild(inp);
   requestAnimationFrame(()=> inp.focus());
 }
-function addTaskToDailySection(dstr, sectionId, text){
-  const value=(text||'').trim();
-  if(!value) return;
-  dailySectionTaskInputSectionId=null;
-  dailySectionTaskInputText='';
-  const list=getDailyTasks(dstr);
-  list.push({
-    id:Date.now(),
-    text:value,
-    done:false,
-    sectionId:sectionId==='__none__'?undefined:sectionId,
-  });
-  saveDailyTasks(dstr,list);
-  renderDailyDayWorkspace();
-}
-function appendDailySectionTaskInput(body, dstr, sectionId){
+function appendDailySectionTaskInput(body,dstr,sectionId){
   const inp=document.createElement('input');
   inp.type='text';
   inp.className='daily-section-task-input';
-  inp.placeholder='Enter task and press Enter';
-  inp.value=dailySectionTaskInputText;
-  inp.addEventListener('input',()=>{ dailySectionTaskInputText=inp.value; });
+  inp.placeholder='Add a task and press Enter';
   inp.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'){
-      e.preventDefault();
-      const value=inp.value.trim();
-      if(!value) return;
-      addTaskToDailySection(dstr, sectionId, value);
-    }
-    if(e.key==='Escape'){
-      e.preventDefault();
-      dailySectionTaskInputSectionId=null;
-      dailySectionTaskInputText='';
-      renderDailyDayWorkspace();
-    }
-  });
-  inp.addEventListener('blur',()=>{
-    setTimeout(()=>{
-      if(!dailySectionTaskInputText.trim()){
-        dailySectionTaskInputSectionId=null;
-        renderDailyDayWorkspace();
-      }
-    },0);
+    if(e.key!=='Enter') return;
+    e.preventDefault();
+    const value=inp.value.trim();
+    if(!value) return;
+    insertDailyTask(dstr,{text:value,sectionId}).then((task)=>{
+      if(!task) return;
+      inp.value='';
+      const empty=body.querySelector('.daily-day-empty');
+      if(empty) empty.remove();
+      const list=getDailyTasks(dstr);
+      const idx=list.findIndex(t=>t.id===task.id);
+      if(idx>=0) appendDailyDayTaskRow(body,dstr,idx,task,inp);
+      inp.focus();
+    });
   });
   body.appendChild(inp);
-  requestAnimationFrame(()=> inp.focus());
 }
 function loadDailyViewMode(){
   const saved = localStorage.getItem('memo2.dailyViewMode');
@@ -937,12 +997,16 @@ function setDailyModeLayout(){
   if(inputSection) inputSection.classList.toggle('is-day-mode',mode==='day');
   updateDailyViewButtons();
 }
-function setDailyItemDone(dstr, idx, checked){
+function setDailyItemDone(dstr,idx,checked){
   const list=getDailyTasks(dstr);
-  if(!list[idx]) return;
-  list[idx].done=checked;
-  saveDailyTasks(dstr,list);
-  refreshDailyTaskViews();
+  const task=list[idx];
+  if(!task) return;
+  if(task.id) patchDailyTask(dstr,task.id,{done:checked});
+  else{
+    list[idx].done=checked;
+    saveDailyTasks(dstr,list);
+    refreshDailyTaskViews();
+  }
 }
 
 function initDailyPage(){
@@ -1186,18 +1250,6 @@ function renderDailyDayWorkspace(){
       };
       rightHead.appendChild(menuBtn);
     }
-    const addTaskBtn=el('button','daily-day-section-btn daily-day-add-task-btn','+ Add task');
-    addTaskBtn.type='button';
-    if(isColoredHeader){
-      addTaskBtn.style.background='rgba(0,0,0,0.08)';
-      addTaskBtn.style.color=theme.text;
-    }
-    addTaskBtn.onclick=()=>{
-      dailySectionTaskInputSectionId=section.id;
-      dailySectionTaskInputText='';
-      renderDailyDayWorkspace();
-    };
-    rightHead.appendChild(addTaskBtn);
     secHead.append(leftHead,rightHead);
 
     const body=el('div','daily-day-section-body');
@@ -1205,15 +1257,14 @@ function renderDailyDayWorkspace(){
       .map((t,idx)=>({task:t,idx}))
       .filter(({task})=> section.id==='__none__' ? !task.sectionId : task.sectionId===section.id);
 
-    const showTaskInput=dailySectionTaskInputSectionId===section.id;
-    if(!items.length && !showTaskInput){
+    if(!items.length){
       body.appendChild(el('div','daily-day-empty','No tasks yet'));
     }else{
       items.forEach(({task,idx})=>{
         appendDailyDayTaskRow(body,dstr,idx,task);
       });
     }
-    if(showTaskInput) appendDailySectionTaskInput(body, dstr, section.id);
+    appendDailySectionTaskInput(body,dstr,section.id);
     sec.append(secHead,body);
     listWrap.appendChild(sec);
   });
@@ -1561,10 +1612,13 @@ function renderDailyList(){
 
     editBtn.addEventListener('click', (e)=>{
       e.stopPropagation();
-      startDailyTaskInlineEdit(dstr, idx, text, {
-        inputClass:'',
-        inputStyle:'flex:1;font-size:14px;border:none;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;box-sizing:border-box;',
-      });
+      const task=list[idx];
+      if(task?.id){
+        startDailyTaskInlineEdit(dstr, task.id, text, {
+          inputClass:'',
+          inputStyle:'flex:1;font-size:14px;border:none;outline:none;background:transparent;width:100%;font-family:inherit;padding:0;box-sizing:border-box;',
+        });
+      }
     });
 
     cb.addEventListener('change', ()=>{
