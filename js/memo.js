@@ -19,7 +19,7 @@
       _sb = window.supabase;
       _sb.auth.onAuthStateChange((_evt, session) => {
         _userId = session?.user?.id || null;
-        if (_userId) initMemoSections();
+        if (_userId && isMemoPageVisible()) initMemoSections();
       });
       _sb.auth.getSession().then(({ data: { session } }) => {
         _userId = session?.user?.id || null;
@@ -49,23 +49,51 @@
   let _sections = []; // { id, name, emoji, color, sort_order }
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
+  let _initPromise = null;
+
+  function isMemoPageVisible() {
+    const page = document.getElementById('memoPage');
+    if (!page || page.classList.contains('hidden')) return false;
+    return window.getComputedStyle(page).display !== 'none';
+  }
 
   // ── 섹션 로드/초기화 ───────────────────────────────
   async function initMemoSections() {
+    if (_initPromise) return _initPromise;
+    _initPromise = _doInitMemoSections();
+    try {
+      await _initPromise;
+    } finally {
+      _initPromise = null;
+    }
+  }
+
+  async function _doInitMemoSections() {
     const userId = await getUserId();
     if (!userId) { renderMemoPage(); return; }
     try {
       const { data, error } = await _sb.from('memo_sections')
         .select('*').eq('user_id', userId).order('sort_order');
       if (error) throw error;
+
       if (data && data.length > 0) {
         _sections = data;
       } else {
-        // 최초 접속 — 기본 섹션 3개 생성
-        const rows = DEFAULT_SECTIONS.map(s => ({ ...s, user_id: userId }));
-        const { data: created, error: e2 } = await _sb.from('memo_sections').insert(rows).select();
-        if (e2) throw e2;
-        _sections = created;
+        const { data: existing, error: existErr } = await _sb.from('memo_sections')
+          .select('name').eq('user_id', userId);
+        if (existErr) throw existErr;
+        const existingNames = new Set((existing || []).map(r => r.name));
+        const rows = DEFAULT_SECTIONS
+          .filter(s => !existingNames.has(s.name))
+          .map(s => ({ ...s, user_id: userId }));
+        if (rows.length > 0) {
+          const { error: insErr } = await _sb.from('memo_sections').insert(rows);
+          if (insErr) throw insErr;
+        }
+        const { data: all, error: allErr } = await _sb.from('memo_sections')
+          .select('*').eq('user_id', userId).order('sort_order');
+        if (allErr) throw allErr;
+        _sections = all || [];
       }
       await loadMemos();
     } catch (e) {
