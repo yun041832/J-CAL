@@ -1366,7 +1366,7 @@ function renderDailyWeekCalendar(){
   yearMonthRow.append(yearMonth, navBtns);
   container.appendChild(yearMonthRow);
 
-  // Week tab 상단: REMINDER / MONTHLY 2컬럼 블록
+  // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
   weeklyNotesWrap.style.cssText = 'margin:0 12px 10px;background:#1e1e2e;border-radius:14px;padding:10px 12px;display:none;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.06);';
@@ -1908,10 +1908,10 @@ function widgetDaily(){
       rightCol.style.cssText = 'flex:1;min-width:0;';
 
       const leftTitle = doc.createElement('div');
-      leftTitle.textContent = '📝 REMINDER';
+      leftTitle.textContent = '📝 WEEKLY FOCUS';
       leftTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
       const rightTitle = doc.createElement('div');
-      rightTitle.textContent = '📅 MONTHLY';
+      rightTitle.textContent = '📅 THIS MONTH';
       rightTitle.style.cssText = 'color:#fff;font-weight:800;font-size:13px;margin-bottom:6px;letter-spacing:0.2px;';
 
       const listWrapStyle = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:8px 10px;';
