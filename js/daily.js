@@ -71,7 +71,7 @@
       banner.className = 'login-nudge-banner';
       const text = document.createElement('span');
       text.className = 'login-nudge-banner__text';
-      text.textContent = '📌 로그인하면 데이터가 저장됩니다.';
+      text.textContent = '📌 로그인하면 모든 기기에서 데이터가 안전하게 저장됩니다.';
       const loginBtn = document.createElement('button');
       loginBtn.type = 'button';
       loginBtn.className = 'login-nudge-banner__btn';
@@ -88,6 +88,10 @@
       }
     } else if (!banner.parentNode) {
       pageEl.prepend(banner);
+    }
+    const textEl = banner.querySelector('.login-nudge-banner__text');
+    if (textEl) {
+      textEl.textContent = '📌 로그인하면 모든 기기에서 데이터가 안전하게 저장됩니다.';
     }
     banner.style.display = '';
   }
@@ -135,13 +139,17 @@
   }
 
   function hideDailyLoginGate() {
-    syncLoginNudgeBanner(document.getElementById('dailyPage'), false);
     const gate = document.getElementById('dailyLoginGate');
     if (gate) gate.style.display = 'none';
   }
 
   function isDailyLoggedIn() {
     return !!_dailySbUserId;
+  }
+
+  function syncDailyPageLoginNudge() {
+    const page = document.getElementById('dailyPage');
+    syncLoginNudgeBanner(page, !isDailyLoggedIn());
   }
 
   async function showDailyPage() {
@@ -159,11 +167,8 @@
     getDailySupabaseClient();
     await resolveDailyUserId();
     initDailyPage();
-    if (!isDailyLoggedIn()) {
-      renderDailyLoginGate();
-      return;
-    }
     hideDailyLoginGate();
+    syncDailyPageLoginNudge();
     applyDailyView();
   }
 
@@ -278,12 +283,9 @@ function getDailySupabaseClient(){
       _dailyTasksLoadPromises.clear();
       _dailySectionsLoadPromises.clear();
       if(!isDailyPageVisible()) return;
-      if(_dailySbUserId){
-        hideDailyLoginGate();
-        if(typeof applyDailyView==='function') applyDailyView();
-      }else if(typeof renderDailyLoginGate==='function'){
-        renderDailyLoginGate();
-      }
+      hideDailyLoginGate();
+      syncDailyPageLoginNudge();
+      if(typeof applyDailyView==='function') applyDailyView();
     });
     _dailySbClient.auth.getSession().then(({data:{session}})=>{
       _dailySbUserId=session?.user?.id||null;
@@ -345,7 +347,7 @@ function ensureDailyTaskId(task){
 
 async function loadDailyTasksFromSupabase(dstr){
   const userId=await resolveDailyUserId();
-  if(!userId) return [];
+  if(!userId) return readDailyTasksLocal(dstr);
   const sb=getDailySupabaseClient();
   try{
     const {data,error}=await sb.from('daily_tasks')
@@ -454,7 +456,7 @@ async function copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr){
 
 async function loadDailySectionsFromSupabase(dstr){
   const userId=await resolveDailyUserId();
-  if(!userId) return [];
+  if(!userId) return readDailySectionsLocal(dstr);
   const sb=getDailySupabaseClient();
   try{
     const rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
@@ -609,16 +611,13 @@ function getDailyTasks(dstr){
     return readDailyTasksLocal(dstr);
   }
   resolveDailyUserId().then((userId)=>{
-    if(!userId){
-      if(isDailyPageVisible()&&typeof renderDailyLoginGate==='function') renderDailyLoginGate();
-      return;
-    }
+    if(!userId) return;
     if(_dailyTasksCache.has(dstr)) return;
     return loadDailyTasksFromSupabase(dstr).then(()=>{
       if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
     });
   }).catch(err=> console.error('getDailyTasks',err));
-  return [];
+  return readDailyTasksLocal(dstr);
 }
 
 function saveDailyTasks(dstr,list){
@@ -636,10 +635,6 @@ function saveDailyTasks(dstr,list){
   })();
 }
 function refreshDailyTaskViews(){
-  if(!isDailyLoggedIn()){
-    if(isDailyPageVisible()) renderDailyLoginGate();
-    return;
-  }
   if(dailyViewMode==='day') renderDailyDayWorkspace();
   else if(dailyViewMode==='week'){
     renderDailyList();
@@ -978,11 +973,8 @@ function saveDailyViewMode(){
   localStorage.setItem('memo2.dailyViewMode', dailyViewMode);
 }
 function applyDailyView(){
-  if(!isDailyLoggedIn()){
-    renderDailyLoginGate();
-    return;
-  }
   hideDailyLoginGate();
+  syncDailyPageLoginNudge();
   setDailyModeLayout();
   updateDailyHeaderPeriodNav();
   if(dailyViewMode === 'day'){
@@ -1087,16 +1079,13 @@ function getDailySections(dstr){
     return readDailySectionsLocal(dstr);
   }
   resolveDailyUserId().then((userId)=>{
-    if(!userId){
-      if(isDailyPageVisible()&&typeof renderDailyLoginGate==='function') renderDailyLoginGate();
-      return;
-    }
+    if(!userId) return;
     if(_dailySectionsCache.has(dstr)) return;
     return loadDailySectionsFromSupabase(dstr).then(()=>{
       if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
     });
   }).catch(err=> console.error('getDailySections',err));
-  return [];
+  return readDailySectionsLocal(dstr);
 }
 
 function setDailySections(dstr,list){

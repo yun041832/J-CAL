@@ -24,6 +24,8 @@
           syncMemoLoginNudge(page, false);
           initMemoSections();
         } else if (!_userId && isMemoPageVisible()) {
+          _sections = buildGuestMemoSections();
+          _memos = [];
           renderMemoPage();
         }
       });
@@ -96,9 +98,24 @@
     }
   }
 
+  function buildGuestMemoSections() {
+    return DEFAULT_SECTIONS.map((s, i) => normalizeMemoSection({
+      id: 'guest_memo_section_' + i,
+      title: s.title,
+      emoji: s.emoji,
+      color: s.color,
+      sort_order: s.sort_order,
+    }));
+  }
+
   async function _doInitMemoSections() {
     const userId = await getUserId();
-    if (!userId) { renderMemoPage(); return; }
+    if (!userId) {
+      _sections = buildGuestMemoSections();
+      _memos = [];
+      renderMemoPage();
+      return;
+    }
     try {
       const { data, error } = await _sb.from('memo_sections')
         .select('*').eq('user_id', userId).order('sort_order');
@@ -251,17 +268,7 @@
     if (_sections.length === 0) {
       const box = document.createElement('div');
       box.style.cssText = 'padding:32px 24px;text-align:center;color:#6b7280;';
-      if (!_userId) {
-        box.innerHTML = '<p style="margin:0 0 12px;font-size:14px;">메모 3패널은 로그인 후 사용할 수 있습니다.</p>';
-        const loginBtn = document.createElement('button');
-        loginBtn.type = 'button';
-        loginBtn.textContent = 'Google로 로그인';
-        loginBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
-        loginBtn.onclick = () => openAppLoginModal();
-        box.appendChild(loginBtn);
-      } else {
-        box.innerHTML = '<p style="margin:0;font-size:14px;">섹션을 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해 주세요.</p>';
-      }
+      box.innerHTML = '<p style="margin:0;font-size:14px;">섹션을 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해 주세요.</p>';
       panels.appendChild(box);
       page.appendChild(panels);
       return;
