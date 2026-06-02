@@ -20,7 +20,8 @@ every day i logged the hours.
 "why can i only last 6 hours."
 "i should be doing 8."
 
-i wasn't rebuilding. i was outrunning something.
+i wasn't rebuilding.
+i was outrunning something.
 
 ---
 
@@ -92,17 +93,15 @@ this time, i'm trying to listen.
 
 ---
 
-one more thing.
-
+p.s.
 i've always been obsessed with data.
-enough of it to read a pattern.
+not because i love numbers.
+because i love patterns.
 numbers. timelines. trends.
-
-that's just how i'm wired.
 collect it. structure it. find the pattern.
-every day. my whole life.
-
-that's probably why jaycalendar and justdoc exist.
-and why i can't stop checking the body battery.
-
-same instinct. different data.
+i've been doing that for as long as i can remember.
+that's probably why i built jaycalendar.
+that's probably why justdoc exists.
+and it's probably why i can't stop checking the body battery.
+same instinct.
+different data.
