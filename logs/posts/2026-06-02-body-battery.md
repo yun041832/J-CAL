@@ -55,9 +55,9 @@ i stopped asking why i couldn't do 8.
 and slowly, the numbers climbed.
 
 <div style="display:flex; gap:8px; margin:16px 0;">
-  <img src="../../images/BB_02.jpg" alt="body battery february" style="width:33%; border-radius:8px;">
-  <img src="../../images/BB_04.jpg" alt="body battery april" style="width:33%; border-radius:8px;">
-  <img src="../../images/BB_05.jpg" alt="body battery this week" style="width:33%; border-radius:8px;">
+  <img src="../../images/BB_02.jpg" alt="body battery february" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
+  <img src="../../images/BB_04.jpg" alt="body battery april" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
+  <img src="../../images/BB_05.jpg" alt="body battery this week" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
 </div>
 
 february: body battery hitting 5 by 3pm.
