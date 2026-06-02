@@ -179,6 +179,51 @@ let dailyViewButtonsBound = false;
 let dailyIsAddingSection = false;
 let dailyNewSectionTitle = '';
 let dailySectionRenameId = null;
+// Virtual render mode: show latest real section structure on dates with 0 rows (no DB insert until task add).
+let dailyIsVirtualMode = false;
+let dailyVirtualTargetDateStr = null;
+let dailyVirtualSourceRows = [];
+let dailyVirtualSectionIdMap = new Map();
+const _dailyVirtualDateKeys = new Set();
+let _dailyPreparePromises = new Map();
+
+function dailyDateKey(val){
+  if(val==null||val===undefined) return '';
+  if(typeof val==='string') return val.slice(0,10);
+  const d=new Date(val);
+  if(Number.isNaN(d.getTime())) return '';
+  return fmtLocalDate(d);
+}
+
+function syncDailyVirtualWindowFlags(){
+  if(typeof window!=='undefined'){
+    window.dailyIsVirtualMode=!!dailyIsVirtualMode;
+    window.dailyVirtualDate=dailyVirtualTargetDateStr||null;
+  }
+}
+
+function clearDailyVirtualState(){
+  dailyIsVirtualMode=false;
+  dailyVirtualTargetDateStr=null;
+  dailyVirtualSourceRows=[];
+  dailyVirtualSectionIdMap=new Map();
+  _dailyVirtualDateKeys.clear();
+  syncDailyVirtualWindowFlags();
+}
+
+function isDailyVirtualDate(dstr){
+  return dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr && _dailyVirtualDateKeys.has(dstr);
+}
+
+function ensureDailySectionsPreparedForDate(dstr){
+  if(_dailyPreparePromises.has(dstr)) return _dailyPreparePromises.get(dstr);
+  const p=prepareDailySectionsForDate(dstr).finally(()=>{
+    _dailyPreparePromises.delete(dstr);
+  });
+  _dailyPreparePromises.set(dstr,p);
+  return p;
+}
+
 const SECTION_COLOR_BG=[
   '#ffcdd2','#ffe0b2','#fff9c4','#c8e6c9','#bbdefb','#e1bee7',
 ];
@@ -431,6 +476,189 @@ async function fetchDailySectionRowsFromSupabase(sb,userId,dstr){
   return data||[];
 }
 
+function isVirtualSectionId(sectionId){
+  return typeof sectionId==='string' && sectionId.startsWith('virtual-');
+}
+
+async function fetchLatestDailySectionsRowsForVirtualSource(sb,userId){
+  const {data,error}=await sb.from('daily_sections')
+    .select('id,date,title,emoji,color,sort_order,repeat_group_id,repeat_origin_date')
+    .eq('user_id',userId)
+    .order('date',{ascending:false})
+    .limit(20);
+  if(error) throw error;
+  const rows=data||[];
+  if(!rows.length) return [];
+  let sourceDate=dailyDateKey(rows[0].date);
+  rows.forEach((r)=>{
+    const dk=dailyDateKey(r.date);
+    if(dk>sourceDate) sourceDate=dk;
+  });
+  if(!sourceDate) return [];
+  return rows
+    .filter(r=>dailyDateKey(r.date)===sourceDate)
+    .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));
+}
+
+async function prepareDailySectionsForDate(dstr){
+  _dailySectionsLoadPromises.delete(dstr);
+
+  const userId=await resolveDailyUserId();
+  if(!userId){
+    clearDailyVirtualState();
+    _dailySectionsCache.delete(dstr);
+    console.log('[daily-virtual] prepare skipped (not logged in)', dstr);
+    return;
+  }
+
+  dailyIsVirtualMode=false;
+  dailyVirtualTargetDateStr=null;
+  dailyVirtualSourceRows=[];
+  dailyVirtualSectionIdMap=new Map();
+  _dailyVirtualDateKeys.delete(dstr);
+  syncDailyVirtualWindowFlags();
+
+  const sb=getDailySupabaseClient();
+  const realRows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+  console.log('[daily-virtual] prepare', dstr, 'realRows=', realRows.length);
+
+  if(realRows.length){
+    const list=realRows.map(mapSupabaseSectionRow);
+    _dailySectionsCache.set(dstr,list);
+    set(kDailySections(dstr),list);
+    return;
+  }
+
+  const sourceRows=await fetchLatestDailySectionsRowsForVirtualSource(sb,userId);
+  console.log('[daily-virtual] prepare', dstr, 'latestSourceRows=', sourceRows.length,
+    sourceRows[0]?dailyDateKey(sourceRows[0].date):null);
+
+  if(!sourceRows.length){
+    _dailySectionsCache.set(dstr,[]);
+    _dailyTasksCache.set(dstr,[]);
+    set(kDailySections(dstr),[]);
+    return;
+  }
+
+  dailyIsVirtualMode=true;
+  dailyVirtualTargetDateStr=dstr;
+  dailyVirtualSourceRows=sourceRows.slice();
+  _dailyVirtualDateKeys.add(dstr);
+
+  const virtualSections=sourceRows.map((row)=>({
+    ...mapSupabaseSectionRow(row),
+    id:'virtual-'+row.id,
+    virtualSourceId:row.id,
+  }));
+
+  _dailySectionsCache.set(dstr,virtualSections);
+  _dailyTasksCache.set(dstr,[]);
+  syncDailyVirtualWindowFlags();
+  console.log('[daily-virtual] virtual mode ON', dstr, 'sections=', virtualSections.length);
+}
+
+  async function materializeDailyVirtualSections(dstr){
+    if(!dailyIsVirtualMode || dailyVirtualTargetDateStr!==dstr) return new Map();
+    const userId=await resolveDailyUserId();
+    if(!userId) return new Map();
+
+    const sb=getDailySupabaseClient();
+    const sourceRows=dailyVirtualSourceRows.slice();
+    if(!sourceRows.length){
+      _dailyVirtualDateKeys.delete(dstr);
+      dailyIsVirtualMode=false;
+      dailyVirtualTargetDateStr=null;
+      dailyVirtualSourceRows=[];
+      dailyVirtualSectionIdMap=new Map();
+      syncDailyVirtualWindowFlags();
+      return new Map();
+    }
+
+    const insertRows=sourceRows.map((row,i)=>({
+      id:(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId(),
+      user_id:userId,
+      date:dstr,
+      title:row.title||'',
+      color:row.color||SECTION_COLORS[0].bg,
+      emoji:row.emoji||'📌',
+      sort_order:row.sort_order??i,
+      repeat_group_id:row.repeat_group_id??null,
+      repeat_origin_date:row.repeat_origin_date??null,
+    }));
+
+    const {error}=await sb.from('daily_sections').insert(insertRows);
+    if(error) throw error;
+
+    // Fetch the inserted real rows and update caches so the UI becomes consistent.
+    const realRows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    _dailySectionsCache.set(dstr, realRows.map(mapSupabaseSectionRow));
+
+    // Map virtual section ids to real inserted ids (best-effort matching).
+    const idMap=new Map();
+    sourceRows.forEach((src)=>{
+      const virtualId='virtual-'+src.id;
+      const match=realRows.find((r)=>{
+        return (r.repeat_group_id??null)===(src.repeat_group_id??null)
+          && (r.repeat_origin_date??null)===(src.repeat_origin_date??null)
+          && (r.sort_order??0)===(src.sort_order??0)
+          && (r.title||'')===(src.title||'')
+          && (r.color||SECTION_COLORS[0].bg)===(src.color||SECTION_COLORS[0].bg)
+          && (r.emoji||'📌')===(src.emoji||'📌');
+      });
+      if(match) idMap.set(virtualId, match.id);
+    });
+
+    _dailyVirtualDateKeys.delete(dstr);
+    dailyIsVirtualMode=false;
+    dailyVirtualTargetDateStr=null;
+    dailyVirtualSourceRows=[];
+    dailyVirtualSectionIdMap=idMap;
+    syncDailyVirtualWindowFlags();
+    return idMap;
+  }
+
+  async function resolveDailySectionIdForTaskIfVirtual(dstr, sectionId){
+    if(!dailyIsVirtualMode || dailyVirtualTargetDateStr!==dstr) return sectionId;
+    if(!isVirtualSectionId(sectionId)) return sectionId;
+    const idMap=await materializeDailyVirtualSections(dstr);
+    return idMap.get(sectionId) || sectionId;
+  }
+
+  async function addDailySectionInVirtualMode(dstr, title){
+    const userId=await resolveDailyUserId();
+    if(!userId) return addDailySection(dstr,title);
+
+    const sb=getDailySupabaseClient();
+    const current=_dailySectionsCache.get(dstr)||[];
+    const maxOrder=current.reduce((m,s)=>Math.max(m,Number(s.order)||0),-1);
+    const newOrder=maxOrder+1;
+    const newId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId();
+
+    const {error}=await sb.from('daily_sections').insert({
+      id:newId,
+      user_id:userId,
+      date:dstr,
+      title:title||'',
+      emoji:'📌',
+      color:SECTION_COLORS[0].bg,
+      sort_order:newOrder,
+      repeat_group_id:null,
+      repeat_origin_date:null,
+    });
+    if(error) throw error;
+
+    const newSection={
+      id:newId,
+      title:title||'',
+      emoji:'📌',
+      color:SECTION_COLORS[0].bg,
+      order:newOrder,
+      repeatGroupId:null,
+      repeatOriginDate:null,
+    };
+    _dailySectionsCache.set(dstr, current.concat([newSection]));
+  }
+
 async function todayHasDailySections(sb,userId,dstr){
   const {data,error}=await sb.from('daily_sections')
     .select('id')
@@ -470,6 +698,10 @@ async function copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr){
 async function loadDailySectionsFromSupabase(dstr){
   const userId=await resolveDailyUserId();
   if(!userId) return readDailySectionsLocal(dstr);
+  if(isDailyVirtualDate(dstr)){
+    console.log('[daily-virtual] loadDailySectionsFromSupabase skipped (virtual)', dstr);
+    return (_dailySectionsCache.get(dstr)||[]).slice();
+  }
   const sb=getDailySupabaseClient();
   try{
     let rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
@@ -604,6 +836,7 @@ function prefetchDailyTasks(dstr){
 }
 
 function prefetchDailySections(dstr){
+  if(isDailyVirtualDate(dstr)) return;
   if(_dailySectionsCache.has(dstr)||_dailySectionsLoadPromises.has(dstr)) return;
   const p=loadDailySectionsFromSupabase(dstr).then(()=>{
     _dailySectionsLoadPromises.delete(dstr);
@@ -1156,21 +1389,36 @@ function appendDailySectionTaskInput(body,dstr,sectionId){
   inp.type='text';
   inp.className='daily-section-task-input';
   inp.placeholder='Add a task and press Enter';
-  inp.addEventListener('keydown',(e)=>{
+  inp.addEventListener('keydown',async (e)=>{
     if(e.key!=='Enter') return;
     e.preventDefault();
     const value=inp.value.trim();
     if(!value) return;
-    insertDailyTask(dstr,{text:value,sectionId}).then((task)=>{
-      if(!task) return;
-      inp.value='';
-      const empty=body.querySelector('.daily-day-empty');
-      if(empty) empty.remove();
-      const list=getDailyTasks(dstr);
-      const idx=list.findIndex(t=>t.id===task.id);
-      if(idx>=0) appendDailyDayTaskRow(body,dstr,idx,task,inp);
-      inp.focus();
-    });
+
+    let resolvedSectionId=sectionId;
+    let didVirtualMaterialize=false;
+    if(dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr && isVirtualSectionId(sectionId)){
+      resolvedSectionId=await resolveDailySectionIdForTaskIfVirtual(dstr,sectionId);
+      didVirtualMaterialize=true;
+    }
+
+    const task=await insertDailyTask(dstr,{text:value,sectionId:resolvedSectionId});
+    if(!task) return;
+
+    inp.value='';
+    const empty=body.querySelector('.daily-day-empty');
+    if(empty) empty.remove();
+
+    if(didVirtualMaterialize){
+      // Section cards were updated (virtual -> real). Re-render to keep DOM consistent.
+      renderDailyDayWorkspace();
+      return;
+    }
+
+    const list=getDailyTasks(dstr);
+    const idx=list.findIndex(t=>t.id===task.id);
+    if(idx>=0) appendDailyDayTaskRow(body,dstr,idx,task,inp);
+    inp.focus();
   });
   body.appendChild(inp);
 }
@@ -1283,6 +1531,9 @@ function createDailySectionId(){ return `daily_section_${Date.now()}_${Math.rand
 function getDailySections(dstr){
   getDailySupabaseClient();
   if(_dailySbUserId){
+    if(isDailyVirtualDate(dstr)&&_dailySectionsCache.has(dstr)){
+      return _dailySectionsCache.get(dstr).slice();
+    }
     if(_dailySectionsCache.has(dstr)) return _dailySectionsCache.get(dstr).slice();
     prefetchDailySections(dstr);
     return readDailySectionsLocal(dstr);
@@ -1314,6 +1565,13 @@ function setDailySections(dstr,list){
 function ensureDailySections(dstr){
   const sections=getDailySections(dstr);
   return sections.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+}
+
+function getSectionsForDailyDayRender(dstr){
+  if(isDailyVirtualDate(dstr)&&_dailySectionsCache.has(dstr)){
+    return _dailySectionsCache.get(dstr).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  }
+  return ensureDailySections(dstr);
 }
 function getDailySectionTheme(section){
   const palette=resolveDailySectionPalette(section);
@@ -1522,12 +1780,14 @@ function formatDailyTasksTitle(date){
   return `${d.toLocaleDateString('en-US',{month:'long',day:'numeric'})}'s tasks`;
 }
 
-function loadDailyByDate(date){
+async function loadDailyByDate(date){
   dailySelectedDate=new Date(date);
   dailySelectedDate.setHours(0,0,0,0);
   miniCalYear=dailySelectedDate.getFullYear();
   miniCalMonth=dailySelectedDate.getMonth();
-  renderDailyDayWorkspace();
+  const dstr=fmtLocalDate(dailySelectedDate);
+  console.log('[daily-virtual] loadDailyByDate', dstr);
+  await renderDailyDayWorkspace();
 }
 
 function buildDailyMiniCalendar(){
@@ -1611,12 +1871,16 @@ function miniCalToday(){
   loadDailyByDate(new Date());
 }
 
-function renderDailyDayWorkspace(){
+async function renderDailyDayWorkspace(){
   const host=document.getElementById('dailyDayWorkspace');
   if(!host) return;
   const dstr=fmtLocalDate(dailySelectedDate);
-  const allTasks=getDailyTasks(dstr);
-  const sections=ensureDailySections(dstr);
+  const userId=await resolveDailyUserId();
+  if(userId){
+    await ensureDailySectionsPreparedForDate(dstr);
+  }
+  const allTasks=isDailyVirtualDate(dstr)?[]:getDailyTasks(dstr);
+  const sections=getSectionsForDailyDayRender(dstr);
 
   host.innerHTML='';
   const wrap=el('div','daily-day-layout');
@@ -1640,16 +1904,34 @@ function renderDailyDayWorkspace(){
       placeholder:'Enter section name and press Enter',
       value:dailyNewSectionTitle,
       onInput:(v)=>{ dailyNewSectionTitle=v; },
-      onSubmit:(v)=> addDailySection(dstr,v),
+      onSubmit:async (v)=>{
+        const nextTitle=v;
+        dailyIsAddingSection=false;
+        dailyNewSectionTitle='';
+        if(dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr){
+          await addDailySectionInVirtualMode(dstr,nextTitle);
+          renderDailyDayWorkspace();
+          return;
+        }
+        addDailySection(dstr,nextTitle);
+      },
       onCancel:()=>{
         dailyIsAddingSection=false;
         dailyNewSectionTitle='';
         renderDailyDayWorkspace();
       },
-      onBlur:(v)=>{
+      onBlur:async (v)=>{
         const value=(v||'').trim();
-        if(value) addDailySection(dstr,value);
-        else{
+        if(value){
+          dailyIsAddingSection=false;
+          dailyNewSectionTitle='';
+          if(dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr){
+            await addDailySectionInVirtualMode(dstr,value);
+            renderDailyDayWorkspace();
+            return;
+          }
+          addDailySection(dstr,value);
+        }else{
           dailyIsAddingSection=false;
           dailyNewSectionTitle='';
           renderDailyDayWorkspace();
