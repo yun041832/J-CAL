@@ -54,12 +54,20 @@ i stopped asking why i couldn't do 8.
 
 and slowly, the numbers climbed.
 
-![body battery february](../../images/BB_02.jpg)
-![body battery april](../../images/BB_04.jpg)
-![body battery this week](../../images/BB_05.jpg)
+<div style="display:flex; gap:8px; margin:16px 0;">
+  <img src="../../images/BB_02.jpg" alt="body battery february" style="width:33%; border-radius:8px;">
+  <img src="../../images/BB_04.jpg" alt="body battery april" style="width:33%; border-radius:8px;">
+  <img src="../../images/BB_05.jpg" alt="body battery this week" style="width:33%; border-radius:8px;">
+</div>
 
-february peak: 17–35
-this week: 70–77
+february: body battery hitting 5 by 3pm.
+some days, 5pm. then earlier and earlier.
+peak never crossed 35.
+
+now: still 6–8 right before bed.
+peak hitting 70–77.
+
+same person. completely different body.
 
 ---
 
