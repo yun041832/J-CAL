@@ -46,7 +46,68 @@
     document.getElementById('insightWritePage')?.classList.add('hidden');
   }
 
-  function showDailyPage() {
+  function isDailyPageVisible() {
+    const page = document.getElementById('dailyPage');
+    if (!page || page.classList.contains('hidden')) return false;
+    return window.getComputedStyle(page).display !== 'none';
+  }
+
+  function openAppLoginModal() {
+    const overlay = document.getElementById('login-modal-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    else document.getElementById('login-btn')?.click();
+  }
+
+  function setDailyMainContentVisible(visible) {
+    const ids = ['dailyDayWorkspace', 'dailyWeekCalendar', 'dailyMonthCalendar', 'dailyList'];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (visible) el.style.removeProperty('display');
+      else el.style.display = 'none';
+    });
+  }
+
+  function ensureDailyLoginGateEl() {
+    const page = document.getElementById('dailyPage');
+    if (!page) return null;
+    let gate = document.getElementById('dailyLoginGate');
+    if (!gate) {
+      gate = document.createElement('div');
+      gate.id = 'dailyLoginGate';
+      gate.style.cssText = 'flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;';
+      page.appendChild(gate);
+    }
+    return gate;
+  }
+
+  function renderDailyLoginGate() {
+    setDailyMainContentVisible(false);
+    const gate = ensureDailyLoginGateEl();
+    if (!gate) return;
+    gate.style.display = 'flex';
+    gate.innerHTML = '';
+    const msg = document.createElement('p');
+    msg.style.cssText = 'margin:0 0 12px;font-size:14px;color:#6b7280;';
+    msg.textContent = 'Daily는 로그인 후 사용할 수 있습니다.';
+    const loginBtn = document.createElement('button');
+    loginBtn.type = 'button';
+    loginBtn.textContent = 'Google로 로그인';
+    loginBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+    loginBtn.onclick = () => openAppLoginModal();
+    gate.append(msg, loginBtn);
+  }
+
+  function hideDailyLoginGate() {
+    const gate = document.getElementById('dailyLoginGate');
+    if (gate) gate.style.display = 'none';
+  }
+
+  function isDailyLoggedIn() {
+    return !!_dailySbUserId;
+  }
+
+  async function showDailyPage() {
     localStorage.setItem('memo2.lastPage', 'daily');
     document.getElementById('homeIntroSection')?.classList.add('hidden');
     document.getElementById('calendarPage')?.classList.add('hidden');
@@ -58,7 +119,14 @@
     document.getElementById('dailyPage')?.classList.remove('hidden');
     hideInsightPages();
     document.querySelector('.right')?.classList.add('hidden');
+    getDailySupabaseClient();
+    await resolveDailyUserId();
     initDailyPage();
+    if (!isDailyLoggedIn()) {
+      renderDailyLoginGate();
+      return;
+    }
+    hideDailyLoginGate();
     applyDailyView();
   }
 
@@ -172,7 +240,13 @@ function getDailySupabaseClient(){
       _dailyNotesCache.clear();
       _dailyTasksLoadPromises.clear();
       _dailySectionsLoadPromises.clear();
-      if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+      if(!isDailyPageVisible()) return;
+      if(_dailySbUserId){
+        hideDailyLoginGate();
+        if(typeof applyDailyView==='function') applyDailyView();
+      }else if(typeof renderDailyLoginGate==='function'){
+        renderDailyLoginGate();
+      }
     });
     _dailySbClient.auth.getSession().then(({data:{session}})=>{
       _dailySbUserId=session?.user?.id||null;
@@ -234,7 +308,7 @@ function ensureDailyTaskId(task){
 
 async function loadDailyTasksFromSupabase(dstr){
   const userId=await resolveDailyUserId();
-  if(!userId) return readDailyTasksLocal(dstr);
+  if(!userId) return [];
   const sb=getDailySupabaseClient();
   try{
     const {data,error}=await sb.from('daily_tasks')
@@ -343,7 +417,7 @@ async function copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr){
 
 async function loadDailySectionsFromSupabase(dstr){
   const userId=await resolveDailyUserId();
-  if(!userId) return readDailySectionsLocal(dstr);
+  if(!userId) return [];
   const sb=getDailySupabaseClient();
   try{
     const rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
@@ -498,12 +572,16 @@ function getDailyTasks(dstr){
     return readDailyTasksLocal(dstr);
   }
   resolveDailyUserId().then((userId)=>{
-    if(!userId||_dailyTasksCache.has(dstr)) return;
+    if(!userId){
+      if(isDailyPageVisible()&&typeof renderDailyLoginGate==='function') renderDailyLoginGate();
+      return;
+    }
+    if(_dailyTasksCache.has(dstr)) return;
     return loadDailyTasksFromSupabase(dstr).then(()=>{
       if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
     });
   }).catch(err=> console.error('getDailyTasks',err));
-  return readDailyTasksLocal(dstr);
+  return [];
 }
 
 function saveDailyTasks(dstr,list){
@@ -521,6 +599,10 @@ function saveDailyTasks(dstr,list){
   })();
 }
 function refreshDailyTaskViews(){
+  if(!isDailyLoggedIn()){
+    if(isDailyPageVisible()) renderDailyLoginGate();
+    return;
+  }
   if(dailyViewMode==='day') renderDailyDayWorkspace();
   else if(dailyViewMode==='week'){
     renderDailyList();
@@ -859,6 +941,11 @@ function saveDailyViewMode(){
   localStorage.setItem('memo2.dailyViewMode', dailyViewMode);
 }
 function applyDailyView(){
+  if(!isDailyLoggedIn()){
+    renderDailyLoginGate();
+    return;
+  }
+  hideDailyLoginGate();
   setDailyModeLayout();
   updateDailyHeaderPeriodNav();
   if(dailyViewMode === 'day'){
@@ -963,12 +1050,16 @@ function getDailySections(dstr){
     return readDailySectionsLocal(dstr);
   }
   resolveDailyUserId().then((userId)=>{
-    if(!userId||_dailySectionsCache.has(dstr)) return;
+    if(!userId){
+      if(isDailyPageVisible()&&typeof renderDailyLoginGate==='function') renderDailyLoginGate();
+      return;
+    }
+    if(_dailySectionsCache.has(dstr)) return;
     return loadDailySectionsFromSupabase(dstr).then(()=>{
       if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
     });
   }).catch(err=> console.error('getDailySections',err));
-  return readDailySectionsLocal(dstr);
+  return [];
 }
 
 function setDailySections(dstr,list){
