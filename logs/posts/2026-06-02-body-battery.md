@@ -12,12 +12,10 @@ would drag me back to the version of myself that couldn't get moving.
 
 so i didn't stop.
 
-i'd had a license for 20 years but barely drove.
-so i commuted however i could.
-some days i drove. some days subway.
-some days i biked — then took the subway home,
-brought the bike back the next morning, or drove in and biked home.
-three weeks straight at one point. weekends included.
+still a beginner driver after 20 years of holding a license.
+some days i drove. some days subway. some days bike.
+
+weekends. holidays. three weeks straight at one point.
 
 every day i logged the hours.
 "why can i only last 6 hours."
@@ -31,7 +29,9 @@ i was outrunning something.
 april 15th. shingles.
 three days before the JustDoc launch.
 
-i took one day off. then went straight back.
+i took one day off.
+
+then went straight back.
 seven days in a row.
 
 a few days later — couldn't walk from the dining table to the couch
@@ -42,7 +42,9 @@ but i knew.
 
 that was the first time i couldn't convince myself to push through it.
 
-so i stopped. not because i wanted to.
+so i stopped.
+
+not because i wanted to.
 because i had no choice.
 
 ---
@@ -55,6 +57,7 @@ is bigger than it sounds.
 
 i stopped measuring myself by hours at the office.
 some days 3. some days 5.
+
 and strangely, i can do more now than i could back then.
 not because i'm pushing harder.
 because i'm recovering better.
@@ -100,11 +103,14 @@ p.s.
 i've always been obsessed with data.
 not because i love numbers.
 because i love patterns.
+
 numbers. timelines. trends.
 collect it. structure it. find the pattern.
 i've been doing that for as long as i can remember.
+
 that's probably why i built jaycalendar.
 that's probably why justdoc exists.
 and it's probably why i can't stop checking the body battery.
+
 same instinct.
 different data.
