@@ -4660,19 +4660,29 @@ input[type="checkbox"],
   border-radius: 3px !important;
 }
 
-/* Logs page */
+/* Logs page — single page scroll (no nested scroll on post body) */
 #logsPage.logs-page{
-  display:flex;
-  flex-direction:column;
-  height:100%;
+  display:block;
+  height:auto !important;
   min-height:0;
+  max-height:none !important;
+  overflow:visible !important;
+  content-visibility:visible !important;
 }
 #logsPage .logs-page-body{
-  flex:1;
+  flex:none !important;
   min-height:0;
-  overflow-y:auto;
+  max-height:none !important;
+  height:auto !important;
+  overflow:visible !important;
   padding:16px 20px 24px;
   box-sizing:border-box;
+}
+#logsPage .logs-detail,
+#logsPage #logs-detail{
+  overflow:visible !important;
+  max-height:none !important;
+  height:auto !important;
 }
 .logs-header{
   padding:20px 0 8px;
@@ -4769,19 +4779,39 @@ input[type="checkbox"],
   color:var(--text-muted,#9aa5b1);
   margin:0 0 20px;
 }
-.log-content{
+#logsPage .log-content{
   font-size:14px;
   line-height:1.8;
   color:var(--text,#111827);
+  overflow:visible !important;
+  max-height:none !important;
+  height:auto !important;
 }
-.log-content h1,
-.log-content h2,
-.log-content h3{
+#logsPage .log-content h1,
+#logsPage .log-content h2,
+#logsPage .log-content h3{
   font-weight:500;
   margin:1.5rem 0 0.5rem;
 }
-.log-content p{
+#logsPage .log-content p{
   margin:0 0 1em;
+}
+
+/* Logs open: page-level scroll only */
+html:has(#logsPage:not(.hidden)),
+html:has(#logsPage:not(.hidden)) body{
+  height:auto !important;
+  min-height:100%;
+  overflow-y:auto !important;
+}
+.app:has(#logsPage:not(.hidden)){
+  height:auto !important;
+  min-height:100vh;
+  min-height:100dvh;
+}
+.app:has(#logsPage:not(.hidden)) .main{
+  overflow:visible !important;
+  min-height:0;
 }
 
 /* ── 사이드바 축소 (0531 패치) ── */
