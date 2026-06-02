@@ -293,18 +293,65 @@ async function persistDailyTasksToSupabase(dstr,list){
   }
 }
 
+function shiftDateString(dstr, deltaDays){
+  const parts=(dstr||'').split('-').map(Number);
+  const d=new Date(parts[0],(parts[1]||1)-1,parts[2]||1);
+  d.setDate(d.getDate()+deltaDays);
+  return fmtLocalDate(d);
+}
+
+async function fetchDailySectionRowsFromSupabase(sb,userId,dstr){
+  const {data,error}=await sb.from('daily_sections')
+    .select('id,title,emoji,color,sort_order')
+    .eq('user_id',userId)
+    .eq('date',dstr)
+    .order('sort_order',{ascending:true});
+  if(error) throw error;
+  return data||[];
+}
+
+async function todayHasDailySections(sb,userId,dstr){
+  const {data,error}=await sb.from('daily_sections')
+    .select('id')
+    .eq('user_id',userId)
+    .eq('date',dstr)
+    .limit(1);
+  if(error) throw error;
+  return (data||[]).length>0;
+}
+
+async function copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr){
+  if(await todayHasDailySections(sb,userId,todayStr)) return false;
+  const yesterdayStr=shiftDateString(todayStr,-1);
+  const yesterdayRows=await fetchDailySectionRowsFromSupabase(sb,userId,yesterdayStr);
+  if(!yesterdayRows.length) return false;
+  if(await todayHasDailySections(sb,userId,todayStr)) return false;
+  const insertRows=yesterdayRows.map((row,i)=>({
+    id:(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId(),
+    user_id:userId,
+    date:todayStr,
+    title:row.title||'',
+    emoji:row.emoji||'📌',
+    color:row.color||SECTION_COLORS[0].bg,
+    sort_order:row.sort_order??i,
+  }));
+  const {error:insertErr}=await sb.from('daily_sections').insert(insertRows);
+  if(insertErr) throw insertErr;
+  return true;
+}
+
 async function loadDailySectionsFromSupabase(dstr){
   const userId=await resolveDailyUserId();
   if(!userId) return readDailySectionsLocal(dstr);
   const sb=getDailySupabaseClient();
   try{
-    const {data,error}=await sb.from('daily_sections')
-      .select('id,title,emoji,color,sort_order')
-      .eq('user_id',userId)
-      .eq('date',dstr)
-      .order('sort_order',{ascending:true});
-    if(error) throw error;
-    const list=(data||[]).map(mapSupabaseSectionRow);
+    let rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    const todayStr=fmtLocalDate(new Date());
+    if(!rows.length&&dstr===todayStr){
+      const copied=await copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr);
+      if(copied) rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    }
+    const list=rows.map(mapSupabaseSectionRow);
     _dailySectionsCache.set(dstr,list);
     set(kDailySections(dstr),list);
     return list.slice();
