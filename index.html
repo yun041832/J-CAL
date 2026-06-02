@@ -522,6 +522,10 @@
         <span style="font-size:20px;line-height:1.2;">⏲️</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Timer</span>
       </button>
+      <button type="button" class="mobile-tab-btn" data-widget="logs" aria-label="Logs" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+        <span style="font-size:20px;">📓</span>
+        <span>Logs</span>
+      </button>
     </nav>
 
     <main class="main">
@@ -1085,6 +1089,7 @@
       else if (widget === 'daily' && typeof showDailyPage === 'function') showDailyPage()
       else if (widget === 'timer' && typeof showTimerPage === 'function') showTimerPage()
       else if (widget === 'stopwatch' && typeof showTimerPage === 'function') showTimerPage('stopwatch')
+      else if (widget === 'logs' && typeof showLogsPage === 'function') showLogsPage()
     }
 
     document.querySelectorAll('#mobile-tab-bar .mobile-tab-btn').forEach(function (btn) {

@@ -366,6 +366,9 @@
 
   // ── showMemoPage 진입점 ────────────────────────────
   function showMemoPage() {
+    document.getElementById('homeIntroSection')?.classList.add('hidden');
+    document.getElementById('calendarPage')?.classList.add('hidden');
+    document.getElementById('memoWritePage')?.classList.add('hidden');
     document.getElementById('memoPage')?.classList.remove('hidden');
     document.getElementById('routinePage')?.classList.add('hidden');
     document.getElementById('dailyPage')?.classList.add('hidden');

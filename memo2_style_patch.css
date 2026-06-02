@@ -5116,12 +5116,9 @@ aside.right:not(.hidden) .card {
   color: #9ca3af !important;
 }
 
-/* 반응형: 캘린더 헤더 · JustDoc 사이드바 */
+/* 반응형: 캘린더 헤더 · JustDoc 사이드바 · Daily 주간뷰 */
 @media (max-width: 768px) {
   #openCalendarWidgetBtn {
-    display: none !important;
-  }
-  #mobile-tab-bar .mobile-tab-btn[data-widget="logs"] {
     display: none !important;
   }
   #calendarPage {
@@ -5132,6 +5129,40 @@ aside.right:not(.hidden) .card {
   }
   .day__num {
     font-size: 11px !important;
+  }
+
+  /* Daily 주간뷰: 7일 가로 스크롤 (weekGrid = #dailyWeekCalendar 마지막 자식) */
+  #dailyWeekCalendar > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    grid-template-columns: unset !important;
+    gap: 8px !important;
+  }
+  #dailyWeekCalendar > div:last-child > div {
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 달력 헤더 한 줄 유지 */
+  .card__header-unified {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    overflow-x: auto;
+    gap: 4px !important;
+  }
+  .card__header-unified .icon-btn,
+  .card__header-unified .goal-style-btn,
+  .card__header-unified .icon-btn-ghost {
+    flex-shrink: 0;
+  }
+  .card__header-unified .monthly-goal-input-unified,
+  #calendarPage .monthly-goal-input-unified {
+    min-width: 80px;
+    max-width: 140px;
   }
 }
 
