@@ -2265,14 +2265,19 @@ function renderDailyWeekCalendar(){
     const itemList = el('div', 'weekly-day-card-scroll');
     itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
 
+    const sections=getDailySections(dstr);
+
     items.forEach((item, idx)=>{
       const row = el('div');
       row.style.cssText = `display:flex;align-items:flex-start;gap:4px;padding:4px 2px;border-radius:6px;`;
 
+      const section=item.sectionId?sections.find((s)=>s.id===item.sectionId):null;
+      const sectionColor=section?.color||'#5C8DFF';
+
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = !!item.done;
-      cb.style.cssText = 'width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#5C8DFF;';
+      cb.style.cssText=`width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:${sectionColor};`;
 
       const text = el('span', null, item.text);
       text.style.cssText = `font-size:11px;line-height:1.4;word-break:break-all;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
