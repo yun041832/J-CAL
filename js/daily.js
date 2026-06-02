@@ -24,6 +24,7 @@
   function formatYearMonth(y, m) { return MONTHS_EN[m] + ' ' + y; }
 
   function kDaily(d) { return 'memo2.daily.' + d; }
+  function kDailyNote(d) { return 'memo2.daily.note.' + d; }
 
   function getJayMemoList() {
     return (window.JCal?.getJayMemoList || window.getJayMemoList)?.() ?? [];
@@ -1415,7 +1416,6 @@ function renderDailyDayWorkspace(){
   left.appendChild(listWrap);
 
   const noteSection=el('div','daily-note-section');
-  noteSection.style.display='none';
   const memoHead=el('div','daily-memo-head');
   const memoHeadLeft=el('div','daily-memo-head-title','📝 Daily Note');
   const memoHeadActions=el('div','daily-memo-head-actions');
@@ -1454,9 +1454,16 @@ function renderDailyDayWorkspace(){
     if(isSaving) return;
     isSaving=true;
     try{
-      const out=await upsertDailyNoteToSupabase(dstr,memoInput.value||'');
-      if(out?.updatedAt){
-        savedAtEl.textContent=formatDailyMemoSavedAt(new Date(out.updatedAt).getTime());
+      const text=memoInput.value||'';
+      const userId=await resolveDailyUserId();
+      if(userId){
+        const out=await upsertDailyNoteToSupabase(dstr,text);
+        if(out?.updatedAt){
+          savedAtEl.textContent=formatDailyMemoSavedAt(new Date(out.updatedAt).getTime());
+        }
+      }else{
+        set(kDailyNote(dstr),{content:text,updatedAt:Date.now()});
+        savedAtEl.textContent=formatDailyMemoSavedAt(Date.now());
       }
     }finally{
       isSaving=false;
@@ -1472,16 +1479,23 @@ function renderDailyDayWorkspace(){
   noteSection.append(memoHead,memoInput,savedAtEl,memoActions);
   (async ()=>{
     const userId=await resolveDailyUserId();
-    if(!userId){
-      noteSection.style.display='none';
-      return;
+    let content='';
+    let updatedAt=null;
+    if(userId){
+      const loaded=await loadDailyNoteFromSupabase(dstr);
+      content=loaded?.content||'';
+      updatedAt=loaded?.updatedAt||null;
+    }else{
+      const local=get(kDailyNote(dstr),null);
+      if(local&&typeof local==='object'){
+        content=local.content||'';
+        updatedAt=local.updatedAt||null;
+      }
     }
-    noteSection.style.removeProperty('display');
-    const loaded=await loadDailyNoteFromSupabase(dstr);
-    memoInput.value=loaded?.content||'';
+    memoInput.value=content;
     autoResizeDailyNote();
-    if(loaded?.updatedAt){
-      savedAtEl.textContent=formatDailyMemoSavedAt(new Date(loaded.updatedAt).getTime());
+    if(updatedAt){
+      savedAtEl.textContent=formatDailyMemoSavedAt(new Date(updatedAt).getTime());
     }else{
       savedAtEl.textContent='';
     }

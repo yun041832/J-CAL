@@ -20,6 +20,7 @@
       _sb.auth.onAuthStateChange((_evt, session) => {
         _userId = session?.user?.id || null;
         if (_userId && isMemoPageVisible()) initMemoSections();
+        else if (!_userId && isMemoPageVisible()) renderMemoPage();
       });
       _sb.auth.getSession().then(({ data: { session } }) => {
         _userId = session?.user?.id || null;
@@ -41,12 +42,21 @@
 
   // ── 기본 섹션 3개 ──────────────────────────────────
   const DEFAULT_SECTIONS = [
-    { name: 'Today\'s Work', emoji: '📝', color: '#f0fdf4', sort_order: 0 },
-    { name: 'Thoughts',   emoji: '💭', color: '#eff6ff', sort_order: 1 },
-    { name: 'Journal',     emoji: '📔', color: '#fdf4ff', sort_order: 2 },
+    { title: 'Today\'s Work', emoji: '📝', color: '#f0fdf4', sort_order: 0 },
+    { title: 'Thoughts', emoji: '💭', color: '#eff6ff', sort_order: 1 },
+    { title: 'Journal', emoji: '📔', color: '#fdf4ff', sort_order: 2 },
   ];
 
-  let _sections = []; // { id, name, emoji, color, sort_order }
+  function sectionTitle(sec) {
+    return (sec?.title || sec?.name || '').trim() || 'Section';
+  }
+
+  function normalizeMemoSection(row) {
+    const title = (row?.title || row?.name || '').trim();
+    return { ...row, title, name: title };
+  }
+
+  let _sections = []; // { id, title, name, emoji, color, sort_order }
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
   let _initPromise = null;
@@ -77,15 +87,15 @@
       if (error) throw error;
 
       if (data && data.length > 0) {
-        _sections = data;
+        _sections = data.map(normalizeMemoSection);
       } else {
         const { data: existing, error: existErr } = await _sb.from('memo_sections')
-          .select('name').eq('user_id', userId);
+          .select('title,name').eq('user_id', userId);
         if (existErr) throw existErr;
-        const existingNames = new Set((existing || []).map(r => r.name));
+        const existingTitles = new Set((existing || []).map(r => (r.title || r.name || '').trim()));
         const rows = DEFAULT_SECTIONS
-          .filter(s => !existingNames.has(s.name))
-          .map(s => ({ ...s, user_id: userId }));
+          .filter(s => !existingTitles.has(s.title))
+          .map(s => ({ title: s.title, emoji: s.emoji, color: s.color, sort_order: s.sort_order, user_id: userId }));
         if (rows.length > 0) {
           const { error: insErr } = await _sb.from('memo_sections').insert(rows);
           if (insErr) throw insErr;
@@ -93,7 +103,7 @@
         const { data: all, error: allErr } = await _sb.from('memo_sections')
           .select('*').eq('user_id', userId).order('sort_order');
         if (allErr) throw allErr;
-        _sections = all || [];
+        _sections = (all || []).map(normalizeMemoSection);
       }
       await loadMemos();
     } catch (e) {
@@ -220,7 +230,23 @@
     panels.style.cssText = 'display:flex;flex:1;overflow:hidden;';
 
     if (_sections.length === 0) {
-      panels.innerHTML = '<div style="padding:24px;color:#9ca3af;">Please log in to continue.</div>';
+      const box = document.createElement('div');
+      box.style.cssText = 'padding:32px 24px;text-align:center;color:#6b7280;';
+      if (!_userId) {
+        box.innerHTML = '<p style="margin:0 0 12px;font-size:14px;">메모 3패널은 로그인 후 사용할 수 있습니다.</p>';
+        const loginBtn = document.createElement('button');
+        loginBtn.type = 'button';
+        loginBtn.textContent = 'Google로 로그인';
+        loginBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+        loginBtn.onclick = () => {
+          document.getElementById('login-modal-overlay')?.style && (document.getElementById('login-modal-overlay').style.display = 'flex');
+          document.getElementById('login-btn')?.click();
+        };
+        box.appendChild(loginBtn);
+      } else {
+        box.innerHTML = '<p style="margin:0;font-size:14px;">섹션을 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해 주세요.</p>';
+      }
+      panels.appendChild(box);
       page.appendChild(panels);
       return;
     }
@@ -234,20 +260,20 @@
       secHeader.style.cssText = 'display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
       secHeader.innerHTML = `
         <span style="font-size:16px;">${sec.emoji || '📝'}</span>
-        <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="Click to rename">${sec.name}</span>
+        <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="Click to rename">${sectionTitle(sec)}</span>
         <button data-add="${sec.id}" style="font-size:18px;background:none;border:none;cursor:pointer;color:#5C8DFF;line-height:1;">+</button>
       `;
       // 섹션명 클릭 → 인라인 편집
       secHeader.querySelector('.sec-name-' + sec.id).onclick = function () {
         const input = document.createElement('input');
-        input.value = sec.name;
+        input.value = sectionTitle(sec);
         input.style.cssText = 'font-weight:600;font-size:13px;flex:1;border:1px solid #5C8DFF;border-radius:4px;padding:2px 4px;width:80px;';
         this.replaceWith(input);
         input.focus();
         input.select();
         const done = () => {
-          const newName = input.value.trim() || sec.name;
-          updateSection(sec.id, { name: newName });
+          const newTitle = input.value.trim() || sectionTitle(sec);
+          updateSection(sec.id, { title: newTitle });
         };
         input.onblur = done;
         input.onkeydown = e => { if (e.key === 'Enter') done(); };
@@ -365,7 +391,7 @@
   }
 
   // ── showMemoPage 진입점 ────────────────────────────
-  function showMemoPage() {
+  async function showMemoPage() {
     document.getElementById('homeIntroSection')?.classList.add('hidden');
     document.getElementById('calendarPage')?.classList.add('hidden');
     document.getElementById('memoWritePage')?.classList.add('hidden');
@@ -379,11 +405,12 @@
     localStorage.setItem('memo2.lastPage', 'memo');
 
     getSb();
-    if (_sections.length > 0) {
-      renderMemoPage();
-    } else {
-      initMemoSections();
+    const page = document.getElementById('memoPage');
+    if (page) {
+      page.innerHTML = '<div style="padding:24px;color:#9ca3af;font-size:14px;">불러오는 중…</div>';
+      page.classList.remove('hidden');
     }
+    await initMemoSections();
   }
 
   // ── 전역 등록 ──────────────────────────────────────
