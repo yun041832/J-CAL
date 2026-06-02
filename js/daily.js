@@ -2336,6 +2336,51 @@ function renderDailyWeekCalendar(){
   container.appendChild(weekGrid);
 }
 
+function focusDailyDayTaskInput(){
+  requestAnimationFrame(()=>{
+    document.querySelector('#dailyDayWorkspace .daily-section-task-input')?.focus();
+  });
+}
+
+async function openMonthDayInDailyView(date){
+  dailySelectedDate=new Date(date);
+  dailySelectedDate.setHours(0,0,0,0);
+  if(dailyViewMode!=='day') setDailyViewMode('day');
+  await loadDailyByDate(dailySelectedDate);
+  focusDailyDayTaskInput();
+}
+
+async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
+  const list=getDailyTasks(dstr).slice();
+  let removeIdx=idx;
+  if(taskId){
+    const byId=list.findIndex((t)=>t.id===taskId);
+    if(byId>=0) removeIdx=byId;
+  }
+  const task=removeIdx>=0?list[removeIdx]:null;
+  if(removeIdx>=0) list.splice(removeIdx,1);
+  _dailyTasksCache.set(dstr,list);
+  set(kDaily(dstr),list);
+
+  const userId=await resolveDailyUserId();
+  const id=taskId||task?.id;
+  if(userId&&id){
+    const sb=getDailySupabaseClient();
+    const {error}=await sb.from('daily_tasks')
+      .delete()
+      .eq('id',id)
+      .eq('user_id',userId);
+    if(error) console.error('deleteMonthViewTask',error);
+  }else if(!userId&&removeIdx>=0){
+    saveDailyTasks(dstr,list);
+  }
+
+  rowItem.remove();
+  if(!body.querySelector('.daily-month-task-item')&&!body.querySelector('.daily-month-empty')){
+    body.appendChild(el('div','daily-month-empty','No records'));
+  }
+}
+
 function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
@@ -2362,7 +2407,8 @@ function renderDailyMonthCalendar(){
       const date = new Date(startDate);
       date.setDate(startDate.getDate()+weekStart+i);
       const dstr=fmtLocalDate(date);
-      const items=get(kDaily(dstr),[]);
+      const items=getDailyTasks(dstr);
+      const sections=getDailySections(dstr);
       const isCurrentMonth=date.getMonth()===m;
       const isToday=dstr===fmtLocalDate(new Date());
       const isSelected=dstr===fmtLocalDate(dailySelectedDate);
@@ -2383,25 +2429,59 @@ function renderDailyMonthCalendar(){
         body.appendChild(empty);
       }else{
         items.forEach((item,idx)=>{
-          const rowItem=el('label','daily-month-task-item');
+          const rowItem=el('div','daily-month-task-item');
+          rowItem.style.position='relative';
+
+          const section=item.sectionId?sections.find((s)=>s.id===item.sectionId):null;
+          const sectionColor=section?.color||'#5C8DFF';
+
           const cb=document.createElement('input');
           cb.type='checkbox';
           cb.checked=!!item.done;
-          cb.addEventListener('change',()=> setDailyItemDone(dstr, idx, cb.checked));
+          cb.style.accentColor=sectionColor;
           const txt=el('span','daily-month-task-text',item.text);
           if(item.done) txt.classList.add('is-done');
-          rowItem.append(cb,txt);
+
+          const delBtn=el('button',null,'×');
+          delBtn.type='button';
+          delBtn.title='Delete task';
+          delBtn.style.cssText='position:absolute;top:0;right:0;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;opacity:0;transition:opacity 0.15s;';
+          rowItem.addEventListener('mouseenter',()=>{ delBtn.style.opacity='1'; });
+          rowItem.addEventListener('mouseleave',()=>{ delBtn.style.opacity='0'; });
+
+          cb.addEventListener('change',(e)=>{
+            e.stopPropagation();
+            const checked=cb.checked;
+            if(checked) txt.classList.add('is-done');
+            else txt.classList.remove('is-done');
+            setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+          });
+          delBtn.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            void deleteMonthViewTask(dstr,item.id,idx,rowItem,body);
+          });
+
+          rowItem.append(cb,txt,delBtn);
           body.appendChild(rowItem);
         });
       }
 
+      const addDayBtn=el('button',null,'+');
+      addDayBtn.type='button';
+      addDayBtn.title='Open day view and add task';
+      addDayBtn.style.cssText='margin:4px 8px 8px;padding:4px 0;width:calc(100% - 16px);border:none;border-top:1px solid #e5e7eb;background:transparent;color:#64748b;font-size:16px;line-height:1;cursor:pointer;border-radius:0 0 8px 8px;';
+      addDayBtn.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        void openMonthDayInDailyView(date);
+      });
+
       card.addEventListener('click',(e)=>{
-        if(e.target.closest('input')) return;
+        if(e.target.closest('input,button')) return;
         dailySelectedDate=new Date(date);
         renderDailyMonthCalendar();
       });
 
-      card.append(cardHeader,body);
+      card.append(cardHeader,body,addDayBtn);
       row.appendChild(card);
     }
     view.appendChild(row);
