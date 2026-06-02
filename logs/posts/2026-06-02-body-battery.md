@@ -12,9 +12,12 @@ would drag me back to the version of myself that couldn't get moving.
 
 so i didn't stop.
 
-learner's license. never really drove until then.
-subway. bike, 3–4 times a week.
-weekends. holidays. three weeks straight at one point.
+i'd had a license for 20 years but barely drove.
+so i commuted however i could.
+some days i drove. some days subway.
+some days i biked — then took the subway home,
+brought the bike back the next morning, or drove in and biked home.
+three weeks straight at one point. weekends included.
 
 every day i logged the hours.
 "why can i only last 6 hours."
