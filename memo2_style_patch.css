@@ -5171,3 +5171,5 @@ aside.right:not(.hidden) .card {
     display: none !important;
   }
 }
+
+#calendarPage.hidden { display: none !important; }
