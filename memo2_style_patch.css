@@ -5173,3 +5173,46 @@ aside.right:not(.hidden) .card {
 }
 
 #calendarPage.hidden { display: none !important; }
+
+/* Guest login nudge — Daily / Memo tab top */
+#dailyPage #login-nudge-banner,
+#memoPage #login-nudge-banner {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  margin: 0;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #78350f;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  box-sizing: border-box;
+}
+
+.login-nudge-banner__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.login-nudge-banner__btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #5c8dff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.login-nudge-banner__btn:hover {
+  background: #4a7aee;
+}

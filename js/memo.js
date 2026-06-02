@@ -19,8 +19,13 @@
       _sb = window.supabase;
       _sb.auth.onAuthStateChange((_evt, session) => {
         _userId = session?.user?.id || null;
-        if (_userId && isMemoPageVisible()) initMemoSections();
-        else if (!_userId && isMemoPageVisible()) renderMemoPage();
+        const page = document.getElementById('memoPage');
+        if (_userId && isMemoPageVisible()) {
+          syncMemoLoginNudge(page, false);
+          initMemoSections();
+        } else if (!_userId && isMemoPageVisible()) {
+          renderMemoPage();
+        }
       });
       _sb.auth.getSession().then(({ data: { session } }) => {
         _userId = session?.user?.id || null;
@@ -38,6 +43,19 @@
       _userId = session?.user?.id || null;
       return _userId;
     } catch (e) { return null; }
+  }
+
+  function openAppLoginModal() {
+    if (typeof window.openAppLoginModal === 'function') window.openAppLoginModal();
+    else {
+      const overlay = document.getElementById('login-modal-overlay');
+      if (overlay) overlay.style.display = 'flex';
+      else document.getElementById('login-btn')?.click();
+    }
+  }
+
+  function syncMemoLoginNudge(pageEl, show) {
+    if (typeof window.syncLoginNudgeBanner === 'function') window.syncLoginNudgeBanner(pageEl, show);
   }
 
   // ── 기본 섹션 3개 ──────────────────────────────────
@@ -224,6 +242,7 @@
       };
     });
     page.appendChild(header);
+    syncMemoLoginNudge(page, !_userId);
 
     // 3패널 컨테이너
     const panels = document.createElement('div');
@@ -238,10 +257,7 @@
         loginBtn.type = 'button';
         loginBtn.textContent = 'Google로 로그인';
         loginBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
-        loginBtn.onclick = () => {
-          document.getElementById('login-modal-overlay')?.style && (document.getElementById('login-modal-overlay').style.display = 'flex');
-          document.getElementById('login-btn')?.click();
-        };
+        loginBtn.onclick = () => openAppLoginModal();
         box.appendChild(loginBtn);
       } else {
         box.innerHTML = '<p style="margin:0;font-size:14px;">섹션을 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해 주세요.</p>';

@@ -58,6 +58,40 @@
     else document.getElementById('login-btn')?.click();
   }
 
+  function syncLoginNudgeBanner(pageEl, show) {
+    if (!pageEl) return;
+    let banner = pageEl.querySelector('#login-nudge-banner');
+    if (!show) {
+      banner?.remove();
+      return;
+    }
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'login-nudge-banner';
+      banner.className = 'login-nudge-banner';
+      const text = document.createElement('span');
+      text.className = 'login-nudge-banner__text';
+      text.textContent = '📌 로그인하면 데이터가 저장됩니다.';
+      const loginBtn = document.createElement('button');
+      loginBtn.type = 'button';
+      loginBtn.className = 'login-nudge-banner__btn';
+      loginBtn.textContent = 'Google로 로그인';
+      loginBtn.onclick = () => openAppLoginModal();
+      banner.append(text, loginBtn);
+    }
+    const anchor = pageEl.querySelector('.daily-page-header')
+      || pageEl.querySelector('.card__header')
+      || pageEl.firstElementChild;
+    if (anchor) {
+      if (banner.previousElementSibling !== anchor) {
+        anchor.insertAdjacentElement('afterend', banner);
+      }
+    } else if (!banner.parentNode) {
+      pageEl.prepend(banner);
+    }
+    banner.style.display = '';
+  }
+
   function setDailyMainContentVisible(visible) {
     const ids = ['dailyDayWorkspace', 'dailyWeekCalendar', 'dailyMonthCalendar', 'dailyList'];
     ids.forEach((id) => {
@@ -82,6 +116,8 @@
   }
 
   function renderDailyLoginGate() {
+    const page = document.getElementById('dailyPage');
+    syncLoginNudgeBanner(page, true);
     setDailyMainContentVisible(false);
     const gate = ensureDailyLoginGateEl();
     if (!gate) return;
@@ -99,6 +135,7 @@
   }
 
   function hideDailyLoginGate() {
+    syncLoginNudgeBanner(document.getElementById('dailyPage'), false);
     const gate = document.getElementById('dailyLoginGate');
     if (gate) gate.style.display = 'none';
   }
@@ -2209,6 +2246,9 @@ function widgetDaily(){
   };
 
   Object.assign(window.JCal || (window.JCal = {}), dailyApi);
+
+  window.syncLoginNudgeBanner = syncLoginNudgeBanner;
+  window.openAppLoginModal = openAppLoginModal;
 
   window.showDailyPage = showDailyPage;
   window.initDailyPage = initDailyPage;
