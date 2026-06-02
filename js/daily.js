@@ -866,8 +866,6 @@ async function persistDailySectionsToSupabase(dstr,list){
       const {error}=await sb.from('daily_sections').delete().in('id',deleteIds);
       if(error) throw error;
     }
-    _dailySectionsCache.set(dstr,normalized);
-    set(kDailySections(dstr),normalized);
   }catch(err){
     console.error('persistDailySectionsToSupabase',err);
     if(!hasVirtualInList) set(kDailySections(dstr),normalized);
@@ -1130,6 +1128,7 @@ async function addDailySection(dstr,title){
     repeatOriginDate:null,
   }]);
   setDailySections(dstr,next);
+  _dailySkipPrepareOnce.add(dstr);
   dailyIsAddingSection=false;
   dailyNewSectionTitle='';
   await renderDailyDayWorkspace();
