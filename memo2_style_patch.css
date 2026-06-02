@@ -3178,12 +3178,52 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   color:#111827;
 }
 .daily-month-day-card-body{
+  flex:1;
+  min-height:0;
   padding:8px;
-  max-height:180px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
   gap:6px;
+}
+/* Week view day cell + row (renderDailyWeekCalendar addRow / addInput inline pattern) */
+.daily-week-day-add-wrap{
+  padding:4px;
+  flex-shrink:0;
+  margin-top:auto;
+}
+.daily-week-day-add-input{
+  width:100%;
+  box-sizing:border-box;
+  font-size:11px;
+  line-height:1.4;
+  border:none;
+  border-top:1px solid #e2e8f0;
+  padding:4px 2px;
+  outline:none;
+  background:transparent;
+  color:#64748b;
+}
+/* Month view day cell + button — pinned to bottom like week view */
+.daily-month-day-add-btn{
+  margin-top:auto;
+  flex-shrink:0;
+  width:100%;
+  box-sizing:border-box;
+  padding:4px 2px;
+  font-size:11px;
+  line-height:1.4;
+  border:none;
+  border-top:1px solid #e2e8f0;
+  border-radius:0;
+  background:transparent;
+  color:#64748b;
+  cursor:pointer;
+  text-align:center;
+}
+.daily-month-day-add-btn:hover{
+  color:#5C8DFF;
+  background:#f8fafc;
 }
 .daily-month-task-item{
   display:flex;

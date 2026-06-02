@@ -2302,12 +2302,11 @@ function renderDailyWeekCalendar(){
       itemList.appendChild(row);
     });
 
-    const addRow = el('div');
-    addRow.style.cssText = 'padding:4px;';
+    const addRow = el('div','daily-week-day-add-wrap');
     const addInput = document.createElement('input');
     addInput.type = 'text';
+    addInput.className = 'daily-week-day-add-input';
     addInput.placeholder = '+';
-    addInput.style.cssText = 'width:100%;font-size:11px;border:none;border-top:1px solid #e2e8f0;padding:4px 2px;outline:none;background:transparent;color:#64748b;';
     addInput.addEventListener('keydown', (e)=>{
       if(e.key==='Enter'){
         e.stopPropagation();
@@ -2466,10 +2465,9 @@ function renderDailyMonthCalendar(){
         });
       }
 
-      const addDayBtn=el('button',null,'+');
+      const addDayBtn=el('button','daily-month-day-add-btn','+');
       addDayBtn.type='button';
       addDayBtn.title='Open day view and add task';
-      addDayBtn.style.cssText='margin:4px 8px 8px;padding:4px 0;width:calc(100% - 16px);border:none;border-top:1px solid #e5e7eb;background:transparent;color:#64748b;font-size:16px;line-height:1;cursor:pointer;border-radius:0 0 8px 8px;';
       addDayBtn.addEventListener('click',(e)=>{
         e.stopPropagation();
         void openMonthDayInDailyView(date);
