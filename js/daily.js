@@ -1001,7 +1001,7 @@ function insertDailyTask(dstr,{text,sectionId,done=false}){
     return task;
   })();
 }
-function patchDailyTask(dstr,taskId,patch){
+function patchDailyTask(dstr,taskId,patch,opts={}){
   return (async ()=>{
     const list=getDailyTasks(dstr);
     const idx=list.findIndex(t=>t.id===taskId);
@@ -1018,7 +1018,7 @@ function patchDailyTask(dstr,taskId,patch){
     list[idx]={...list[idx],...normalized};
     _dailyTasksCache.set(dstr,list);
     set(kDaily(dstr),list);
-    refreshDailyTaskViews();
+    if(!opts.skipRefresh) refreshDailyTaskViews();
     const userId=await resolveDailyUserId();
     if(!userId){
       console.error('patchDailyTask: not logged in');
@@ -1822,16 +1822,23 @@ function setDailyModeLayout(){
   show(listSection, mode==='week');
   updateDailyViewButtons();
 }
-function setDailyItemDone(dstr,idx,checked){
+function setDailyItemDone(dstr,idx,checked,opts={}){
   const list=getDailyTasks(dstr);
   const task=list[idx];
   if(!task) return;
-  if(task.id) patchDailyTask(dstr,task.id,{done:checked});
+  if(task.id) patchDailyTask(dstr,task.id,{done:checked},opts);
   else{
     list[idx].done=checked;
     saveDailyTasks(dstr,list);
-    refreshDailyTaskViews();
+    if(!opts.skipRefresh) refreshDailyTaskViews();
   }
+}
+
+function updateWeekDayColumnDot(dot,dstr){
+  const items=get(kDaily(dstr),[]);
+  dot.style.background=items.length>0
+    ?(items.some((it)=>it.done)?'#22c55e':'#f97316')
+    :'transparent';
 }
 
 function initDailyPage(){
@@ -2228,7 +2235,7 @@ function renderDailyWeekCalendar(){
   // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
-  weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:10px;align-items:stretch;border:1px solid #e9ecef;';
+  weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:10px;align-items:stretch;border:1px solid #e9ecef;min-height:80px;';
   container.appendChild(weeklyNotesWrap);
   renderDailyWeeklyNotesBlock(weeklyNotesWrap, weekStartMonday);
 
@@ -2284,7 +2291,11 @@ function renderDailyWeekCalendar(){
 
       cb.addEventListener('change', (e)=>{
         e.stopPropagation();
-        setDailyItemDone(dstr, idx, cb.checked);
+        const checked=cb.checked;
+        text.style.textDecoration=checked?'line-through':'';
+        text.style.color=checked?'#9aa5b1':'#374151';
+        setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+        updateWeekDayColumnDot(dot,dstr);
       });
 
       row.append(cb, text);
