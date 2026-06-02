@@ -201,6 +201,12 @@ function dedupeDailySectionsById(sections){
   return out;
 }
 
+function maxDailySectionOrder(sections){
+  const list=Array.isArray(sections)?sections:[];
+  if(!list.length) return -1;
+  return Math.max(...list.map((s)=>Number(s?.order??0)));
+}
+
 function dailyDateKey(val){
   if(val==null||val===undefined) return '';
   if(typeof val==='string') return val.slice(0,10);
@@ -646,14 +652,13 @@ async function addDailySectionInVirtualMode(dstr, title){
   try{
     const userId=await resolveDailyUserId();
     if(!userId){
-      addDailySection(dstr,value);
+      await addDailySection(dstr,value);
       return true;
     }
 
     const sb=getDailySupabaseClient();
     const current=dedupeDailySectionsById(_dailySectionsCache.get(dstr)||[]);
-    const maxOrder=current.reduce((m,s)=>Math.max(m,Number(s.order)||0),-1);
-    const newOrder=maxOrder+1;
+    const newOrder=maxDailySectionOrder(current)+1;
     const newId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId();
 
     const insertRow={
@@ -685,6 +690,7 @@ async function addDailySectionInVirtualMode(dstr, title){
     _dailyVirtualDateKeys.add(dstr);
     syncDailyVirtualWindowFlags();
     _dailySkipPrepareOnce.add(dstr);
+    await renderDailyDayWorkspace();
     return true;
   }catch(err){
     console.error('addDailySectionInVirtualMode',err);
@@ -1101,31 +1107,32 @@ function appendDailyDayTaskRow(body,dstr,idx,task,beforeEl=null){
   if(beforeEl) body.insertBefore(row,beforeEl);
   else body.appendChild(row);
 }
-function addDailySection(dstr,title){
+async function addDailySection(dstr,title){
   const value=(title||'').trim();
   if(!value) return;
-  const sections=getDailySections(dstr);
+  const sections=dedupeDailySectionsById(
+    _dailySectionsCache.has(dstr)?_dailySectionsCache.get(dstr):getDailySections(dstr)
+  );
   if(isDailyVirtualDate(dstr)||sections.some((s)=>isVirtualSectionId(s?.id))){
     dailyIsAddingSection=false;
     dailyNewSectionTitle='';
-    void addDailySectionInVirtualMode(dstr,value).then((ok)=>{
-      if(ok) void renderDailyDayWorkspace();
-    });
+    await addDailySectionInVirtualMode(dstr,value);
     return;
   }
+  const newOrder=maxDailySectionOrder(sections)+1;
   const next=sections.concat([{
     id:createDailySectionId(),
     title:value,
     emoji:'📌',
     color:SECTION_COLORS[0].bg,
-    order:sections.length,
+    order:newOrder,
     repeatGroupId:null,
     repeatOriginDate:null,
   }]);
   setDailySections(dstr,next);
   dailyIsAddingSection=false;
   dailyNewSectionTitle='';
-  renderDailyDayWorkspace();
+  await renderDailyDayWorkspace();
 }
 function saveDailySection(dstr,sectionId,{title,emoji,color}){
   const value=(title||'').trim();
@@ -1963,7 +1970,6 @@ async function renderDailyDayWorkspace(){
   const sections=getSectionsForDailyDayRender(dstr);
   if(renderId!==_dailyDayWorkspaceRenderId) return;
 
-  host.innerHTML='';
   const wrap=el('div','daily-day-layout');
   const left=el('div','daily-day-sections');
   const right=el('div','daily-day-memo-panel');
@@ -1993,12 +1999,7 @@ async function renderDailyDayWorkspace(){
           dailyIsAddingSection=false;
           dailyNewSectionTitle='';
           if(!nextTitle) return;
-          if(dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr){
-            const ok=await addDailySectionInVirtualMode(dstr,nextTitle);
-            if(ok) await renderDailyDayWorkspace();
-            return;
-          }
-          addDailySection(dstr,nextTitle);
+          await addDailySection(dstr,nextTitle);
         }finally{
           _dailySectionAddInFlight=false;
         }
@@ -2016,12 +2017,7 @@ async function renderDailyDayWorkspace(){
           try{
             dailyIsAddingSection=false;
             dailyNewSectionTitle='';
-            if(dailyIsVirtualMode && dailyVirtualTargetDateStr===dstr){
-              const ok=await addDailySectionInVirtualMode(dstr,value);
-              if(ok) await renderDailyDayWorkspace();
-              return;
-            }
-            addDailySection(dstr,value);
+            await addDailySection(dstr,value);
           }finally{
             _dailySectionAddInFlight=false;
           }
@@ -2214,6 +2210,7 @@ async function renderDailyDayWorkspace(){
   right.append(miniCal,noteSection,widgetRow);
   wrap.append(left,right);
   if(renderId!==_dailyDayWorkspaceRenderId) return;
+  host.innerHTML='';
   host.appendChild(wrap);
   renderMiniCal();
 }
