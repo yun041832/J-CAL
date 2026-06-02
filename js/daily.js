@@ -656,7 +656,7 @@ async function addDailySectionInVirtualMode(dstr, title){
     const newOrder=maxOrder+1;
     const newId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId();
 
-    const {error}=await sb.from('daily_sections').insert({
+    const insertRow={
       id:newId,
       user_id:userId,
       date:dstr,
@@ -666,7 +666,8 @@ async function addDailySectionInVirtualMode(dstr, title){
       sort_order:newOrder,
       repeat_group_id:null,
       repeat_origin_date:null,
-    });
+    };
+    const {error}=await sb.from('daily_sections').insert(insertRow);
     if(error) throw error;
 
     const newSection={
@@ -822,8 +823,11 @@ async function persistDailySectionsToSupabase(dstr,list){
   if(!userId) return;
   const sb=getDailySupabaseClient();
   const normalized=Array.isArray(list)?list.slice():[];
+  const persistable=normalized.filter((s)=>!isVirtualSectionId(s?.id));
+  if(!persistable.length) return;
+  const hasVirtualInList=normalized.length!==persistable.length;
   try{
-    const rows=normalized.map((s,i)=>({
+    const rows=persistable.map((s,i)=>({
       id:s.id,
       user_id:userId,
       date:dstr,
@@ -831,7 +835,16 @@ async function persistDailySectionsToSupabase(dstr,list){
       emoji:s.emoji||'📌',
       color:s.color||SECTION_COLORS[0].bg,
       sort_order:s.order??i,
+      repeat_group_id:s.repeatGroupId??null,
+      repeat_origin_date:s.repeatOriginDate??null,
     }));
+    if(hasVirtualInList||isDailyVirtualDate(dstr)){
+      if(rows.length){
+        const {error}=await sb.from('daily_sections').upsert(rows,{onConflict:'id'});
+        if(error) throw error;
+      }
+      return;
+    }
     const {data:existing,error:fetchErr}=await sb.from('daily_sections')
       .select('id')
       .eq('user_id',userId)
@@ -851,7 +864,7 @@ async function persistDailySectionsToSupabase(dstr,list){
     set(kDailySections(dstr),normalized);
   }catch(err){
     console.error('persistDailySectionsToSupabase',err);
-    set(kDailySections(dstr),normalized);
+    if(!hasVirtualInList) set(kDailySections(dstr),normalized);
   }
 }
 
@@ -1092,7 +1105,23 @@ function addDailySection(dstr,title){
   const value=(title||'').trim();
   if(!value) return;
   const sections=getDailySections(dstr);
-  const next=sections.concat([{id:createDailySectionId(),title:value,emoji:'📌',color:SECTION_COLORS[0].bg,order:sections.length}]);
+  if(isDailyVirtualDate(dstr)||sections.some((s)=>isVirtualSectionId(s?.id))){
+    dailyIsAddingSection=false;
+    dailyNewSectionTitle='';
+    void addDailySectionInVirtualMode(dstr,value).then((ok)=>{
+      if(ok) void renderDailyDayWorkspace();
+    });
+    return;
+  }
+  const next=sections.concat([{
+    id:createDailySectionId(),
+    title:value,
+    emoji:'📌',
+    color:SECTION_COLORS[0].bg,
+    order:sections.length,
+    repeatGroupId:null,
+    repeatOriginDate:null,
+  }]);
   setDailySections(dstr,next);
   dailyIsAddingSection=false;
   dailyNewSectionTitle='';
@@ -1102,16 +1131,19 @@ function saveDailySection(dstr,sectionId,{title,emoji,color}){
   const value=(title||'').trim();
   if(!value) return;
   const safeColor=findSectionColorEntry(color).bg;
-  const sections=getDailySections(dstr);
   const patch={
-    id:sectionId,
     title:value,
     emoji:emoji||'📌',
     color:safeColor,
   };
+  if(isVirtualSectionId(sectionId)){
+    patchDailySection(dstr,sectionId,patch);
+    return;
+  }
+  const sections=getDailySections(dstr);
   const idx=sections.findIndex(s=>s.id===sectionId);
   if(idx<0) return;
-  sections[idx]={...sections[idx],...patch};
+  sections[idx]={...sections[idx],...patch,id:sectionId};
   setDailySections(dstr,sections);
   renderDailyDayWorkspace();
 }
@@ -1183,6 +1215,7 @@ function showDailyRepeatActionModal(title,actionButtons){
 }
 
 async function fetchDailySectionRepeatRow(sb,userId,sectionId){
+  if(isVirtualSectionId(sectionId)) return null;
   const {data,error}=await sb.from('daily_sections')
     .select('id,date,repeat_group_id,repeat_origin_date')
     .eq('id',sectionId)
@@ -1217,6 +1250,10 @@ async function applyDailySectionPatchSingle(dstr,sectionId,patch){
   sections[idx]={...sections[idx],...normalized};
   _dailySectionsCache.set(dstr,sections);
   set(kDailySections(dstr),sections);
+  if(isVirtualSectionId(sectionId)){
+    refreshDailyTaskViews();
+    return;
+  }
   const userId=await resolveDailyUserId();
   if(!userId){
     refreshDailyTaskViews();
@@ -1264,6 +1301,10 @@ function requestDailySectionPatch(dstr,sectionId,patch){
   (async ()=>{
     const normalized=normalizeDailySectionPatch(patch);
     if(!normalized) return;
+    if(isVirtualSectionId(sectionId)){
+      await applyDailySectionPatchSingle(dstr,sectionId,patch);
+      return;
+    }
     const userId=await resolveDailyUserId();
     if(!userId){
       await applyDailySectionPatchSingle(dstr,sectionId,patch);
