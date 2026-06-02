@@ -6,7 +6,7 @@ category: "exp"
 description: "February peak: 17. This week: 70. The numbers tell a story I wasn't ready to hear."
 ---
 
-I started going back to the office last september.
+i started going back to the office last september.
 after years of burnout, i was convinced that stopping — even for one day —
 would drag me back to the version of myself that couldn't get moving.
 
@@ -49,25 +49,32 @@ i started going to bed before midnight.
 turns out the difference between 11:50 PM and 12:30 AM
 is bigger than it sounds.
 
-i started going home after 3–5 hours.
-i stopped asking why i couldn't do 8.
+i stopped measuring myself by hours at the office.
+some days 3. some days 5.
+and strangely, i can do more now than i could back then.
+not because i'm pushing harder.
+because i'm recovering better.
 
-and slowly, the numbers climbed.
+---
+
+february.
+body battery hitting 5 by mid-afternoon.
+some days by 5pm. some days earlier.
+starting the day half-empty and finishing it completely drained.
+most mornings never got much above 30.
 
 <div style="display:flex; gap:8px; margin:16px 0;">
-  <img src="../../images/BB_02.jpg" alt="body battery february" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
-  <img src="../../images/BB_04.jpg" alt="body battery april" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
-  <img src="../../images/BB_05.jpg" alt="body battery this week" style="width:33%; max-height:200px; object-fit:cover; object-position:top; border-radius:8px;">
+  <img src="../../images/BB_0220260602_102910.jpg" alt="body battery february" style="width:33%; border-radius:8px;">
+  <img src="../../images/BB_0420260602_102859.jpg" alt="body battery april" style="width:33%; border-radius:8px;">
+  <img src="../../images/BB_0520260602_102852.jpg" alt="body battery this week" style="width:33%; border-radius:8px;">
 </div>
 
-february: body battery hitting 5 by 3pm.
-some days, 5pm. then earlier and earlier.
-peak never crossed 35.
+june.
+still 6–8 right before bed.
+peaks hitting 70–77.
 
-now: still 6–8 right before bed.
-peak hitting 70–77.
-
-same person. completely different body.
+same person.
+different relationship with recovery.
 
 ---
 
@@ -80,4 +87,22 @@ not for the score.
 because burnout doesn't arrive overnight.
 it sends warnings long before it shows up.
 
+last time, i ignored them.
 this time, i'm trying to listen.
+
+---
+
+one more thing.
+
+i've always been obsessed with data.
+enough of it to read a pattern.
+numbers. timelines. trends.
+
+that's just how i'm wired.
+collect it. structure it. find the pattern.
+every day. my whole life.
+
+that's probably why jaycalendar and justdoc exist.
+and why i can't stop checking the body battery.
+
+same instinct. different data.
