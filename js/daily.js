@@ -346,12 +346,13 @@ async function loadDailySectionsFromSupabase(dstr){
   if(!userId) return readDailySectionsLocal(dstr);
   const sb=getDailySupabaseClient();
   try{
-    let rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
-    const todayStr=fmtLocalDate(new Date());
-    if(!rows.length&&dstr===todayStr){
-      const copied=await copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr);
-      if(copied) rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
-    }
+    const rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    // TEMP DISABLED - race condition fix pending
+    // const todayStr=fmtLocalDate(new Date());
+    // if(!rows.length&&dstr===todayStr){
+    //   const copied=await copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr);
+    //   if(copied) rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    // }
     const list=rows.map(mapSupabaseSectionRow);
     _dailySectionsCache.set(dstr,list);
     set(kDailySections(dstr),list);
