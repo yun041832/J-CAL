@@ -5174,6 +5174,36 @@ aside.right:not(.hidden) .card {
 
 #calendarPage.hidden { display: none !important; }
 
+/* Daily repeat section — modify/delete modal */
+.daily-repeat-modal {
+  min-width: 280px;
+  max-width: 360px;
+}
+.daily-repeat-modal .repeat-option {
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+}
+.daily-repeat-modal .repeat-option:hover {
+  background: #f8fafc;
+  border-color: #5c8dff;
+}
+.daily-repeat-modal .repeat-option.del {
+  color: #dc2626;
+}
+.daily-repeat-modal .repeat-option.del:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
 /* Guest login nudge — Daily / Memo tab top */
 #dailyPage #login-nudge-banner,
 #memoPage #login-nudge-banner {

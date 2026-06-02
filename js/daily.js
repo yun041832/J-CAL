@@ -336,7 +336,14 @@ function mapSupabaseSectionRow(row){
     emoji:row.emoji||'📌',
     color:row.color||SECTION_COLORS[0].bg,
     order:row.sort_order??0,
+    repeatGroupId:row.repeat_group_id||null,
+    repeatOriginDate:row.repeat_origin_date||null,
   };
+}
+
+function newDailyRepeatGroupId(){
+  if(typeof crypto!=='undefined'&&crypto.randomUUID) return crypto.randomUUID();
+  return 'repeat_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
 }
 
 function ensureDailyTaskId(task){
@@ -416,7 +423,7 @@ function shiftDateString(dstr, deltaDays){
 
 async function fetchDailySectionRowsFromSupabase(sb,userId,dstr){
   const {data,error}=await sb.from('daily_sections')
-    .select('id,title,emoji,color,sort_order')
+    .select('id,title,emoji,color,sort_order,repeat_group_id,repeat_origin_date')
     .eq('user_id',userId)
     .eq('date',dstr)
     .order('sort_order',{ascending:true});
@@ -440,15 +447,21 @@ async function copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr){
   const yesterdayRows=await fetchDailySectionRowsFromSupabase(sb,userId,yesterdayStr);
   if(!yesterdayRows.length) return false;
   if(await todayHasDailySections(sb,userId,todayStr)) return false;
-  const insertRows=yesterdayRows.map((row,i)=>({
-    id:(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId(),
-    user_id:userId,
-    date:todayStr,
-    title:row.title||'',
-    emoji:row.emoji||'📌',
-    color:row.color||SECTION_COLORS[0].bg,
-    sort_order:row.sort_order??i,
-  }));
+  const insertRows=yesterdayRows.map((row,i)=>{
+    const groupId=row.repeat_group_id||newDailyRepeatGroupId();
+    const originDate=row.repeat_origin_date||yesterdayStr;
+    return {
+      id:(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId(),
+      user_id:userId,
+      date:todayStr,
+      title:row.title||'',
+      emoji:row.emoji||'📌',
+      color:row.color||SECTION_COLORS[0].bg,
+      sort_order:row.sort_order??i,
+      repeat_group_id:groupId,
+      repeat_origin_date:originDate,
+    };
+  });
   const {error:insertErr}=await sb.from('daily_sections').insert(insertRows);
   if(insertErr) throw insertErr;
   return true;
@@ -459,13 +472,12 @@ async function loadDailySectionsFromSupabase(dstr){
   if(!userId) return readDailySectionsLocal(dstr);
   const sb=getDailySupabaseClient();
   try{
-    const rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
-    // TEMP DISABLED - race condition fix pending
-    // const todayStr=fmtLocalDate(new Date());
-    // if(!rows.length&&dstr===todayStr){
-    //   const copied=await copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr);
-    //   if(copied) rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
-    // }
+    let rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    const todayStr=fmtLocalDate(new Date());
+    if(!rows.length&&dstr===todayStr){
+      const copied=await copyYesterdaySectionsToTodayIfEmpty(sb,userId,todayStr);
+      if(copied) rows=await fetchDailySectionRowsFromSupabase(sb,userId,dstr);
+    }
     const list=rows.map(mapSupabaseSectionRow);
     _dailySectionsCache.set(dstr,list);
     set(kDailySections(dstr),list);
@@ -841,74 +853,271 @@ function isDailySectionDeletable(section){
   if(title==='Uncategorized'||title==='미분류') return false;
   return true;
 }
-function deleteDailySection(dstr,sectionId){
+function normalizeDailySectionPatch(patch){
+  const normalized={...patch};
+  if(normalized.color!=null) normalized.color=findSectionColorEntry(normalized.color).bg;
+  if(normalized.title!=null){
+    const value=(normalized.title||'').trim();
+    if(!value) return null;
+    normalized.title=value;
+  }
+  return normalized;
+}
+
+function buildDailySectionDbPatch(patch,normalized){
+  const dbPatch={};
+  if(patch.title!=null) dbPatch.title=normalized.title;
+  if(patch.emoji!=null) dbPatch.emoji=normalized.emoji;
+  if(patch.color!=null) dbPatch.color=normalized.color;
+  return dbPatch;
+}
+
+async function reloadDailySectionsAfterRepeatChange(dstr){
+  _dailySectionsCache.delete(dstr);
+  _dailyTasksCache.delete(dstr);
+  const userId=await resolveDailyUserId();
+  if(userId) await loadDailySectionsFromSupabase(dstr);
+  if(typeof refreshDailyTaskViews==='function') refreshDailyTaskViews();
+}
+
+function invalidateDailyRepeatCaches(){
+  _dailySectionsCache.clear();
+  _dailyTasksCache.clear();
+}
+
+function showDailyRepeatActionModal(title,actionButtons){
+  if(dailyOpenPop) dailyOpenPop.remove();
+  const overlay=el('div','repeat-modal-overlay daily-repeat-modal-overlay');
+  const modal=el('div','repeat-modal daily-repeat-modal');
+  modal.appendChild(el('div','repeat-modal-header',title));
+  actionButtons.forEach(({label,onClick,danger})=>{
+    const btn=el('button','repeat-option',label);
+    btn.type='button';
+    if(danger) btn.classList.add('del');
+    btn.onclick=()=>{
+      overlay.remove();
+      dailyOpenPop=null;
+      onClick?.();
+    };
+    modal.appendChild(btn);
+  });
+  const cancelBtn=el('button','repeat-option','취소');
+  cancelBtn.type='button';
+  cancelBtn.onclick=()=>{
+    overlay.remove();
+    dailyOpenPop=null;
+  };
+  modal.appendChild(cancelBtn);
+  overlay.appendChild(modal);
+  overlay.onclick=(e)=>{ if(e.target===overlay){ overlay.remove(); dailyOpenPop=null; } };
+  document.body.appendChild(overlay);
+  dailyOpenPop=overlay;
+}
+
+async function fetchDailySectionRepeatRow(sb,userId,sectionId){
+  const {data,error}=await sb.from('daily_sections')
+    .select('id,date,repeat_group_id,repeat_origin_date')
+    .eq('id',sectionId)
+    .eq('user_id',userId)
+    .maybeSingle();
+  if(error) throw error;
+  return data;
+}
+
+async function fetchDailySectionIdsByRepeatGroup(sb,userId,repeatGroupId,{fromDate=null}={}){
+  let q=sb.from('daily_sections').select('id').eq('user_id',userId).eq('repeat_group_id',repeatGroupId);
+  if(fromDate) q=q.gte('date',fromDate);
+  const {data,error}=await q;
+  if(error) throw error;
+  return (data||[]).map(r=>r.id);
+}
+
+async function deleteDailySectionsByIds(sb,userId,sectionIds){
+  if(!sectionIds.length) return;
+  const {error:taskErr}=await sb.from('daily_tasks').delete().eq('user_id',userId).in('section_id',sectionIds);
+  if(taskErr) throw taskErr;
+  const {error:secErr}=await sb.from('daily_sections').delete().eq('user_id',userId).in('id',sectionIds);
+  if(secErr) throw secErr;
+}
+
+async function applyDailySectionPatchSingle(dstr,sectionId,patch){
+  const normalized=normalizeDailySectionPatch(patch);
+  if(!normalized) return;
+  const sections=getDailySections(dstr);
+  const idx=sections.findIndex(s=>s.id===sectionId);
+  if(idx<0) return;
+  sections[idx]={...sections[idx],...normalized};
+  _dailySectionsCache.set(dstr,sections);
+  set(kDailySections(dstr),sections);
+  const userId=await resolveDailyUserId();
+  if(!userId){
+    refreshDailyTaskViews();
+    return;
+  }
+  const sb=getDailySupabaseClient();
+  const dbPatch=buildDailySectionDbPatch(patch,normalized);
+  const {error}=await sb.from('daily_sections').update(dbPatch).eq('id',sectionId).eq('user_id',userId);
+  if(error) console.error('applyDailySectionPatchSingle',error);
+  refreshDailyTaskViews();
+}
+
+async function applyDailySectionPatchFromTodayOnly(dstr,sectionId,patch){
+  const normalized=normalizeDailySectionPatch(patch);
+  if(!normalized) return;
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  const dbPatch=buildDailySectionDbPatch(patch,normalized);
+  dbPatch.repeat_group_id=newDailyRepeatGroupId();
+  const {error}=await sb.from('daily_sections').update(dbPatch).eq('id',sectionId).eq('user_id',userId);
+  if(error){ console.error('applyDailySectionPatchFromTodayOnly',error); return; }
+  invalidateDailyRepeatCaches();
+  await reloadDailySectionsAfterRepeatChange(dstr);
+}
+
+async function applyDailySectionPatchAllFromToday(dstr,sectionId,patch,repeatGroupId,todayStr){
+  const normalized=normalizeDailySectionPatch(patch);
+  if(!normalized) return;
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  const dbPatch=buildDailySectionDbPatch(patch,normalized);
+  const {error}=await sb.from('daily_sections')
+    .update(dbPatch)
+    .eq('user_id',userId)
+    .eq('repeat_group_id',repeatGroupId)
+    .gte('date',todayStr);
+  if(error){ console.error('applyDailySectionPatchAllFromToday',error); return; }
+  invalidateDailyRepeatCaches();
+  await reloadDailySectionsAfterRepeatChange(dstr);
+}
+
+function requestDailySectionPatch(dstr,sectionId,patch){
+  (async ()=>{
+    const normalized=normalizeDailySectionPatch(patch);
+    if(!normalized) return;
+    const userId=await resolveDailyUserId();
+    if(!userId){
+      await applyDailySectionPatchSingle(dstr,sectionId,patch);
+      return;
+    }
+    const sb=getDailySupabaseClient();
+    let row=null;
+    try{
+      row=await fetchDailySectionRepeatRow(sb,userId,sectionId);
+    }catch(err){
+      console.error('requestDailySectionPatch',err);
+      await applyDailySectionPatchSingle(dstr,sectionId,patch);
+      return;
+    }
+    if(!row?.repeat_group_id){
+      await applyDailySectionPatchSingle(dstr,sectionId,patch);
+      return;
+    }
+    const todayStr=fmtLocalDate(new Date());
+    showDailyRepeatActionModal('반복 섹션을 수정합니다',[
+      {
+        label:'오늘부터 변경',
+        onClick:()=> applyDailySectionPatchFromTodayOnly(dstr,sectionId,patch),
+      },
+      {
+        label:'전체 기간 변경',
+        onClick:()=> applyDailySectionPatchAllFromToday(dstr,sectionId,patch,row.repeat_group_id,todayStr),
+      },
+    ]);
+  })();
+}
+
+async function deleteDailySectionTodayOnly(dstr,sectionId){
+  const sections=getDailySections(dstr);
+  const userId=await resolveDailyUserId();
+  if(userId){
+    const sb=getDailySupabaseClient();
+    try{
+      await deleteDailySectionsByIds(sb,userId,[sectionId]);
+    }catch(err){
+      console.error('deleteDailySectionTodayOnly',err);
+      return;
+    }
+  }
+  const nextSections=sections.filter(s=>s.id!==sectionId);
+  const nextTasks=getDailyTasks(dstr).filter(t=>t.sectionId!==sectionId);
+  _dailySectionsCache.set(dstr,nextSections);
+  _dailyTasksCache.set(dstr,nextTasks);
+  set(kDailySections(dstr),nextSections);
+  set(kDaily(dstr),nextTasks);
+  if(dailySectionRenameId===sectionId) dailySectionRenameId=null;
+  renderDailyDayWorkspace();
+}
+
+async function deleteDailySectionFromToday(dstr,repeatGroupId,todayStr){
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  try{
+    const ids=await fetchDailySectionIdsByRepeatGroup(sb,userId,repeatGroupId,{fromDate:todayStr});
+    await deleteDailySectionsByIds(sb,userId,ids);
+  }catch(err){
+    console.error('deleteDailySectionFromToday',err);
+    return;
+  }
+  invalidateDailyRepeatCaches();
+  await reloadDailySectionsAfterRepeatChange(dstr);
+}
+
+async function deleteDailySectionEntireGroup(dstr,repeatGroupId){
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const sb=getDailySupabaseClient();
+  try{
+    const ids=await fetchDailySectionIdsByRepeatGroup(sb,userId,repeatGroupId);
+    await deleteDailySectionsByIds(sb,userId,ids);
+  }catch(err){
+    console.error('deleteDailySectionEntireGroup',err);
+    return;
+  }
+  invalidateDailyRepeatCaches();
+  await reloadDailySectionsAfterRepeatChange(dstr);
+}
+
+function requestDeleteDailySection(dstr,sectionId){
   (async ()=>{
     const sections=getDailySections(dstr);
     const target=sections.find(s=>s.id===sectionId);
     if(!target||!isDailySectionDeletable(target)) return;
     const userId=await resolveDailyUserId();
     if(!userId){
-      console.error('deleteDailySection: not logged in');
+      await deleteDailySectionTodayOnly(dstr,sectionId);
       return;
     }
     const sb=getDailySupabaseClient();
+    let row=null;
     try{
-      const {error:taskErr}=await sb.from('daily_tasks')
-        .delete()
-        .eq('user_id',userId)
-        .eq('section_id',sectionId);
-      if(taskErr) throw taskErr;
-      const {error:secErr}=await sb.from('daily_sections')
-        .delete()
-        .eq('id',sectionId)
-        .eq('user_id',userId);
-      if(secErr) throw secErr;
+      row=await fetchDailySectionRepeatRow(sb,userId,sectionId);
     }catch(err){
-      console.error('deleteDailySection',err);
+      console.error('requestDeleteDailySection',err);
+      await deleteDailySectionTodayOnly(dstr,sectionId);
       return;
     }
-    const nextSections=sections.filter(s=>s.id!==sectionId);
-    const nextTasks=getDailyTasks(dstr).filter(t=>t.sectionId!==sectionId);
-    _dailySectionsCache.set(dstr,nextSections);
-    _dailyTasksCache.set(dstr,nextTasks);
-    set(kDailySections(dstr),nextSections);
-    set(kDaily(dstr),nextTasks);
-    if(dailySectionRenameId===sectionId) dailySectionRenameId=null;
-    renderDailyDayWorkspace();
+    if(!row?.repeat_group_id){
+      await deleteDailySectionTodayOnly(dstr,sectionId);
+      return;
+    }
+    const todayStr=fmtLocalDate(new Date());
+    showDailyRepeatActionModal('반복 섹션을 삭제합니다',[
+      {label:'오늘만 삭제',onClick:()=> deleteDailySectionTodayOnly(dstr,sectionId)},
+      {label:'오늘부터 삭제',onClick:()=> deleteDailySectionFromToday(dstr,row.repeat_group_id,todayStr),danger:true},
+      {label:'전체 삭제',onClick:()=> deleteDailySectionEntireGroup(dstr,row.repeat_group_id),danger:true},
+    ]);
   })();
 }
+
+function deleteDailySection(dstr,sectionId){
+  requestDeleteDailySection(dstr,sectionId);
+}
+
 function patchDailySection(dstr,sectionId,patch){
-  return (async ()=>{
-    const sections=getDailySections(dstr);
-    const idx=sections.findIndex(s=>s.id===sectionId);
-    if(idx<0) return;
-    const normalized={...patch};
-    if(normalized.color!=null) normalized.color=findSectionColorEntry(normalized.color).bg;
-    if(normalized.title!=null){
-      const value=(normalized.title||'').trim();
-      if(!value) return;
-      normalized.title=value;
-    }
-    sections[idx]={...sections[idx],...normalized};
-    _dailySectionsCache.set(dstr,sections);
-    set(kDailySections(dstr),sections);
-    refreshDailyTaskViews();
-    const userId=await resolveDailyUserId();
-    if(!userId){
-      console.error('patchDailySection: not logged in');
-      return;
-    }
-    const sb=getDailySupabaseClient();
-    const dbPatch={};
-    if(patch.title!=null) dbPatch.title=normalized.title;
-    if(patch.emoji!=null) dbPatch.emoji=normalized.emoji;
-    if(patch.color!=null) dbPatch.color=normalized.color;
-    const {error}=await sb.from('daily_sections')
-      .update(dbPatch)
-      .eq('id',sectionId)
-      .eq('user_id',userId);
-    if(error) console.error('patchDailySection',error);
-  })();
+  requestDailySectionPatch(dstr,sectionId,patch);
 }
 function appendDailySectionTitleInput(host,opts){
   const inp=document.createElement('input');
@@ -1229,7 +1438,7 @@ function showDailySectionMenu(anchor,dstr,section){
     delBtn.onclick=(e)=>{
       e.stopPropagation();
       close();
-      deleteDailySection(dstr,section.id);
+      requestDeleteDailySection(dstr,section.id);
     };
     pop.appendChild(delBtn);
   }
