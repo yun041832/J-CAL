@@ -2615,7 +2615,7 @@ function widgetDaily(){
     hostEl.style.display = 'flex';
     hostEl.style.justifyContent = 'space-between';
     hostEl.style.flexWrap = 'nowrap';
-    hostEl.style.alignItems = 'flex-start';
+    hostEl.style.alignItems = 'stretch';
     hostEl.innerHTML = '<div style="color:#94a3b8;font-size:12px;line-height:1.4;padding:6px 0;">Loading...</div>';
 
     (async () => {
@@ -2762,10 +2762,10 @@ function widgetDaily(){
 
       const leftCol = doc.createElement('div');
       leftCol.className = 'daily-weekly-notes-col';
-      leftCol.style.cssText = 'flex:1;min-width:0;';
+      leftCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
       const rightCol = doc.createElement('div');
       rightCol.className = 'daily-weekly-notes-col';
-      rightCol.style.cssText = 'flex:1;min-width:0;';
+      rightCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
 
       const leftTitle = doc.createElement('div');
       leftTitle.textContent = '📌 Weekly Focus';
@@ -2774,13 +2774,14 @@ function widgetDaily(){
       rightTitle.textContent = '🗓️ This Month';
       rightTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
 
-      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;';
+      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;height:100%;flex:1;min-height:0;';
       leftCol.append(leftTitle, reminderListEl);
       rightCol.append(rightTitle, monthlyListEl);
       reminderListEl.style.cssText = listWrapStyle;
       monthlyListEl.style.cssText = listWrapStyle;
 
       hostEl.innerHTML = '';
+      hostEl.style.alignItems = 'stretch';
       hostEl.append(leftCol, rightCol);
 
       const renderAll = () => {
