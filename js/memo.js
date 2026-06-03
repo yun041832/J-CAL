@@ -78,6 +78,7 @@
 
   let _sections = []; // { id, title, name, emoji, color, sort_order }
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
+  let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
   let _initPromise = null;
 
@@ -217,6 +218,35 @@
     } catch (e) { console.error('[memo] deleteMemo', e); }
   }
 
+  async function deleteMemoWithUndo(id, memoData) {
+    _lastDeletedMemo = { ...memoData };
+    _memos = _memos.filter(m => m.id !== id);
+    renderMemoPage();
+    try {
+      const { error } = await _sb.from('memo').delete().eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.error('[memo] deleteMemoWithUndo', e);
+      _memos.unshift(_lastDeletedMemo);
+      _lastDeletedMemo = null;
+      renderMemoPage();
+    }
+  }
+
+  async function undoDeleteMemo() {
+    if (!_lastDeletedMemo) return;
+    const memo = { ..._lastDeletedMemo };
+    _lastDeletedMemo = null;
+    try {
+      const { data, error } = await _sb.from('memo').insert(memo).select().single();
+      if (error) throw error;
+      _memos.unshift(data);
+      renderMemoPage();
+    } catch (e) {
+      console.error('[memo] undoDeleteMemo', e);
+    }
+  }
+
   // ── 섹션명 수정 ────────────────────────────────────
   async function updateSection(id, patch) {
     try {
@@ -287,9 +317,13 @@
     // 헤더
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
+    const undoBtnHtml = _lastDeletedMemo
+      ? '<button type="button" id="memoUndoBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12px;cursor:pointer;">↩ Undo</button>'
+      : '';
     header.innerHTML = `
       <span style="font-weight:700;font-size:16px;">Memo</span>
-      <div style="display:flex;gap:6px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${undoBtnHtml}
         ${['Day', 'Month', 'All'].map((v, i) => {
           const modes = ['day', 'month', 'all'];
           const active = _viewMode === modes[i];
@@ -297,6 +331,8 @@
         }).join('')}
       </div>
     `;
+    const undoBtn = header.querySelector('#memoUndoBtn');
+    if (undoBtn) undoBtn.onclick = () => undoDeleteMemo();
     header.querySelectorAll('[data-view]').forEach(btn => {
       btn.onclick = () => {
         _viewMode = btn.dataset.view;
@@ -438,7 +474,7 @@
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
     delBtn.style.cssText = 'position:absolute;top:6px;right:28px;background:none;border:none;color:#d1d5db;font-size:16px;cursor:pointer;line-height:1;';
-    delBtn.onclick = () => { if (confirm('Delete this memo?')) deleteMemo(memo.id); };
+    delBtn.onclick = () => { deleteMemoWithUndo(memo.id, memo); };
 
     if (_userId) {
       const pinBtn = document.createElement('button');
