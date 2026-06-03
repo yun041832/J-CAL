@@ -3134,6 +3134,26 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   overflow-y:auto;
   padding-bottom:16px;
 }
+.daily-month-weekday-header{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(120px,1fr));
+  gap:6px;
+  width:100%;
+  min-width:840px;
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:#fff;
+  padding:6px 0 8px;
+  border-bottom:1px solid #e5e7eb;
+}
+.daily-month-weekday-cell{
+  font-size:11px;
+  font-weight:500;
+  color:#64748b;
+  text-align:center;
+  line-height:1.2;
+}
 .daily-month-week-row{
   display:grid;
   grid-template-columns:repeat(7,minmax(120px,1fr));
@@ -3173,6 +3193,12 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 }
 .daily-month-day-num-clickable{
   cursor:pointer;
+  min-height:24px;
+  min-width:24px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
 }
 .daily-month-day-num-clickable:hover{
   text-decoration:underline;

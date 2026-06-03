@@ -2393,6 +2393,13 @@ function renderDailyMonthCalendar(){
 
   const view = el('div','daily-month-record-view');
   const weekdays=WEEKDAY_LABELS_EN;
+
+  const weekdayHeaderRow=el('div','daily-month-weekday-header');
+  weekdays.forEach((name)=>{
+    weekdayHeaderRow.appendChild(el('div','daily-month-weekday-cell',name));
+  });
+  view.appendChild(weekdayHeaderRow);
+
   const startDate = new Date(y,m,1-startDay);
   const endBase = new Date(y,m,totalDays);
   const endDate = new Date(endBase);
@@ -2428,16 +2435,22 @@ function renderDailyMonthCalendar(){
       dot.style.cssText=`width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
 
       dayNum.title='Open day view';
-      dayNum.addEventListener('click',(e)=>{
-        e.preventDefault();
+      dayNum.addEventListener('click',function(e){
         e.stopPropagation();
-        void navigateMonthDateToDayView(date);
+        e.preventDefault();
+        const dateStr=fmtLocalDate(date);
+        void loadDailyByDate(dateStr).then(()=>{
+          setTimeout(()=>setDailyViewMode('day'),50);
+        });
       });
-      cardHeader.addEventListener('click',(e)=>{
+      cardHeader.addEventListener('click',function(e){
         if(e.target===dayNum||dayNum.contains(e.target)) return;
-        e.preventDefault();
         e.stopPropagation();
-        void navigateMonthDateToDayView(date);
+        e.preventDefault();
+        const dateStr=fmtLocalDate(date);
+        void loadDailyByDate(dateStr).then(()=>{
+          setTimeout(()=>setDailyViewMode('day'),50);
+        });
       });
       cardHeader.append(dayName,dayNum,dot);
 
@@ -2487,7 +2500,13 @@ function renderDailyMonthCalendar(){
       addDayBtn.title='Open day view and add task';
       addDayBtn.addEventListener('click',(e)=>{
         e.stopPropagation();
-        void openMonthDayInDailyView(date,{focusTaskInput:true});
+        const dateStr=fmtLocalDate(date);
+        void loadDailyByDate(dateStr).then(()=>{
+          setTimeout(()=>{
+            setDailyViewMode('day');
+            focusDailyDayTaskInput();
+          },50);
+        });
       });
 
       card.addEventListener('click',(e)=>{
