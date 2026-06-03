@@ -2365,9 +2365,29 @@ async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
   rowItem.remove();
 }
 
+let dailyMonthCalendarClickBound=false;
+
+function ensureDailyMonthCalendarClickDelegation(){
+  if(dailyMonthCalendarClickBound) return;
+  const container=document.getElementById('dailyMonthCalendar');
+  if(!container) return;
+  dailyMonthCalendarClickBound=true;
+  container.addEventListener('click',function(e){
+    const numEl=e.target.closest('.daily-month-day-num-clickable');
+    if(!numEl) return;
+    e.stopPropagation();
+    const dateStr=numEl.dataset.date;
+    if(!dateStr) return;
+    void loadDailyByDate(dateStr).then(()=>{
+      setTimeout(()=>setDailyViewMode('day'),80);
+    });
+  });
+}
+
 function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
+  ensureDailyMonthCalendarClickDelegation();
   container.innerHTML = '';
   updateDailyHeaderPeriodNav();
 
@@ -2410,17 +2430,11 @@ function renderDailyMonthCalendar(){
 
       const cardHeader=el('div','daily-month-day-card-header');
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
-      if(isToday&&!isSelected) dayNum.classList.add('is-today');
+      dayNum.dataset.date=dstr;
+      if(isToday) dayNum.classList.add('is-today');
+      if(isSelected) dayNum.classList.add('is-selected');
 
       dayNum.title='Open day view';
-      dayNum.addEventListener('click',function(e){
-        e.stopPropagation();
-        e.preventDefault();
-        const dateStr=fmtLocalDate(date);
-        void loadDailyByDate(dateStr).then(()=>{
-          setTimeout(()=>setDailyViewMode('day'),50);
-        });
-      });
       cardHeader.addEventListener('click',function(e){
         if(e.target===dayNum||dayNum.contains(e.target)) return;
         e.stopPropagation();

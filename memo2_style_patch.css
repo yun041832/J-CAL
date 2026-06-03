@@ -3176,12 +3176,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-month-day-card.is-selected{
   border-color:#5C8DFF;
 }
-.daily-month-day-card.is-selected .daily-month-day-card-header{
-  background:#5C8DFF;
-}
-.daily-month-day-card.is-selected .daily-month-day-num{
-  color:#fff;
-}
 .daily-month-day-card-header{
   height:44px;
   display:flex;
@@ -3196,6 +3190,13 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background:#5C8DFF;
   color:#fff;
   border-radius:50%;
+}
+.daily-month-day-num.is-selected:not(.is-today){
+  background:#e8efff;
+  color:#5C8DFF;
+  border-radius:50%;
+  border:2px solid #5C8DFF;
+  box-sizing:border-box;
 }
 .daily-month-day-name{
   font-size:11px;
@@ -3213,7 +3214,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   justify-content:center;
   box-sizing:border-box;
 }
-.daily-month-day-num-clickable:hover:not(.is-today){
+.daily-month-day-num-clickable:hover:not(.is-today):not(.is-selected){
   text-decoration:underline;
 }
 .daily-week-day-header{
@@ -3239,11 +3240,17 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   min-height:28px;
   box-sizing:border-box;
 }
-.daily-week-day-num.is-today,
-.daily-week-day-num.is-selected{
+.daily-week-day-num.is-today{
   background:#5C8DFF;
   color:#fff;
   border-radius:50%;
+}
+.daily-week-day-num.is-selected:not(.is-today){
+  background:#e8efff;
+  color:#5C8DFF;
+  border-radius:50%;
+  border:2px solid #5C8DFF;
+  box-sizing:border-box;
 }
 .daily-month-day-card-body{
   flex:1;
@@ -3947,6 +3954,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   min-width:22px;
   min-height:22px;
   box-sizing:border-box;
+  background:transparent;
 }
 .mini-cal-cell:hover:not(.empty):not(.mini-cal-today):not(.mini-cal-selected){
   background:#e8efff;
@@ -3956,10 +3964,15 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   cursor:default;
   visibility:hidden;
 }
-.mini-cal-cell.mini-cal-today,
-.mini-cal-cell.mini-cal-selected{
+.mini-cal-cell.mini-cal-today{
   background:#5C8DFF;
   color:#fff;
+  font-weight:500;
+}
+.mini-cal-cell.mini-cal-selected:not(.mini-cal-today){
+  background:#e8efff;
+  color:#5C8DFF;
+  border:2px solid #5C8DFF;
   font-weight:500;
 }
 .daily-panel-widget-row{
