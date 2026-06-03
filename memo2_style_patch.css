@@ -3174,7 +3174,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   opacity:0.45;
 }
 .daily-month-day-card.is-selected{
-  border-color:#5C8DFF;
+  border-color:#4A7AEE;
 }
 .daily-month-day-card-header{
   height:44px;
@@ -3186,16 +3186,21 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border-bottom:1px solid #e5e7eb;
   cursor:pointer;
 }
-.daily-month-day-num.is-today{
+.daily-month-day-card-header.is-today{
   background:#5C8DFF;
+}
+.daily-month-day-card-header.is-today .daily-month-day-num,
+.daily-month-day-card-header.is-today .daily-month-day-num.is-selected{
   color:#fff;
-  border-radius:50%;
+  background:transparent;
+  border:none;
+  border-radius:0;
 }
 .daily-month-day-num.is-selected:not(.is-today){
-  background:#e8efff;
-  color:#5C8DFF;
+  background:#c5d8ff;
+  color:#3d6fd6;
   border-radius:50%;
-  border:2px solid #5C8DFF;
+  border:2px solid #4A7AEE;
   box-sizing:border-box;
 }
 .daily-month-day-name{
@@ -3240,16 +3245,22 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   min-height:28px;
   box-sizing:border-box;
 }
-.daily-week-day-num.is-today{
+.daily-week-day-header.is-today{
   background:#5C8DFF;
+}
+.daily-week-day-header.is-today .daily-week-day-name,
+.daily-week-day-header.is-today .daily-week-day-num,
+.daily-week-day-header.is-today .daily-week-day-num.is-selected{
   color:#fff;
-  border-radius:50%;
+  background:transparent;
+  border:none;
+  border-radius:0;
 }
 .daily-week-day-num.is-selected:not(.is-today){
-  background:#e8efff;
-  color:#5C8DFF;
+  background:#c5d8ff;
+  color:#3d6fd6;
   border-radius:50%;
-  border:2px solid #5C8DFF;
+  border:2px solid #4A7AEE;
   box-sizing:border-box;
 }
 .daily-month-day-card-body{
@@ -3970,9 +3981,9 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   font-weight:500;
 }
 .mini-cal-cell.mini-cal-selected:not(.mini-cal-today){
-  background:#e8efff;
-  color:#5C8DFF;
-  border:2px solid #5C8DFF;
+  background:#c5d8ff;
+  color:#3d6fd6;
+  border:2px solid #4A7AEE;
   font-weight:500;
 }
 .daily-panel-widget-row{

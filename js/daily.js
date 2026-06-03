@@ -2256,7 +2256,7 @@ function renderDailyWeekCalendar(){
     const dayHeader = el('div','daily-week-day-header');
     const dayName = el('div','daily-week-day-name',weekdays[i]);
     const dayNum = el('div','daily-week-day-num',String(date.getDate()));
-    if(isToday) dayNum.classList.add('is-today');
+    if(isToday) dayHeader.classList.add('is-today');
     if(isSelected) dayNum.classList.add('is-selected');
 
     dayHeader.append(dayName,dayNum);
@@ -2431,7 +2431,7 @@ function renderDailyMonthCalendar(){
       const cardHeader=el('div','daily-month-day-card-header');
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
       dayNum.dataset.date=dstr;
-      if(isToday) dayNum.classList.add('is-today');
+      if(isToday) cardHeader.classList.add('is-today');
       if(isSelected) dayNum.classList.add('is-selected');
 
       dayNum.title='Open day view';
