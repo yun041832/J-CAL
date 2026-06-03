@@ -646,6 +646,197 @@ async function resolveDailySectionIdForTaskIfVirtual(dstr, sectionId){
   return idMap.get(sectionId) || sectionId;
 }
 
+async function ensureFirstSectionIdForDailyDate(dstr){
+  const userId=await resolveDailyUserId();
+  if(userId) await ensureDailySectionsPreparedForDate(dstr);
+
+  let sections=userId
+    ? getSectionsForDailyDayRender(dstr)
+    : dedupeDailySectionsById(getDailySections(dstr)).sort((a,b)=>(a.order||0)-(b.order||0));
+
+  if(!sections.length){
+    if(userId){
+      const sb=getDailySupabaseClient();
+      const newId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():createDailySectionId();
+      const insertRow={
+        id:newId,
+        user_id:userId,
+        date:dstr,
+        title:'Tasks',
+        emoji:'📌',
+        color:SECTION_COLORS[0].bg,
+        sort_order:0,
+        repeat_group_id:null,
+        repeat_origin_date:null,
+      };
+      const {error}=await sb.from('daily_sections').insert(insertRow);
+      if(error) throw error;
+      const newSection={
+        id:newId,
+        title:'Tasks',
+        emoji:'📌',
+        color:SECTION_COLORS[0].bg,
+        order:0,
+        repeatGroupId:null,
+        repeatOriginDate:null,
+      };
+      _dailySectionsCache.set(dstr,[newSection]);
+      set(kDailySections(dstr),[newSection]);
+      _dailyVirtualDateKeys.delete(dstr);
+      if(dailyVirtualTargetDateStr===dstr){
+        dailyIsVirtualMode=false;
+        dailyVirtualTargetDateStr=null;
+        dailyVirtualSourceRows=[];
+        syncDailyVirtualWindowFlags();
+      }
+      return newId;
+    }
+    const localSection={
+      id:createDailySectionId(),
+      title:'Tasks',
+      emoji:'📌',
+      color:SECTION_COLORS[0].bg,
+      order:0,
+    };
+    setDailySections(dstr,[localSection]);
+    return localSection.id;
+  }
+
+  const firstId=sections[0].id;
+  if(userId&&isVirtualSectionId(firstId)&&isDailyVirtualDate(dstr)){
+    return await resolveDailySectionIdForTaskIfVirtual(dstr,firstId);
+  }
+  return firstId;
+}
+
+async function insertDailyTaskViaFirstSection(dstr,text){
+  const value=(text||'').trim();
+  if(!value) return null;
+  const sectionId=await ensureFirstSectionIdForDailyDate(dstr);
+  const task=await insertDailyTask(dstr,{text:value,sectionId,done:false});
+  return task?{task,sectionId}:null;
+}
+
+function appendDailyWeekViewTaskRow(itemList,dstr,task,idx){
+  const sections=getDailySections(dstr);
+  const section=task.sectionId?sections.find((s)=>s.id===task.sectionId):null;
+  const sectionColor=section?.color||'#5C8DFF';
+
+  const row=el('div');
+  row.style.cssText='display:flex;align-items:flex-start;gap:4px;padding:4px 2px;border-radius:6px;';
+
+  const cb=document.createElement('input');
+  cb.type='checkbox';
+  cb.checked=!!task.done;
+  cb.style.accentColor=sectionColor;
+  const text=el('span',null,task.text||'');
+  text.style.cssText=`font-size:11px;line-height:1.3;flex:1;word-break:break-word;color:${task.done?'#9aa5b1':'#374151'};text-decoration:${task.done?'line-through':'none'};`;
+
+  cb.addEventListener('change',(e)=>{
+    e.stopPropagation();
+    const checked=cb.checked;
+    text.style.textDecoration=checked?'line-through':'';
+    text.style.color=checked?'#9aa5b1':'#374151';
+    setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+  });
+
+  row.append(cb,text);
+  itemList.appendChild(row);
+}
+
+function appendDailyMonthViewTaskRow(body,dstr,task,idx){
+  const sections=getDailySections(dstr);
+  const section=task.sectionId?sections.find((s)=>s.id===task.sectionId):null;
+  const sectionColor=section?.color||'#5C8DFF';
+
+  const rowItem=el('div','daily-month-task-item');
+  rowItem.style.position='relative';
+
+  const cb=document.createElement('input');
+  cb.type='checkbox';
+  cb.checked=!!task.done;
+  cb.style.accentColor=sectionColor;
+  const txt=el('span','daily-month-task-text',task.text||'');
+  if(task.done) txt.classList.add('is-done');
+
+  const delBtn=el('button',null,'×');
+  delBtn.type='button';
+  delBtn.title='Delete task';
+  delBtn.style.cssText='position:absolute;top:0;right:0;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;opacity:0;transition:opacity 0.15s;';
+  rowItem.addEventListener('mouseenter',()=>{ delBtn.style.opacity='1'; });
+  rowItem.addEventListener('mouseleave',()=>{ delBtn.style.opacity='0'; });
+
+  cb.addEventListener('change',(e)=>{
+    e.stopPropagation();
+    const checked=cb.checked;
+    if(checked) txt.classList.add('is-done');
+    else txt.classList.remove('is-done');
+    setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+  });
+  delBtn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    void deleteMonthViewTask(dstr,task.id,idx,rowItem,body);
+  });
+
+  rowItem.append(cb,txt,delBtn);
+  body.appendChild(rowItem);
+}
+
+function bindDailyCellInlineAddButton({hostEl,addBtn,dstr,onTaskAdded}){
+  addBtn.type='button';
+  if(!addBtn.textContent) addBtn.textContent='+';
+
+  let addWrap=null;
+  let addInput=null;
+
+  const closeInput=()=>{
+    if(addWrap){
+      addWrap.remove();
+      addWrap=null;
+      addInput=null;
+    }
+    addBtn.style.display='';
+  };
+
+  addBtn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    if(addInput){
+      addInput.focus();
+      return;
+    }
+    addBtn.style.display='none';
+    addWrap=el('div','daily-week-day-add-wrap');
+    addInput=document.createElement('input');
+    addInput.type='text';
+    addInput.className='daily-week-day-add-input';
+    addInput.placeholder='+';
+    addWrap.appendChild(addInput);
+    hostEl.appendChild(addWrap);
+    addInput.focus();
+
+    const commit=async ()=>{
+      const text=addInput?.value.trim();
+      if(!text) return;
+      const result=await insertDailyTaskViaFirstSection(dstr,text);
+      if(!result?.task) return;
+      closeInput();
+      onTaskAdded(result.task);
+    };
+
+    addInput.addEventListener('keydown',async (e)=>{
+      e.stopPropagation();
+      if(e.key==='Enter'){
+        e.preventDefault();
+        await commit();
+      }
+      if(e.key==='Escape'){
+        e.preventDefault();
+        closeInput();
+      }
+    });
+  });
+}
+
 async function addDailySectionInVirtualMode(dstr, title){
   const value=(title||'').trim();
   if(!value) return false;
@@ -1875,6 +2066,8 @@ async function loadDailyByDate(date){
   miniCalYear=dailySelectedDate.getFullYear();
   miniCalMonth=dailySelectedDate.getMonth();
   const dstr=fmtLocalDate(dailySelectedDate);
+  _dailySectionsCache.delete(dstr);
+  _dailyPreparePromises.delete(dstr);
   console.log('[daily-virtual] loadDailyByDate', dstr);
   await renderDailyDayWorkspace();
 }
@@ -2293,33 +2486,29 @@ function renderDailyWeekCalendar(){
       itemList.appendChild(row);
     });
 
-    const addRow = el('div','daily-week-day-add-wrap');
-    const addInput = document.createElement('input');
-    addInput.type = 'text';
-    addInput.className = 'daily-week-day-add-input';
-    addInput.placeholder = '+';
-    addInput.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){
-        e.stopPropagation();
-        const text = addInput.value.trim();
-        if(!text) return;
-        const list = get(kDaily(dstr), []);
-        list.push({ id: Date.now(), text, done: false });
-        set(kDaily(dstr), list);
-        addInput.value = '';
-        renderDailyWeekCalendar();
-      }
+    const addFoot=el('div','daily-week-day-add-foot');
+    const addBtn=el('button','daily-month-day-add-btn','+');
+    addBtn.title='Add task';
+    bindDailyCellInlineAddButton({
+      hostEl:addFoot,
+      addBtn,
+      dstr,
+      onTaskAdded:(task)=>{
+        const list=getDailyTasks(dstr);
+        const idx=list.findIndex((t)=>t.id===task.id);
+        appendDailyWeekViewTaskRow(itemList,dstr,task,idx>=0?idx:list.length-1);
+      },
     });
-    addRow.appendChild(addInput);
+    addFoot.appendChild(addBtn);
 
     col.addEventListener('click', (e)=>{
-      if(e.target.closest('input')) return;
+      if(e.target.closest('input,button,.daily-week-day-add-wrap')) return;
       dailySelectedDate = new Date(date);
       renderDailyWeekCalendar();
       renderDailyList();
     });
 
-    col.append(dayHeader, itemList, addRow);
+    col.append(dayHeader, itemList, addFoot);
     weekGrid.appendChild(col);
   }
 
@@ -2374,11 +2563,9 @@ function ensureDailyMonthCalendarClickDelegation(){
   dailyMonthCalendarClickBound=true;
   container.addEventListener('click',function(e){
     const numEl=e.target.closest('.daily-month-day-num-clickable');
-    if(!numEl) return;
+    if(!numEl||!numEl.dataset.date) return;
     e.stopPropagation();
-    const dateStr=numEl.dataset.date;
-    if(!dateStr) return;
-    void loadDailyByDate(dateStr).then(()=>{
+    void loadDailyByDate(numEl.dataset.date).then(()=>{
       setTimeout(()=>setDailyViewMode('day'),80);
     });
   });
@@ -2403,7 +2590,7 @@ function renderDailyMonthCalendar(){
   const startDay = first.getDay();
   const totalDays = new Date(y, m+1, 0).getDate();
 
-  const view = el('div','daily-month-record-view');
+  const view = el('div','daily-month-record-view daily-month-grid');
   const weekdays=WEEKDAY_LABELS_EN;
 
   const weekdayHeaderRow=el('div','daily-month-weekday-header');
@@ -2436,7 +2623,7 @@ function renderDailyMonthCalendar(){
 
       const cardHeader=el('div','daily-month-day-card-header');
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
-      dayNum.dataset.date=dstr;
+      dayNum.dataset.date=dstr; // YYYY-MM-DD
       if(isToday) cardHeader.classList.add('is-today');
       else if(isSelected) cardHeader.classList.add('is-selected');
 
@@ -2492,27 +2679,28 @@ function renderDailyMonthCalendar(){
         });
       }
 
+      const addFoot=el('div','daily-month-day-add-foot');
       const addDayBtn=el('button','daily-month-day-add-btn','+');
-      addDayBtn.type='button';
-      addDayBtn.title='Open day view and add task';
-      addDayBtn.addEventListener('click',(e)=>{
-        e.stopPropagation();
-        const dateStr=fmtLocalDate(date);
-        void loadDailyByDate(dateStr).then(()=>{
-          setTimeout(()=>{
-            setDailyViewMode('day');
-            focusDailyDayTaskInput();
-          },50);
-        });
+      addDayBtn.title='Add task';
+      bindDailyCellInlineAddButton({
+        hostEl:addFoot,
+        addBtn:addDayBtn,
+        dstr,
+        onTaskAdded:(task)=>{
+          const list=getDailyTasks(dstr);
+          const idx=list.findIndex((t)=>t.id===task.id);
+          appendDailyMonthViewTaskRow(body,dstr,task,idx>=0?idx:list.length-1);
+        },
       });
+      addFoot.appendChild(addDayBtn);
 
       card.addEventListener('click',(e)=>{
-        if(e.target.closest('input,button,.daily-month-day-num-clickable')) return;
+        if(e.target.closest('input,button,.daily-month-day-num-clickable,.daily-week-day-add-wrap,.daily-month-day-add-foot')) return;
         dailySelectedDate=new Date(date);
         renderDailyMonthCalendar();
       });
 
-      card.append(cardHeader,body,addDayBtn);
+      card.append(cardHeader,body,addFoot);
       row.appendChild(card);
     }
     view.appendChild(row);
