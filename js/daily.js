@@ -2230,7 +2230,7 @@ function renderDailyWeekCalendar(){
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - dayOfWeek);
 
-  // Week tab 상단: WEEKLY FOCUS / THIS MONTH 2컬럼 블록
+  // Week tab 상단: Weekly Focus / Next Week 2컬럼 블록
   const weekStartMonday = getWeekStartMondayDateStr(dailySelectedDate);
   const weeklyNotesWrap = el('div','daily-weekly-notes-wrap');
   weeklyNotesWrap.style.cssText = 'margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:10px;align-items:stretch;border:1px solid #e9ecef;min-height:80px;';
@@ -2390,6 +2390,12 @@ function renderDailyMonthCalendar(){
   ensureDailyMonthCalendarClickDelegation();
   container.innerHTML = '';
   updateDailyHeaderPeriodNav();
+
+  const monthStartStr=getMonthStartDateStr(dailySelectedDate);
+  const monthlyNotesWrap=el('div','daily-weekly-notes-wrap daily-monthly-notes-wrap');
+  monthlyNotesWrap.style.cssText='margin:0 12px 12px;background:#f8f9fa;border-radius:12px;padding:10px 12px;display:none;gap:10px;align-items:stretch;border:1px solid #e9ecef;min-height:80px;';
+  container.appendChild(monthlyNotesWrap);
+  renderDailyMonthlyNotesBlock(monthlyNotesWrap,monthStartStr);
 
   const y = dailySelectedDate.getFullYear();
   const m = dailySelectedDate.getMonth();
@@ -2651,6 +2657,13 @@ function widgetDaily(){
     return fmtLocalDate(d);
   }
 
+  function getMonthStartDateStr(date) {
+    const d = new Date(date || new Date());
+    d.setHours(0, 0, 0, 0);
+    d.setDate(1);
+    return fmtLocalDate(d);
+  }
+
   function safeJsonParseStringArray(v) {
     try {
       if (Array.isArray(v)) return v.map(String);
@@ -2705,7 +2718,44 @@ function widgetDaily(){
     if (error) throw error;
   }
 
-  function renderDailyWeeklyNotesBlock(hostEl, weekStartStr) {
+  async function loadMonthlyNotesFromSupabase(monthStartStr) {
+    const userId = await resolveDailyUserId();
+    if (!userId) return null;
+    const sb = getDailySupabaseClient();
+    const { data, error } = await sb
+      .from('monthly_notes')
+      .select('id,focus,next_month')
+      .eq('user_id', userId)
+      .eq('month_start', monthStartStr);
+    if (error) throw error;
+
+    const row = (data || [])[0] || null;
+    const focusArr = safeJsonParseStringArray(row?.focus) || [''];
+    const nextMonthArr = safeJsonParseStringArray(row?.next_month) || [''];
+    return {
+      focus: focusArr.length ? focusArr : [''],
+      next_month: nextMonthArr.length ? nextMonthArr : [''],
+    };
+  }
+
+  async function upsertMonthlyNotesToSupabase(monthStartStr, focusArr, nextMonthArr) {
+    const userId = await resolveDailyUserId();
+    if (!userId) return;
+    const sb = getDailySupabaseClient();
+    const rows = [
+      {
+        id: ensureUUID(),
+        user_id: userId,
+        month_start: monthStartStr,
+        focus: JSON.stringify(focusArr),
+        next_month: JSON.stringify(nextMonthArr),
+      },
+    ];
+    const { error } = await sb.from('monthly_notes').upsert(rows, { onConflict: 'user_id,month_start' });
+    if (error) throw error;
+  }
+
+  function renderDailyDualBulletNotesBlock(hostEl, { leftTitle, rightTitle, loadItems, saveItems }) {
     const doc = hostEl.ownerDocument || document;
 
     // 로그인 안 됐을 때는 블록 숨김
@@ -2730,16 +2780,16 @@ function widgetDaily(){
         return;
       }
 
-      let reminderItems = [''];
-      let monthlyItems = [''];
+      let leftItems = [''];
+      let rightItems = [''];
       try {
-        const loaded = await loadWeeklyNotesFromSupabase(weekStartStr);
+        const loaded = await loadItems();
         if (loaded) {
-          reminderItems = loaded.reminder || [''];
-          monthlyItems = loaded.monthly || [''];
+          leftItems = loaded.left || [''];
+          rightItems = loaded.right || [''];
         }
       } catch (err) {
-        console.error('loadWeeklyNotesFromSupabase', err);
+        console.error('loadDailyDualBulletNotes', err);
       }
 
       // debounce: 500ms 후 upsert
@@ -2748,14 +2798,14 @@ function widgetDaily(){
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
           try {
-            await upsertWeeklyNotesToSupabase(weekStartStr, reminderItems, monthlyItems);
+            await saveItems(leftItems, rightItems);
           } catch (err) {
-            console.error('upsertWeeklyNotesToSupabase', err);
+            console.error('saveDailyDualBulletNotes', err);
           }
         }, 500);
       };
 
-      const pending = { reminder: null, monthly: null };
+      const pending = { left: null, right: null };
 
       const renderBulletList = (listEl, items, autoEditIndex, onItemsChange) => {
         listEl.innerHTML = '';
@@ -2862,8 +2912,8 @@ function widgetDaily(){
         });
       };
 
-      const reminderListEl = doc.createElement('div');
-      const monthlyListEl = doc.createElement('div');
+      const leftListEl = doc.createElement('div');
+      const rightListEl = doc.createElement('div');
 
       const leftCol = doc.createElement('div');
       leftCol.className = 'daily-weekly-notes-col';
@@ -2872,44 +2922,70 @@ function widgetDaily(){
       rightCol.className = 'daily-weekly-notes-col';
       rightCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
 
-      const leftTitle = doc.createElement('div');
-      leftTitle.textContent = '📌 Weekly Focus';
-      leftTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
-      const rightTitle = doc.createElement('div');
-      rightTitle.textContent = '🗓️ This Month';
-      rightTitle.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
+      const leftTitleEl = doc.createElement('div');
+      leftTitleEl.textContent = leftTitle;
+      leftTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
+      const rightTitleEl = doc.createElement('div');
+      rightTitleEl.textContent = rightTitle;
+      rightTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
 
       const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;height:100%;flex:1;min-height:0;';
-      leftCol.append(leftTitle, reminderListEl);
-      rightCol.append(rightTitle, monthlyListEl);
-      reminderListEl.style.cssText = listWrapStyle;
-      monthlyListEl.style.cssText = listWrapStyle;
+      leftCol.append(leftTitleEl, leftListEl);
+      rightCol.append(rightTitleEl, rightListEl);
+      leftListEl.style.cssText = listWrapStyle;
+      rightListEl.style.cssText = listWrapStyle;
 
       hostEl.innerHTML = '';
       hostEl.style.alignItems = 'stretch';
       hostEl.append(leftCol, rightCol);
 
       const renderAll = () => {
-        reminderListEl.style.cssText = listWrapStyle;
-        monthlyListEl.style.cssText = listWrapStyle;
-        renderBulletList(reminderListEl, reminderItems, pending.reminder, (nextArr, focusIdx) => {
-          reminderItems = nextArr.length ? nextArr : [''];
-          pending.reminder = focusIdx;
+        leftListEl.style.cssText = listWrapStyle;
+        rightListEl.style.cssText = listWrapStyle;
+        renderBulletList(leftListEl, leftItems, pending.left, (nextArr, focusIdx) => {
+          leftItems = nextArr.length ? nextArr : [''];
+          pending.left = focusIdx;
           scheduleSave();
           renderAll();
         });
-        renderBulletList(monthlyListEl, monthlyItems, pending.monthly, (nextArr, focusIdx) => {
-          monthlyItems = nextArr.length ? nextArr : [''];
-          pending.monthly = focusIdx;
+        renderBulletList(rightListEl, rightItems, pending.right, (nextArr, focusIdx) => {
+          rightItems = nextArr.length ? nextArr : [''];
+          pending.right = focusIdx;
           scheduleSave();
           renderAll();
         });
-        pending.reminder = null;
-        pending.monthly = null;
+        pending.left = null;
+        pending.right = null;
       };
 
       renderAll();
     })();
+  }
+
+  function renderDailyWeeklyNotesBlock(hostEl, weekStartStr) {
+    renderDailyDualBulletNotesBlock(hostEl, {
+      leftTitle: '📌 Weekly Focus',
+      rightTitle: '📅 Next Week',
+      loadItems: async () => {
+        const loaded = await loadWeeklyNotesFromSupabase(weekStartStr);
+        if (!loaded) return { left: [''], right: [''] };
+        return { left: loaded.reminder, right: loaded.monthly };
+      },
+      saveItems: (leftArr, rightArr) => upsertWeeklyNotesToSupabase(weekStartStr, leftArr, rightArr),
+    });
+  }
+
+  function renderDailyMonthlyNotesBlock(hostEl, monthStartStr) {
+    renderDailyDualBulletNotesBlock(hostEl, {
+      leftTitle: '📌 Monthly Focus',
+      rightTitle: '📅 Next Month',
+      loadItems: async () => {
+        const loaded = await loadMonthlyNotesFromSupabase(monthStartStr);
+        if (!loaded) return { left: [''], right: [''] };
+        return { left: loaded.focus, right: loaded.next_month };
+      },
+      saveItems: (leftArr, rightArr) => upsertMonthlyNotesToSupabase(monthStartStr, leftArr, rightArr),
+    });
   }
 
   const dailyApi = {
