@@ -2250,22 +2250,16 @@ function renderDailyWeekCalendar(){
     const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
-    const col = el('div');
-    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#5C8DFF':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
+    const col = el('div','daily-week-day-col');
+    col.style.cssText = 'display:flex;flex-direction:column;gap:4px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;cursor:pointer;';
 
-    const dayHeader = el('div');
-    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};`;
+    const dayHeader = el('div','daily-week-day-header');
+    const dayName = el('div','daily-week-day-name',weekdays[i]);
+    const dayNum = el('div','daily-week-day-num',String(date.getDate()));
+    if(isToday) dayNum.classList.add('is-today');
+    if(isSelected) dayNum.classList.add('is-selected');
 
-    const dayName = el('div', null, weekdays[i]);
-    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
-
-    const dayNum = el('div', null, String(date.getDate()));
-    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111'};`;
-
-    const dot = el('div');
-    dot.style.cssText = `width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
-
-    dayHeader.append(dayName, dayNum, dot);
+    dayHeader.append(dayName,dayNum);
 
     const itemList = el('div', 'weekly-day-card-scroll');
     itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
