@@ -606,17 +606,50 @@
     }
 
     // 카드 클릭 → 인라인 편집
-    content.ondblclick = () => {
-      const ta = document.createElement('textarea');
-      ta.value = memo.content || '';
-      ta.rows = 4;
-      ta.style.cssText = 'resize:none;border:1px solid #5C8DFF;border-radius:4px;outline:none;font-size:13px;width:100%;box-sizing:border-box;';
-      content.replaceWith(ta);
-      ta.focus();
-      ta.onblur = async () => {
-        const newVal = ta.value.trim();
-        if (newVal !== memo.content) await updateMemo(memo.id, { content: newVal });
-        else renderMemoPage();
+    content.onclick = () => {
+      if (content.isContentEditable) return;
+
+      content.contentEditable = 'true';
+      content.style.cssText = `
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.6;
+    outline:none;
+    border:1.5px solid #5C8DFF;
+    border-radius:8px;
+    padding:8px;
+    min-height:60px;
+    background:#fff;
+    box-shadow:0 2px 8px rgba(92,141,255,0.10);
+    cursor:text;
+  `;
+      content.textContent = memo.content || '';
+
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(content);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      content.onblur = async () => {
+        const newVal = content.textContent.trim();
+        content.contentEditable = 'false';
+        content.style.cssText = `
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.6;
+    `;
+        if (newVal !== memo.content) {
+          await updateMemo(memo.id, { content: newVal });
+        }
+      };
+
+      content.onkeydown = (e) => {
+        if (e.key === 'Escape') {
+          content.textContent = memo.content || '';
+          content.blur();
+        }
       };
     };
 
