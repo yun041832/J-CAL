@@ -435,16 +435,9 @@
         form.querySelector('textarea')?.focus();
       };
 
-      if (filtered.length === 0) {
-        const empty = document.createElement('div');
-        empty.style.cssText = 'color:#d1d5db;font-size:12px;text-align:center;padding:24px 0;';
-        empty.textContent = _searchQuery.trim() ? 'No results.' : 'No memos yet.';
-        list.appendChild(empty);
-      } else {
-        filtered.forEach(memo => {
-          list.appendChild(buildMemoCard(memo));
-        });
-      }
+      filtered.forEach(memo => {
+        list.appendChild(buildMemoCard(memo));
+      });
 
       col.appendChild(list);
       panels.appendChild(col);
@@ -469,28 +462,76 @@
   function buildInputForm(sectionId, onDone) {
     const form = document.createElement('div');
     form.className = 'memo-input-form';
-    form.style.cssText = 'background:#fff;border:1px solid #5C8DFF;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;';
+    form.style.cssText = `
+    background:#fff;
+    border:1.5px solid #5C8DFF;
+    border-radius:12px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    box-shadow:0 2px 12px rgba(92,141,255,0.10);
+  `;
+
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Write something...';
+    ta.rows = 5;
+    ta.style.cssText = `
+    resize:none;
+    border:none;
+    outline:none;
+    font-size:14px;
+    font-family:inherit;
+    line-height:1.6;
+    width:100%;
+    box-sizing:border-box;
+    color:#111827;
+  `;
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
 
     const dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.value = todayStr();
-    dateInput.style.cssText = 'font-size:11px;border:1px solid #e5e7eb;border-radius:4px;padding:2px 6px;';
-
-    const ta = document.createElement('textarea');
-    ta.placeholder = 'Write something...';
-    ta.rows = 4;
-    ta.style.cssText = 'resize:none;border:none;outline:none;font-size:13px;width:100%;box-sizing:border-box;';
+    dateInput.style.cssText = `
+    font-size:11px;
+    border:1px solid #e5e7eb;
+    border-radius:6px;
+    padding:3px 8px;
+    color:#6b7280;
+    background:#f8fafc;
+  `;
 
     const btns = document.createElement('div');
-    btns.style.cssText = 'display:flex;justify-content:flex-end;gap:6px;';
-
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'background:#5C8DFF;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;';
+    btns.style.cssText = 'display:flex;gap:6px;';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'background:#f3f4f6;color:#374151;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;';
+    cancelBtn.style.cssText = `
+    background:#f3f4f6;
+    color:#6b7280;
+    border:none;
+    border-radius:8px;
+    padding:6px 14px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:inherit;
+  `;
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = `
+    background:#5C8DFF;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:6px 14px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+  `;
 
     saveBtn.onclick = async () => {
       const content = ta.value.trim();
@@ -498,10 +539,22 @@
       await saveMemo(sectionId, { content, date: dateInput.value });
       onDone();
     };
+
     cancelBtn.onclick = () => { form.remove(); onDone(); };
 
+    ta.onkeydown = (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        saveBtn.onclick();
+      }
+      if (e.key === 'Escape') {
+        form.remove();
+        onDone();
+      }
+    };
+
     btns.append(cancelBtn, saveBtn);
-    form.append(dateInput, ta, btns);
+    footer.append(dateInput, btns);
+    form.append(ta, footer);
     return form;
   }
 
