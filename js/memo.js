@@ -80,6 +80,7 @@
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
   let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
+  let _searchQuery = '';
   let _initPromise = null;
 
   function isMemoPageVisible() {
@@ -273,6 +274,17 @@
   function getFilteredMemos(sectionId) {
     const base = _memos.filter(m => m.section_id === sectionId);
     let filtered = base;
+
+    if (_searchQuery.trim()) {
+      const q = _searchQuery.trim().toLowerCase();
+      filtered = base.filter(m =>
+        (m.content || '').toLowerCase().includes(q) ||
+        (m.title || '').toLowerCase().includes(q) ||
+        (m.date || '').includes(q)
+      );
+      return sortMemosForDisplay(filtered);
+    }
+
     if (_viewMode === 'day') {
       const t = todayStr();
       filtered = base.filter(m => m.date === t);
@@ -323,6 +335,13 @@
     header.innerHTML = `
       <span style="font-weight:700;font-size:16px;">Memo</span>
       <div style="display:flex;gap:6px;align-items:center;">
+        <input
+          type="text"
+          class="memo-search-input"
+          placeholder="Search memos..."
+          value=""
+          style="padding:4px 10px;border-radius:6px;border:1px solid #e5e7eb;font-size:12px;width:160px;outline:none;"
+        />
         ${undoBtnHtml}
         ${['Day', 'Month', 'All'].map((v, i) => {
           const modes = ['day', 'month', 'all'];
@@ -331,6 +350,14 @@
         }).join('')}
       </div>
     `;
+    const searchInput = header.querySelector('.memo-search-input');
+    if (searchInput) {
+      searchInput.value = _searchQuery;
+      searchInput.oninput = (e) => {
+        _searchQuery = e.target.value;
+        renderMemoPage();
+      };
+    }
     const undoBtn = header.querySelector('#memoUndoBtn');
     if (undoBtn) undoBtn.onclick = () => undoDeleteMemo();
     header.querySelectorAll('[data-view]').forEach(btn => {
@@ -403,7 +430,7 @@
       if (filtered.length === 0) {
         const empty = document.createElement('div');
         empty.style.cssText = 'color:#d1d5db;font-size:12px;text-align:center;padding:24px 0;';
-        empty.textContent = 'No memos yet.';
+        empty.textContent = _searchQuery.trim() ? 'No results.' : 'No memos yet.';
         list.appendChild(empty);
       } else {
         filtered.forEach(memo => {
@@ -416,6 +443,7 @@
     });
 
     page.appendChild(panels);
+    document.querySelector('.memo-search-input')?.focus();
   }
 
   // ── 입력폼 ─────────────────────────────────────────
