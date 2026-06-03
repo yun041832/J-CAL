@@ -67,6 +67,16 @@
     { title: 'Journal', emoji: '📔', color: '#fdf4ff', sort_order: 2 },
   ];
 
+  const MEMO_COLORS = [
+    { name: 'none', bg: '#ffffff', label: '없음' },
+    { name: 'rose', bg: '#ffcdd2', label: 'Rose' },
+    { name: 'orange', bg: '#ffe0b2', label: 'Orange' },
+    { name: 'yellow', bg: '#fff9c4', label: 'Yellow' },
+    { name: 'green', bg: '#c8e6c9', label: 'Green' },
+    { name: 'blue', bg: '#bbdefb', label: 'Blue' },
+    { name: 'lavender', bg: '#e1bee7', label: 'Lavender' },
+  ];
+
   function sectionTitle(sec) {
     return (sec?.title || sec?.name || '').trim() || 'Section';
   }
@@ -393,7 +403,7 @@
 
     _sections.forEach((sec, si) => {
       const col = document.createElement('div');
-      col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:hidden;background:${sec.color || '#fff'};`;
+      col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:hidden;background:#fff;`;
 
       // 섹션 헤더
       const secHeader = document.createElement('div');
@@ -473,6 +483,18 @@
     box-shadow:0 2px 12px rgba(92,141,255,0.10);
   `;
 
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = todayStr();
+    dateInput.style.cssText = `
+    font-size:11px;
+    border:1px solid #e5e7eb;
+    border-radius:6px;
+    padding:3px 8px;
+    color:#6b7280;
+    background:#f8fafc;
+  `;
+
     const ta = document.createElement('textarea');
     ta.placeholder = 'Write something...';
     ta.rows = 5;
@@ -491,17 +513,33 @@
     const footer = document.createElement('div');
     footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
 
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = todayStr();
-    dateInput.style.cssText = `
-    font-size:11px;
-    border:1px solid #e5e7eb;
-    border-radius:6px;
-    padding:3px 8px;
-    color:#6b7280;
-    background:#f8fafc;
+    let _selectedColor = '';
+
+    const colorWrap = document.createElement('div');
+    colorWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+    MEMO_COLORS.forEach(c => {
+      const dot = document.createElement('button');
+      dot.style.cssText = `
+    width:18px;height:18px;border-radius:50%;
+    background:${c.bg};
+    border:2px solid ${c.name === 'none' ? '#e5e7eb' : c.bg};
+    cursor:pointer;padding:0;flex-shrink:0;
+    transition:transform 0.1s;
   `;
+      if (c.name === 'none') dot.textContent = '×';
+      dot.onclick = (e) => {
+        e.preventDefault();
+        _selectedColor = c.name === 'none' ? '' : c.bg;
+        colorWrap.querySelectorAll('button').forEach(b => {
+          b.style.transform = 'scale(1)';
+          b.style.borderColor = b.style.background === c.bg ? '#5C8DFF' : (c.name === 'none' ? '#e5e7eb' : b.style.background);
+        });
+        dot.style.transform = 'scale(1.25)';
+        dot.style.borderColor = '#5C8DFF';
+      };
+      colorWrap.appendChild(dot);
+    });
 
     const btns = document.createElement('div');
     btns.style.cssText = 'display:flex;gap:6px;';
@@ -536,7 +574,7 @@
     saveBtn.onclick = async () => {
       const content = ta.value.trim();
       if (!content) return;
-      await saveMemo(sectionId, { content, date: dateInput.value });
+      await saveMemo(sectionId, { content, date: dateInput.value, color: _selectedColor });
       onDone();
     };
 
@@ -553,8 +591,8 @@
     };
 
     btns.append(cancelBtn, saveBtn);
-    footer.append(dateInput, btns);
-    form.append(ta, footer);
+    footer.append(colorWrap, btns);
+    form.append(dateInput, ta, footer);
     return form;
   }
 
@@ -569,7 +607,14 @@
   function buildMemoCard(memo) {
     const card = document.createElement('div');
     card.dataset.memoCard = 'true';
-    card.style.cssText = `background:#fff;border-radius:8px;padding:10px 36px 10px 10px;border:1px solid #f3f4f6;font-size:13px;position:relative;`;
+    card.style.cssText = `
+  background:${memo.color || '#fff'};
+  border-radius:8px;
+  padding:10px 36px 10px 10px;
+  border:1px solid ${memo.color ? memo.color : '#f3f4f6'};
+  font-size:13px;
+  position:relative;
+`;
 
     const dateEl = document.createElement('div');
     dateEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:4px;';
