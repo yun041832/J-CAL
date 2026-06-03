@@ -351,10 +351,20 @@
     const searchInput = header.querySelector('.memo-search-input');
     if (searchInput) {
       searchInput.value = _searchQuery;
-      searchInput.oninput = (e) => {
+      let _isComposing = false;
+      searchInput.addEventListener('compositionstart', () => {
+        _isComposing = true;
+      });
+      searchInput.addEventListener('compositionend', (e) => {
+        _isComposing = false;
         _searchQuery = e.target.value;
         renderMemoPage();
-      };
+      });
+      searchInput.addEventListener('input', (e) => {
+        if (_isComposing) return;
+        _searchQuery = e.target.value;
+        renderMemoPage();
+      });
     }
     const undoBtn = header.querySelector('#memoUndoBtn');
     if (undoBtn) undoBtn.onclick = () => undoDeleteMemo();
