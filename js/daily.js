@@ -2425,14 +2425,8 @@ function renderDailyMonthCalendar(){
       const cardHeader=el('div','daily-month-day-card-header');
       cardHeader.style.cssText=`display:flex;flex-direction:column;align-items:center;justify-content:center;height:44px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};border-bottom:1px solid #e5e7eb;cursor:pointer;`;
 
-      const dayName=el('div','daily-month-day-name',weekdays[i]);
-      dayName.style.cssText=`font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
-
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
       dayNum.style.cssText=`font-size:14px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111827'};`;
-
-      const dot=el('div');
-      dot.style.cssText=`width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
 
       dayNum.title='Open day view';
       dayNum.addEventListener('click',function(e){
@@ -2452,7 +2446,7 @@ function renderDailyMonthCalendar(){
           setTimeout(()=>setDailyViewMode('day'),50);
         });
       });
-      cardHeader.append(dayName,dayNum,dot);
+      cardHeader.append(dayNum);
 
       const body=el('div','daily-month-day-card-body');
       if(items.length){
@@ -2483,7 +2477,6 @@ function renderDailyMonthCalendar(){
             if(checked) txt.classList.add('is-done');
             else txt.classList.remove('is-done');
             setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
-            updateWeekDayColumnDot(dot,dstr);
           });
           delBtn.addEventListener('click',(e)=>{
             e.stopPropagation();

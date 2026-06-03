@@ -3100,6 +3100,9 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 #dailyMonthCalendar{
   overflow:auto;
 }
+#dailyMonthCalendar .daily-month-day-dot{
+  display:none !important;
+}
 .daily-month-header{
   display:flex;
   align-items:center;
