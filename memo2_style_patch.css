@@ -3196,12 +3196,14 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border:none;
   border-radius:0;
 }
-.daily-month-day-num.is-selected:not(.is-today){
+.daily-month-day-card-header.is-selected:not(.is-today){
   background:#c5d8ff;
+}
+.daily-month-day-card-header.is-selected:not(.is-today) .daily-month-day-num{
   color:#3d6fd6;
-  border-radius:50%;
-  border:2px solid #4A7AEE;
-  box-sizing:border-box;
+  background:transparent;
+  border:none;
+  border-radius:0;
 }
 .daily-month-day-name{
   font-size:11px;
@@ -3219,8 +3221,12 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   justify-content:center;
   box-sizing:border-box;
 }
-.daily-month-day-num-clickable:hover:not(.is-today):not(.is-selected){
+.daily-month-day-num-clickable:hover{
   text-decoration:underline;
+}
+.daily-month-day-card-header.is-today .daily-month-day-num-clickable:hover,
+.daily-month-day-card-header.is-selected .daily-month-day-num-clickable:hover{
+  text-decoration:none;
 }
 .daily-week-day-header{
   display:flex;
@@ -3256,12 +3262,15 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border:none;
   border-radius:0;
 }
-.daily-week-day-num.is-selected:not(.is-today){
+.daily-week-day-header.is-selected:not(.is-today){
   background:#c5d8ff;
+}
+.daily-week-day-header.is-selected:not(.is-today) .daily-week-day-name,
+.daily-week-day-header.is-selected:not(.is-today) .daily-week-day-num{
   color:#3d6fd6;
-  border-radius:50%;
-  border:2px solid #4A7AEE;
-  box-sizing:border-box;
+  background:transparent;
+  border:none;
+  border-radius:0;
 }
 .daily-month-day-card-body{
   flex:1;
@@ -3955,7 +3964,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   font-size:11px;
   text-align:center;
   padding:4px 2px;
-  border-radius:50%;
+  border-radius:4px;
   cursor:pointer;
   color:var(--text,#111827);
   line-height:1.2;
@@ -3979,11 +3988,12 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   background:#5C8DFF;
   color:#fff;
   font-weight:500;
+  border-radius:4px;
 }
 .mini-cal-cell.mini-cal-selected:not(.mini-cal-today){
   background:#c5d8ff;
   color:#3d6fd6;
-  border:2px solid #4A7AEE;
+  border-radius:4px;
   font-weight:500;
 }
 .daily-panel-widget-row{
