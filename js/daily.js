@@ -1834,6 +1834,13 @@ function setDailyItemDone(dstr,idx,checked,opts={}){
   }
 }
 
+function updateWeekDayColumnDot(dot,dstr){
+  const items=get(kDaily(dstr),[]);
+  dot.style.background=items.length>0
+    ?(items.some((it)=>it.done)?'#22c55e':'#f97316')
+    :'transparent';
+}
+
 async function navigateMonthDateToDayView(date){
   await loadDailyByDate(date);
   setDailyViewMode('day');
@@ -2250,16 +2257,22 @@ function renderDailyWeekCalendar(){
     const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
-    const col = el('div','daily-week-day-col');
-    col.style.cssText = 'display:flex;flex-direction:column;gap:4px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;cursor:pointer;';
+    const col = el('div');
+    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#5C8DFF':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
 
-    const dayHeader = el('div','daily-week-day-header');
-    const dayName = el('div','daily-week-day-name',weekdays[i]);
-    const dayNum = el('div','daily-week-day-num',String(date.getDate()));
-    if(isToday) dayNum.classList.add('is-today');
-    if(isSelected) dayNum.classList.add('is-selected');
+    const dayHeader = el('div');
+    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};`;
 
-    dayHeader.append(dayName,dayNum);
+    const dayName = el('div', null, weekdays[i]);
+    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
+
+    const dayNum = el('div', null, String(date.getDate()));
+    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111'};`;
+
+    const dot = el('div');
+    dot.style.cssText = `width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
+
+    dayHeader.append(dayName, dayNum, dot);
 
     const itemList = el('div', 'weekly-day-card-scroll');
     itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
@@ -2287,6 +2300,7 @@ function renderDailyWeekCalendar(){
         text.style.textDecoration=checked?'line-through':'';
         text.style.color=checked?'#9aa5b1':'#374151';
         setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+        updateWeekDayColumnDot(dot,dstr);
       });
 
       row.append(cb, text);
@@ -2399,12 +2413,20 @@ function renderDailyMonthCalendar(){
 
       const card=el('div','daily-month-day-card');
       if(!isCurrentMonth) card.classList.add('is-outside-month');
+      if(isSelected) card.classList.add('is-selected');
 
       const cardHeader=el('div','daily-month-day-card-header');
+      cardHeader.style.cssText=`display:flex;flex-direction:column;align-items:center;justify-content:center;height:44px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};border-bottom:1px solid #e5e7eb;cursor:pointer;`;
+
       const dayName=el('div','daily-month-day-name',weekdays[i]);
+      dayName.style.cssText=`font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
+
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
-      if(isToday) dayNum.classList.add('is-today');
-      if(isSelected) dayNum.classList.add('is-selected');
+      dayNum.style.cssText=`font-size:14px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111827'};`;
+
+      const dot=el('div');
+      dot.style.cssText=`width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
+
       dayNum.title='Open day view';
       dayNum.addEventListener('click',(e)=>{
         e.preventDefault();
@@ -2417,7 +2439,7 @@ function renderDailyMonthCalendar(){
         e.stopPropagation();
         void navigateMonthDateToDayView(date);
       });
-      cardHeader.append(dayName,dayNum);
+      cardHeader.append(dayName,dayNum,dot);
 
       const body=el('div','daily-month-day-card-body');
       if(items.length){
@@ -2448,6 +2470,7 @@ function renderDailyMonthCalendar(){
             if(checked) txt.classList.add('is-done');
             else txt.classList.remove('is-done');
             setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
+            updateWeekDayColumnDot(dot,dstr);
           });
           delBtn.addEventListener('click',(e)=>{
             e.stopPropagation();
