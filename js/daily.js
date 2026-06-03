@@ -1834,11 +1834,9 @@ function setDailyItemDone(dstr,idx,checked,opts={}){
   }
 }
 
-function updateWeekDayColumnDot(dot,dstr){
-  const items=get(kDaily(dstr),[]);
-  dot.style.background=items.length>0
-    ?(items.some((it)=>it.done)?'#22c55e':'#f97316')
-    :'transparent';
+async function navigateMonthDateToDayView(date){
+  await loadDailyByDate(date);
+  setDailyViewMode('day');
 }
 
 function initDailyPage(){
@@ -2252,22 +2250,16 @@ function renderDailyWeekCalendar(){
     const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
-    const col = el('div');
-    col.style.cssText = `display:flex;flex-direction:column;gap:4px;border:1px solid ${isSelected?'#5C8DFF':'#e2e8f0'};border-radius:10px;overflow:hidden;cursor:pointer;`;
+    const col = el('div','daily-week-day-col');
+    col.style.cssText = 'display:flex;flex-direction:column;gap:4px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;cursor:pointer;';
 
-    const dayHeader = el('div');
-    dayHeader.style.cssText = `display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};`;
+    const dayHeader = el('div','daily-week-day-header');
+    const dayName = el('div','daily-week-day-name',weekdays[i]);
+    const dayNum = el('div','daily-week-day-num',String(date.getDate()));
+    if(isToday) dayNum.classList.add('is-today');
+    if(isSelected) dayNum.classList.add('is-selected');
 
-    const dayName = el('div', null, weekdays[i]);
-    dayName.style.cssText = `font-size:11px;font-weight:500;color:${isSelected?'#fff':isToday?'#5C8DFF':'#64748b'};`;
-
-    const dayNum = el('div', null, String(date.getDate()));
-    dayNum.style.cssText = `font-size:16px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111'};`;
-
-    const dot = el('div');
-    dot.style.cssText = `width:5px;height:5px;border-radius:50%;margin-top:2px;background:${items.length>0?(items.some(it=>it.done)?'#22c55e':'#f97316'):'transparent'};`;
-
-    dayHeader.append(dayName, dayNum, dot);
+    dayHeader.append(dayName,dayNum);
 
     const itemList = el('div', 'weekly-day-card-scroll');
     itemList.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:6px 4px;flex:1;overflow-y:auto;max-height:300px;';
@@ -2295,7 +2287,6 @@ function renderDailyWeekCalendar(){
         text.style.textDecoration=checked?'line-through':'';
         text.style.color=checked?'#9aa5b1':'#374151';
         setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
-        updateWeekDayColumnDot(dot,dstr);
       });
 
       row.append(cb, text);
@@ -2342,10 +2333,8 @@ function focusDailyDayTaskInput(){
 }
 
 async function openMonthDayInDailyView(date,opts={}){
-  const focusTaskInput=opts.focusTaskInput!==false;
-  await loadDailyByDate(date);
-  if(dailyViewMode!=='day') setDailyViewMode('day');
-  if(focusTaskInput) focusDailyDayTaskInput();
+  await navigateMonthDateToDayView(date);
+  if(opts.focusTaskInput!==false) focusDailyDayTaskInput();
 }
 
 async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
@@ -2374,9 +2363,6 @@ async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
   }
 
   rowItem.remove();
-  if(!body.querySelector('.daily-month-task-item')&&!body.querySelector('.daily-month-empty')){
-    body.appendChild(el('div','daily-month-empty','No records'));
-  }
 }
 
 function renderDailyMonthCalendar(){
@@ -2413,24 +2399,28 @@ function renderDailyMonthCalendar(){
 
       const card=el('div','daily-month-day-card');
       if(!isCurrentMonth) card.classList.add('is-outside-month');
-      if(isToday) card.classList.add('is-today');
-      if(isSelected) card.classList.add('is-selected');
 
       const cardHeader=el('div','daily-month-day-card-header');
       const dayName=el('div','daily-month-day-name',weekdays[i]);
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
+      if(isToday) dayNum.classList.add('is-today');
+      if(isSelected) dayNum.classList.add('is-selected');
       dayNum.title='Open day view';
       dayNum.addEventListener('click',(e)=>{
+        e.preventDefault();
         e.stopPropagation();
-        void openMonthDayInDailyView(date,{focusTaskInput:false});
+        void navigateMonthDateToDayView(date);
+      });
+      cardHeader.addEventListener('click',(e)=>{
+        if(e.target===dayNum||dayNum.contains(e.target)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void navigateMonthDateToDayView(date);
       });
       cardHeader.append(dayName,dayNum);
 
       const body=el('div','daily-month-day-card-body');
-      if(!items.length){
-        const empty=el('div','daily-month-empty','No records');
-        body.appendChild(empty);
-      }else{
+      if(items.length){
         items.forEach((item,idx)=>{
           const rowItem=el('div','daily-month-task-item');
           rowItem.style.position='relative';
