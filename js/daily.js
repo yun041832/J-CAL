@@ -2938,20 +2938,182 @@ function widgetDaily(){
   function renderDailyDualBulletNotesBlock(hostEl, { leftTitle, rightTitle, loadItems, saveItems }) {
     const doc = hostEl.ownerDocument || document;
 
-    // 로그인 안 됐을 때는 블록 숨김
-    hostEl.style.display = 'none';
     hostEl.innerHTML = '';
+    hostEl.style.display = 'flex';
+    hostEl.style.justifyContent = 'space-between';
+    hostEl.style.flexWrap = 'nowrap';
+    hostEl.style.alignItems = 'stretch';
 
     const renderHidden = () => {
       hostEl.style.display = 'none';
     };
 
-    // 방어적으로 로딩 표시
-    hostEl.style.display = 'flex';
-    hostEl.style.justifyContent = 'space-between';
-    hostEl.style.flexWrap = 'nowrap';
+    let leftItems = [''];
+    let rightItems = [''];
+    let saveTimer = null;
+    const pending = { left: null, right: null };
+
+    const scheduleSave = () => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        try {
+          await saveItems(leftItems, rightItems);
+        } catch (err) {
+          console.error('saveDailyDualBulletNotes', err);
+        }
+      }, 500);
+    };
+
+    const renderBulletList = (listEl, items, autoEditIndex, onItemsChange) => {
+      listEl.innerHTML = '';
+      const makeInput = (rowEl, spanEl, idx) => {
+        const input = doc.createElement('input');
+        input.type = 'text';
+        input.value = items[idx] || '';
+        input.maxLength = 200;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.style.cssText =
+          'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:2px 8px;font-size:0.875rem;line-height:1.4;outline:none;font-family:inherit;';
+
+        rowEl.replaceChild(input, spanEl);
+        input.focus();
+        input.select();
+
+        const original = items[idx] || '';
+        let isFinished = false;
+        const commitBlur = () => {
+          if(isFinished) return;
+          isFinished = true;
+          const next = items.slice();
+          next[idx] = (input.value || '').trim();
+          onItemsChange(next, null);
+        };
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            isFinished = true;
+            const next = items.slice();
+            next[idx] = original;
+            onItemsChange(next, null);
+            return;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            isFinished = true;
+            const next = items.slice();
+            next[idx] = (input.value || '').trim();
+            next.splice(idx + 1, 0, '');
+            onItemsChange(next, idx + 1);
+            return;
+          }
+          if (e.key === 'Backspace') {
+            const atStart = input.selectionStart === 0;
+            if (atStart && (input.value || '').trim() === '' && items.length > 1) {
+              e.preventDefault();
+              isFinished = true;
+              const next = items.slice();
+              next.splice(idx, 1);
+              if (!next.length) next.push('');
+              const focusIdx = Math.min(idx, next.length - 1);
+              onItemsChange(next, focusIdx);
+            }
+          }
+        });
+
+        input.addEventListener('blur', commitBlur);
+      };
+
+      items.forEach((val, idx) => {
+        const row = doc.createElement('div');
+        row.className = 'daily-weekly-note-row';
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:3px 0;cursor:text;';
+
+        const bullet = doc.createElement('span');
+        bullet.textContent = '•';
+        bullet.style.cssText = 'color:#6b7280;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
+
+        const span = doc.createElement('span');
+        span.className = 'daily-weekly-note-text';
+        span.textContent = val || '\u00A0';
+        span.tabIndex = 0;
+        span.style.cssText =
+          'color:#374151;font-size:0.9rem;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;min-height:1.4em;';
+        if (!val) span.style.color = '#94a3b8';
+
+        const startEdit = (e) => {
+          e.stopPropagation();
+          if (row.querySelector('input')) return;
+          makeInput(row, span, idx);
+        };
+        span.addEventListener('click', startEdit);
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('input')) return;
+          startEdit(e);
+        });
+        span.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            startEdit(e);
+          }
+        });
+
+        row.append(bullet, span);
+        listEl.appendChild(row);
+
+        if (autoEditIndex === idx) {
+          setTimeout(() => makeInput(row, span, idx), 0);
+        }
+      });
+    };
+
+    const leftListEl = doc.createElement('div');
+    const rightListEl = doc.createElement('div');
+
+    const leftCol = doc.createElement('div');
+    leftCol.className = 'daily-weekly-notes-col';
+    leftCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
+    const rightCol = doc.createElement('div');
+    rightCol.className = 'daily-weekly-notes-col';
+    rightCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
+
+    const leftTitleEl = doc.createElement('div');
+    leftTitleEl.textContent = leftTitle;
+    leftTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
+    const rightTitleEl = doc.createElement('div');
+    rightTitleEl.textContent = rightTitle;
+    rightTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
+
+    const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;height:100%;flex:1;min-height:0;';
+    leftCol.append(leftTitleEl, leftListEl);
+    rightCol.append(rightTitleEl, rightListEl);
+    leftListEl.style.cssText = listWrapStyle;
+    rightListEl.style.cssText = listWrapStyle;
+
     hostEl.style.alignItems = 'stretch';
-    hostEl.innerHTML = '<div data-daily-notes-loading style="color:#94a3b8;font-size:12px;line-height:1.4;padding:6px 0;">Loading...</div>';
+    hostEl.append(leftCol, rightCol);
+
+    const renderAll = () => {
+      leftListEl.style.cssText = listWrapStyle;
+      rightListEl.style.cssText = listWrapStyle;
+      renderBulletList(leftListEl, leftItems, pending.left, (nextArr, focusIdx) => {
+        leftItems = nextArr.length ? nextArr : [''];
+        pending.left = focusIdx;
+        scheduleSave();
+        renderAll();
+      });
+      renderBulletList(rightListEl, rightItems, pending.right, (nextArr, focusIdx) => {
+        rightItems = nextArr.length ? nextArr : [''];
+        pending.right = focusIdx;
+        scheduleSave();
+        renderAll();
+      });
+      pending.left = null;
+      pending.right = null;
+    };
+
+    renderAll();
 
     (async () => {
       try {
@@ -2961,192 +3123,14 @@ function widgetDaily(){
           return;
         }
 
-        let leftItems = [''];
-        let rightItems = [''];
-        try {
-          const loaded = await loadItems();
-          if (loaded) {
-            leftItems = loaded.left || [''];
-            rightItems = loaded.right || [''];
-          }
-        } catch (err) {
-          console.error('loadDailyDualBulletNotes', err);
+        const loaded = await loadItems();
+        if (loaded) {
+          leftItems = loaded.left || [''];
+          rightItems = loaded.right || [''];
+          renderAll();
         }
-
-        // debounce: 500ms 후 upsert
-        let saveTimer = null;
-        const scheduleSave = () => {
-          if (saveTimer) clearTimeout(saveTimer);
-          saveTimer = setTimeout(async () => {
-            try {
-              await saveItems(leftItems, rightItems);
-            } catch (err) {
-              console.error('saveDailyDualBulletNotes', err);
-            }
-          }, 500);
-        };
-
-        const pending = { left: null, right: null };
-
-      const renderBulletList = (listEl, items, autoEditIndex, onItemsChange) => {
-        listEl.innerHTML = '';
-        const makeInput = (rowEl, spanEl, idx) => {
-          const input = doc.createElement('input');
-          input.type = 'text';
-          input.value = items[idx] || '';
-          input.maxLength = 200;
-          input.autocomplete = 'off';
-          input.spellcheck = false;
-          input.style.cssText =
-            'width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;color:#374151;padding:2px 8px;font-size:0.875rem;line-height:1.4;outline:none;font-family:inherit;';
-
-          rowEl.replaceChild(input, spanEl);
-          input.focus();
-          input.select();
-
-          const original = items[idx] || '';
-          let isFinished = false;
-          const commitBlur = () => {
-            if(isFinished) return;
-            isFinished = true;
-            const next = items.slice();
-            next[idx] = (input.value || '').trim();
-            onItemsChange(next, null);
-          };
-
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              isFinished = true;
-              const next = items.slice();
-              next[idx] = original;
-              onItemsChange(next, null);
-              return;
-            }
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              isFinished = true;
-              const next = items.slice();
-              next[idx] = (input.value || '').trim();
-              next.splice(idx + 1, 0, '');
-              onItemsChange(next, idx + 1);
-              return;
-            }
-            if (e.key === 'Backspace') {
-              const atStart = input.selectionStart === 0;
-              if (atStart && (input.value || '').trim() === '' && items.length > 1) {
-                e.preventDefault();
-                isFinished = true;
-                const next = items.slice();
-                next.splice(idx, 1);
-                if (!next.length) next.push('');
-                const focusIdx = Math.min(idx, next.length - 1);
-                onItemsChange(next, focusIdx);
-              }
-            }
-          });
-
-          input.addEventListener('blur', commitBlur);
-        };
-
-        items.forEach((val, idx) => {
-          const row = doc.createElement('div');
-          row.className = 'daily-weekly-note-row';
-          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:3px 0;cursor:text;';
-
-          const bullet = doc.createElement('span');
-          bullet.textContent = '•';
-          bullet.style.cssText = 'color:#6b7280;margin-top:4px;flex-shrink:0;font-size:16px;line-height:1;';
-
-          const span = doc.createElement('span');
-          span.className = 'daily-weekly-note-text';
-          span.textContent = val || '\u00A0';
-          span.tabIndex = 0;
-          span.style.cssText =
-            'color:#374151;font-size:0.9rem;line-height:1.4;word-break:break-word;flex:1;min-width:0;cursor:text;min-height:1.4em;';
-          if (!val) span.style.color = '#94a3b8';
-
-          const startEdit = (e) => {
-            e.stopPropagation();
-            if (row.querySelector('input')) return;
-            makeInput(row, span, idx);
-          };
-          span.addEventListener('click', startEdit);
-          row.addEventListener('click', (e) => {
-            if (e.target.closest('input')) return;
-            startEdit(e);
-          });
-          span.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              startEdit(e);
-            }
-          });
-
-          row.append(bullet, span);
-          listEl.appendChild(row);
-
-          if (autoEditIndex === idx) {
-            // renderAll 이후 DOM이 완전히 구성된 뒤 편집 시작
-            setTimeout(() => makeInput(row, span, idx), 0);
-          }
-        });
-      };
-
-      const leftListEl = doc.createElement('div');
-      const rightListEl = doc.createElement('div');
-
-      const leftCol = doc.createElement('div');
-      leftCol.className = 'daily-weekly-notes-col';
-      leftCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
-      const rightCol = doc.createElement('div');
-      rightCol.className = 'daily-weekly-notes-col';
-      rightCol.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;align-self:stretch;';
-
-      const leftTitleEl = doc.createElement('div');
-      leftTitleEl.textContent = leftTitle;
-      leftTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
-      const rightTitleEl = doc.createElement('div');
-      rightTitleEl.textContent = rightTitle;
-      rightTitleEl.style.cssText = 'color:#374151;font-weight:600;font-size:0.85rem;margin-bottom:6px;letter-spacing:0;';
-
-      const listWrapStyle = 'background:#ffffff;border:1px solid #e9ecef;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;height:100%;flex:1;min-height:0;';
-      leftCol.append(leftTitleEl, leftListEl);
-      rightCol.append(rightTitleEl, rightListEl);
-      leftListEl.style.cssText = listWrapStyle;
-      rightListEl.style.cssText = listWrapStyle;
-
-      hostEl.innerHTML = '';
-      hostEl.style.alignItems = 'stretch';
-      hostEl.append(leftCol, rightCol);
-
-      const renderAll = () => {
-        leftListEl.style.cssText = listWrapStyle;
-        rightListEl.style.cssText = listWrapStyle;
-        renderBulletList(leftListEl, leftItems, pending.left, (nextArr, focusIdx) => {
-          leftItems = nextArr.length ? nextArr : [''];
-          pending.left = focusIdx;
-          scheduleSave();
-          renderAll();
-        });
-        renderBulletList(rightListEl, rightItems, pending.right, (nextArr, focusIdx) => {
-          rightItems = nextArr.length ? nextArr : [''];
-          pending.right = focusIdx;
-          scheduleSave();
-          renderAll();
-        });
-        pending.left = null;
-        pending.right = null;
-      };
-
-      renderAll();
       } catch (err) {
-        console.error('renderDailyDualBulletNotesBlock', err);
-      } finally {
-        if (hostEl.querySelector('[data-daily-notes-loading]')) {
-          hostEl.innerHTML = '';
-          renderHidden();
-        }
+        console.error('loadDailyDualBulletNotes', err);
       }
     })();
   }
