@@ -153,7 +153,9 @@
     if (!userId) { renderMemoPage(); return; }
     try {
       const { data, error } = await _sb.from('memo')
-        .select('*').eq('user_id', userId).order('date', { ascending: false }).order('created_at', { ascending: false });
+        .select('*').eq('user_id', userId)
+        .order('is_pinned', { ascending: false })
+        .order('date', { ascending: false });
       if (error) throw error;
       _memos = data || [];
       renderMemoPage();
@@ -182,6 +184,16 @@
       _memos.unshift(data);
       renderMemoPage();
     } catch (e) { console.error('[memo] saveMemo', e); }
+  }
+
+  async function toggleMemoPin(memoId, currentPinned) {
+    const client = window.supabase;
+    if (!client) return;
+    const { error } = await client
+      .from('memo')
+      .update({ is_pinned: !currentPinned })
+      .eq('id', memoId);
+    if (error) console.error('pin toggle error:', error);
   }
 
   // ── 메모 수정 ──────────────────────────────────────
@@ -217,23 +229,57 @@
   }
 
   // ── 보기 필터 ──────────────────────────────────────
+  function sortMemosForDisplay(list) {
+    return list.slice().sort((a, b) => {
+      const pinA = a.is_pinned ? 1 : 0;
+      const pinB = b.is_pinned ? 1 : 0;
+      if (pinB !== pinA) return pinB - pinA;
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      return dateB.localeCompare(dateA);
+    });
+  }
+
   function getFilteredMemos(sectionId) {
     const base = _memos.filter(m => m.section_id === sectionId);
+    let filtered = base;
     if (_viewMode === 'day') {
       const t = todayStr();
-      return base.filter(m => m.date === t);
-    }
-    if (_viewMode === 'month') {
+      filtered = base.filter(m => m.date === t);
+    } else if (_viewMode === 'month') {
       const ym = todayStr().slice(0, 7);
-      return base.filter(m => m.date?.slice(0, 7) === ym);
+      filtered = base.filter(m => m.date?.slice(0, 7) === ym);
     }
-    return base; // all
+    return sortMemosForDisplay(filtered);
+  }
+
+  let _memoPinDelegationBound = false;
+  function bindMemoPinDelegation(page) {
+    if (_memoPinDelegationBound || !page) return;
+    _memoPinDelegationBound = true;
+    page.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.memo-pin-btn');
+      if (!btn) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const id = btn.dataset.id;
+      const currentPinned = btn.dataset.pinned === 'true';
+      const nextPinned = !currentPinned;
+      btn.classList.toggle('pinned', nextPinned);
+      btn.dataset.pinned = String(nextPinned);
+      const idx = _memos.findIndex(m => String(m.id) === String(id));
+      if (idx > -1) _memos[idx] = { ..._memos[idx], is_pinned: nextPinned };
+      await toggleMemoPin(id, currentPinned);
+      renderMemoPage();
+    });
   }
 
   // ── 렌더 ───────────────────────────────────────────
   function renderMemoPage() {
     const page = document.getElementById('memoPage');
     if (!page) return;
+
+    bindMemoPinDelegation(page);
 
     page.innerHTML = '';
     page.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
@@ -379,7 +425,7 @@
   // ── 메모 카드 ──────────────────────────────────────
   function buildMemoCard(memo) {
     const card = document.createElement('div');
-    card.style.cssText = `background:#fff;border-radius:8px;padding:10px;border:1px solid #f3f4f6;font-size:13px;position:relative;`;
+    card.style.cssText = `background:#fff;border-radius:8px;padding:10px 36px 10px 10px;border:1px solid #f3f4f6;font-size:13px;position:relative;`;
 
     const dateEl = document.createElement('div');
     dateEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:4px;';
@@ -391,8 +437,18 @@
 
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
-    delBtn.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;color:#d1d5db;font-size:16px;cursor:pointer;line-height:1;';
+    delBtn.style.cssText = 'position:absolute;top:6px;right:28px;background:none;border:none;color:#d1d5db;font-size:16px;cursor:pointer;line-height:1;';
     delBtn.onclick = () => { if (confirm('Delete this memo?')) deleteMemo(memo.id); };
+
+    if (_userId) {
+      const pinBtn = document.createElement('button');
+      pinBtn.className = `memo-pin-btn${memo.is_pinned ? ' pinned' : ''}`;
+      pinBtn.dataset.id = memo.id;
+      pinBtn.dataset.pinned = String(!!memo.is_pinned);
+      pinBtn.title = 'Pin';
+      pinBtn.innerHTML = '<i class="ti ti-pin"></i>';
+      card.appendChild(pinBtn);
+    }
 
     // 카드 클릭 → 인라인 편집
     content.ondblclick = () => {

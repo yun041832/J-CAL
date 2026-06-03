@@ -5405,3 +5405,22 @@ aside.right:not(.hidden) .card {
 .login-nudge-banner__btn:hover {
   background: #4a7aee;
 }
+
+.memo-pin-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-tertiary, #9ca3af);
+  padding: 0;
+  line-height: 1;
+}
+.memo-pin-btn.pinned {
+  color: #5C8DFF;
+}
+.memo-pin-btn:hover {
+  color: #5C8DFF;
+}
