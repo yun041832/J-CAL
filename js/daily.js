@@ -2341,12 +2341,11 @@ function focusDailyDayTaskInput(){
   });
 }
 
-async function openMonthDayInDailyView(date){
-  dailySelectedDate=new Date(date);
-  dailySelectedDate.setHours(0,0,0,0);
+async function openMonthDayInDailyView(date,opts={}){
+  const focusTaskInput=opts.focusTaskInput!==false;
+  await loadDailyByDate(date);
   if(dailyViewMode!=='day') setDailyViewMode('day');
-  await loadDailyByDate(dailySelectedDate);
-  focusDailyDayTaskInput();
+  if(focusTaskInput) focusDailyDayTaskInput();
 }
 
 async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
@@ -2419,7 +2418,12 @@ function renderDailyMonthCalendar(){
 
       const cardHeader=el('div','daily-month-day-card-header');
       const dayName=el('div','daily-month-day-name',weekdays[i]);
-      const dayNum=el('div','daily-month-day-num',String(date.getDate()));
+      const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
+      dayNum.title='Open day view';
+      dayNum.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        void openMonthDayInDailyView(date,{focusTaskInput:false});
+      });
       cardHeader.append(dayName,dayNum);
 
       const body=el('div','daily-month-day-card-body');
@@ -2470,11 +2474,11 @@ function renderDailyMonthCalendar(){
       addDayBtn.title='Open day view and add task';
       addDayBtn.addEventListener('click',(e)=>{
         e.stopPropagation();
-        void openMonthDayInDailyView(date);
+        void openMonthDayInDailyView(date,{focusTaskInput:true});
       });
 
       card.addEventListener('click',(e)=>{
-        if(e.target.closest('input,button')) return;
+        if(e.target.closest('input,button,.daily-month-day-num-clickable')) return;
         dailySelectedDate=new Date(date);
         renderDailyMonthCalendar();
       });

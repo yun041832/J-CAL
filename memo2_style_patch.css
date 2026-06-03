@@ -3177,6 +3177,15 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   font-weight:700;
   color:#111827;
 }
+.daily-month-day-num-clickable{
+  cursor:pointer;
+}
+.daily-month-day-num-clickable:hover{
+  text-decoration:underline;
+}
+.daily-month-day-card.is-selected .daily-month-day-num-clickable{
+  color:inherit;
+}
 .daily-month-day-card-body{
   flex:1;
   min-height:0;
