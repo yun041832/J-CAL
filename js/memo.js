@@ -81,8 +81,6 @@
   let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
   let _searchQuery = '';
-  const MEMO_TAGS = ['dev', 'idea', 'todo', 'note', 'journal'];
-  let _activeTag = '';
   let _initPromise = null;
 
   function isMemoPageVisible() {
@@ -170,7 +168,7 @@
   }
 
   // ── 메모 저장 ──────────────────────────────────────
-  async function saveMemo(sectionId, { title, content, date, emoji, color, tag }) {
+  async function saveMemo(sectionId, { title, content, date, emoji, color }) {
     const userId = await getUserId();
     const row = {
       user_id: userId,
@@ -180,7 +178,6 @@
       date: date || todayStr(),
       emoji: emoji || '',
       color: color || '',
-      tag: tag || '',
       updated_at: new Date().toISOString(),
     };
     try {
@@ -293,9 +290,6 @@
       filtered = base.filter(m => m.date?.slice(0, 7) === ym);
     }
 
-    if (_activeTag) {
-      filtered = filtered.filter(m => (m.tag || '') === _activeTag);
-    }
     return sortMemosForDisplay(filtered);
   }
 
@@ -362,20 +356,6 @@
         renderMemoPage();
       };
     }
-    const tagWrap = document.createElement('div');
-    tagWrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
-    MEMO_TAGS.forEach(tag => {
-      const btn = document.createElement('button');
-      btn.textContent = '#' + tag;
-      const active = _activeTag === tag;
-      btn.style.cssText = `padding:4px 8px;border-radius:12px;border:1px solid ${active ? '#5C8DFF' : '#e5e7eb'};background:${active ? '#5C8DFF' : '#fff'};color:${active ? '#fff' : '#6b7280'};font-size:11px;cursor:pointer;`;
-      btn.onclick = () => {
-        _activeTag = active ? '' : tag;
-        renderMemoPage();
-      };
-      tagWrap.appendChild(btn);
-    });
-    if (searchInput) searchInput.insertAdjacentElement('afterend', tagWrap);
     const undoBtn = header.querySelector('#memoUndoBtn');
     if (undoBtn) undoBtn.onclick = () => undoDeleteMemo();
     header.querySelectorAll('[data-view]').forEach(btn => {
@@ -462,6 +442,17 @@
 
     page.appendChild(panels);
     document.querySelector('.memo-search-input')?.focus();
+    if (_searchQuery.trim()) {
+      requestAnimationFrame(() => {
+        const firstMatch = document.querySelector('#memoPage mark');
+        if (firstMatch) {
+          firstMatch.closest('[data-memo-card]')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      });
+    }
   }
 
   // ── 입력폼 ─────────────────────────────────────────
@@ -494,9 +485,7 @@
     saveBtn.onclick = async () => {
       const content = ta.value.trim();
       if (!content) return;
-      const tagMatch = content.match(/#(\w+)/);
-      const tag = tagMatch ? tagMatch[1].toLowerCase() : '';
-      await saveMemo(sectionId, { content, date: dateInput.value, tag });
+      await saveMemo(sectionId, { content, date: dateInput.value });
       onDone();
     };
     cancelBtn.onclick = () => { form.remove(); onDone(); };
@@ -516,6 +505,7 @@
 
   function buildMemoCard(memo) {
     const card = document.createElement('div');
+    card.dataset.memoCard = 'true';
     card.style.cssText = `background:#fff;border-radius:8px;padding:10px 36px 10px 10px;border:1px solid #f3f4f6;font-size:13px;position:relative;`;
 
     const dateEl = document.createElement('div');
@@ -568,12 +558,6 @@
     };
 
     card.append(dateEl, content, delBtn);
-    if (memo.tag) {
-      const tagEl = document.createElement('span');
-      tagEl.textContent = '#' + memo.tag;
-      tagEl.style.cssText = 'font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(92,141,255,0.12);color:#5C8DFF;margin-top:6px;display:inline-block;';
-      card.appendChild(tagEl);
-    }
     return card;
   }
 
