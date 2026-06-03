@@ -2923,16 +2923,15 @@ function widgetDaily(){
     const userId = await resolveDailyUserId();
     if (!userId) return;
     const sb = getDailySupabaseClient();
-    const rows = [
+    const { error } = await sb.from('monthly_notes').upsert(
       {
-        id: ensureUUID(),
         user_id: userId,
         month_start: monthStartStr,
         focus: JSON.stringify(focusArr),
         next_month: JSON.stringify(nextMonthArr),
       },
-    ];
-    const { error } = await sb.from('monthly_notes').upsert(rows, { onConflict: 'user_id,month_start' });
+      { onConflict: 'user_id,month_start' }
+    );
     if (error) throw error;
   }
 
@@ -2952,41 +2951,42 @@ function widgetDaily(){
     hostEl.style.justifyContent = 'space-between';
     hostEl.style.flexWrap = 'nowrap';
     hostEl.style.alignItems = 'stretch';
-    hostEl.innerHTML = '<div style="color:#94a3b8;font-size:12px;line-height:1.4;padding:6px 0;">Loading...</div>';
+    hostEl.innerHTML = '<div data-daily-notes-loading style="color:#94a3b8;font-size:12px;line-height:1.4;padding:6px 0;">Loading...</div>';
 
     (async () => {
-      const userId = await resolveDailyUserId();
-      if (!userId) {
-        renderHidden();
-        return;
-      }
-
-      let leftItems = [''];
-      let rightItems = [''];
       try {
-        const loaded = await loadItems();
-        if (loaded) {
-          leftItems = loaded.left || [''];
-          rightItems = loaded.right || [''];
+        const userId = await resolveDailyUserId();
+        if (!userId) {
+          renderHidden();
+          return;
         }
-      } catch (err) {
-        console.error('loadDailyDualBulletNotes', err);
-      }
 
-      // debounce: 500ms 후 upsert
-      let saveTimer = null;
-      const scheduleSave = () => {
-        if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-          try {
-            await saveItems(leftItems, rightItems);
-          } catch (err) {
-            console.error('saveDailyDualBulletNotes', err);
+        let leftItems = [''];
+        let rightItems = [''];
+        try {
+          const loaded = await loadItems();
+          if (loaded) {
+            leftItems = loaded.left || [''];
+            rightItems = loaded.right || [''];
           }
-        }, 500);
-      };
+        } catch (err) {
+          console.error('loadDailyDualBulletNotes', err);
+        }
 
-      const pending = { left: null, right: null };
+        // debounce: 500ms 후 upsert
+        let saveTimer = null;
+        const scheduleSave = () => {
+          if (saveTimer) clearTimeout(saveTimer);
+          saveTimer = setTimeout(async () => {
+            try {
+              await saveItems(leftItems, rightItems);
+            } catch (err) {
+              console.error('saveDailyDualBulletNotes', err);
+            }
+          }, 500);
+        };
+
+        const pending = { left: null, right: null };
 
       const renderBulletList = (listEl, items, autoEditIndex, onItemsChange) => {
         listEl.innerHTML = '';
@@ -3140,6 +3140,14 @@ function widgetDaily(){
       };
 
       renderAll();
+      } catch (err) {
+        console.error('renderDailyDualBulletNotesBlock', err);
+      } finally {
+        if (hostEl.querySelector('[data-daily-notes-loading]')) {
+          hostEl.innerHTML = '';
+          renderHidden();
+        }
+      }
     })();
   }
 
