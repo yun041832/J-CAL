@@ -1834,13 +1834,6 @@ function setDailyItemDone(dstr,idx,checked,opts={}){
   }
 }
 
-function updateWeekDayColumnDot(dot,dstr){
-  const items=get(kDaily(dstr),[]);
-  dot.style.background=items.length>0
-    ?(items.some((it)=>it.done)?'#22c55e':'#f97316')
-    :'transparent';
-}
-
 async function navigateMonthDateToDayView(date){
   await loadDailyByDate(date);
   setDailyViewMode('day');
@@ -2300,7 +2293,6 @@ function renderDailyWeekCalendar(){
         text.style.textDecoration=checked?'line-through':'';
         text.style.color=checked?'#9aa5b1':'#374151';
         setDailyItemDone(dstr,idx,checked,{skipRefresh:true});
-        updateWeekDayColumnDot(dot,dstr);
       });
 
       row.append(cb, text);
@@ -2423,10 +2415,8 @@ function renderDailyMonthCalendar(){
       if(isSelected) card.classList.add('is-selected');
 
       const cardHeader=el('div','daily-month-day-card-header');
-      cardHeader.style.cssText=`display:flex;flex-direction:column;align-items:center;justify-content:center;height:44px;background:${isSelected?'#5C8DFF':isToday?'#EEF2FF':'#f8fafc'};border-bottom:1px solid #e5e7eb;cursor:pointer;`;
-
       const dayNum=el('div','daily-month-day-num daily-month-day-num-clickable',String(date.getDate()));
-      dayNum.style.cssText=`font-size:14px;font-weight:700;color:${isSelected?'#fff':isToday?'#5C8DFF':'#111827'};`;
+      if(isToday&&!isSelected) dayNum.classList.add('is-today');
 
       dayNum.title='Open day view';
       dayNum.addEventListener('click',function(e){

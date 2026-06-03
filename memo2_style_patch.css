@@ -3100,9 +3100,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 #dailyMonthCalendar{
   overflow:auto;
 }
-#dailyMonthCalendar .daily-month-day-dot{
-  display:none !important;
-}
 .daily-month-header{
   display:flex;
   align-items:center;
@@ -3179,13 +3176,26 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 .daily-month-day-card.is-selected{
   border-color:#5C8DFF;
 }
+.daily-month-day-card.is-selected .daily-month-day-card-header{
+  background:#5C8DFF;
+}
+.daily-month-day-card.is-selected .daily-month-day-num{
+  color:#fff;
+}
 .daily-month-day-card-header{
   height:44px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  background:#f8fafc;
   border-bottom:1px solid #e5e7eb;
+  cursor:pointer;
+}
+.daily-month-day-num.is-today{
+  background:#5C8DFF;
+  color:#fff;
+  border-radius:50%;
 }
 .daily-month-day-name{
   font-size:11px;
@@ -3203,8 +3213,37 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   justify-content:center;
   box-sizing:border-box;
 }
-.daily-month-day-num-clickable:hover{
+.daily-month-day-num-clickable:hover:not(.is-today){
   text-decoration:underline;
+}
+.daily-week-day-header{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:8px 4px 6px;
+  background:#f8fafc;
+}
+.daily-week-day-name{
+  font-size:11px;
+  font-weight:500;
+  color:#64748b;
+}
+.daily-week-day-num{
+  font-size:16px;
+  font-weight:700;
+  color:#111827;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:28px;
+  min-height:28px;
+  box-sizing:border-box;
+}
+.daily-week-day-num.is-today,
+.daily-week-day-num.is-selected{
+  background:#5C8DFF;
+  color:#fff;
+  border-radius:50%;
 }
 .daily-month-day-card-body{
   flex:1;
@@ -3898,32 +3937,30 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   font-size:11px;
   text-align:center;
   padding:4px 2px;
-  border-radius:4px;
+  border-radius:50%;
   cursor:pointer;
   color:var(--text,#111827);
   line-height:1.2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:22px;
+  min-height:22px;
+  box-sizing:border-box;
 }
-.mini-cal-cell:hover:not(.empty){
-  background:#EEF2FF;
+.mini-cal-cell:hover:not(.empty):not(.mini-cal-today):not(.mini-cal-selected){
+  background:#e8efff;
   color:#5C8DFF;
 }
 .mini-cal-cell.empty{
   cursor:default;
   visibility:hidden;
 }
-.mini-cal-cell.mini-cal-today{
+.mini-cal-cell.mini-cal-today,
+.mini-cal-cell.mini-cal-selected{
   background:#5C8DFF;
   color:#fff;
   font-weight:500;
-}
-.mini-cal-cell.mini-cal-selected:not(.mini-cal-today){
-  background:#EEF2FF;
-  color:#5C8DFF;
-  font-weight:500;
-}
-.mini-cal-cell.mini-cal-today.mini-cal-selected{
-  background:#5C8DFF;
-  color:#fff;
 }
 .daily-panel-widget-row{
   margin-top:4px;
