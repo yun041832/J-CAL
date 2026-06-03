@@ -487,17 +487,35 @@
   }
 
   // ── 메모 카드 ──────────────────────────────────────
+  function highlightText(text, query) {
+    if (!query || !query.trim()) return text;
+    const escaped = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    return text.replace(regex, '<mark style="background:#FFF176;color:#111827;border-radius:2px;padding:0 1px;">$1</mark>');
+  }
+
   function buildMemoCard(memo) {
     const card = document.createElement('div');
     card.style.cssText = `background:#fff;border-radius:8px;padding:10px 36px 10px 10px;border:1px solid #f3f4f6;font-size:13px;position:relative;`;
 
     const dateEl = document.createElement('div');
     dateEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:4px;';
-    dateEl.textContent = memo.date || '';
+    if (_searchQuery.trim()) {
+      dateEl.innerHTML = highlightText(memo.date || '', _searchQuery);
+    } else {
+      dateEl.textContent = memo.date || '';
+    }
 
     const content = document.createElement('div');
     content.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.6;';
-    content.textContent = memo.content || '';
+    if (_searchQuery.trim()) {
+      content.innerHTML = highlightText(
+        (memo.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        _searchQuery
+      );
+    } else {
+      content.textContent = memo.content || '';
+    }
 
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
