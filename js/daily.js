@@ -728,9 +728,9 @@ function appendDailyWeekViewTaskRow(itemList,dstr,task,idx){
   const cb=document.createElement('input');
   cb.type='checkbox';
   cb.checked=!!task.done;
-  cb.style.accentColor=sectionColor;
+  cb.style.cssText=`width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:${sectionColor};`;
   const text=el('span',null,task.text||'');
-  text.style.cssText=`font-size:11px;line-height:1.3;flex:1;word-break:break-word;color:${task.done?'#9aa5b1':'#374151'};text-decoration:${task.done?'line-through':'none'};`;
+  text.style.cssText=`font-size:11px;line-height:1.4;word-break:break-all;${task.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
 
   cb.addEventListener('change',(e)=>{
     e.stopPropagation();
@@ -808,7 +808,7 @@ function bindDailyCellInlineAddButton({hostEl,addBtn,dstr,onTaskAdded}){
     addWrap=el('div','daily-week-day-add-wrap');
     addInput=document.createElement('input');
     addInput.type='text';
-    addInput.className='daily-week-day-add-input';
+    addInput.className='daily-week-day-add-input daily-month-inline-input';
     addInput.placeholder='+';
     addWrap.appendChild(addInput);
     hostEl.appendChild(addWrap);
@@ -1180,16 +1180,31 @@ function insertDailyTask(dstr,{text,sectionId,done=false}){
       return task;
     }
     const sb=getDailySupabaseClient();
-    const {error}=await sb.from('daily_tasks').insert({
+    const {data,error}=await sb.from('daily_tasks').insert({
       id,
       user_id:userId,
       date:dstr,
       text:value,
       done:!!done,
       section_id:resolvedSectionId||null,
-    });
-    if(error) console.error('insertDailyTask',error);
-    return task;
+    }).select('id,date,text,done,section_id').single();
+    if(error){
+      console.error('insertDailyTask',error);
+      return task;
+    }
+    const savedTask={
+      id:data.id,
+      text:data.text,
+      done:!!data.done,
+      sectionId:data.section_id||undefined,
+    };
+    const savedList=getDailyTasks(dstr).slice();
+    const savedIdx=savedList.findIndex((t)=>t.id===savedTask.id);
+    if(savedIdx>=0) savedList[savedIdx]=savedTask;
+    else savedList.push(savedTask);
+    _dailyTasksCache.set(dstr,savedList);
+    set(kDaily(dstr),savedList);
+    return savedTask;
   })();
 }
 function patchDailyTask(dstr,taskId,patch,opts={}){
@@ -2439,7 +2454,7 @@ function renderDailyWeekCalendar(){
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate()+i);
     const dstr = fmtLocalDate(date);
-    const items = get(kDaily(dstr), []);
+    const items = getDailyTasks(dstr);
     const isToday = fmtLocalDate(date) === fmtLocalDate(new Date());
     const isSelected = fmtLocalDate(date) === fmtLocalDate(dailySelectedDate);
 
@@ -2494,7 +2509,7 @@ function renderDailyWeekCalendar(){
       addBtn,
       dstr,
       onTaskAdded:(task)=>{
-        const list=getDailyTasks(dstr);
+        const list=_dailyTasksCache.get(dstr)||getDailyTasks(dstr);
         const idx=list.findIndex((t)=>t.id===task.id);
         appendDailyWeekViewTaskRow(itemList,dstr,task,idx>=0?idx:list.length-1);
       },
@@ -2556,25 +2571,9 @@ async function deleteMonthViewTask(dstr,taskId,idx,rowItem,body){
 
 let dailyMonthCalendarClickBound=false;
 
-function ensureDailyMonthCalendarClickDelegation(){
-  if(dailyMonthCalendarClickBound) return;
-  const container=document.getElementById('dailyMonthCalendar');
-  if(!container) return;
-  dailyMonthCalendarClickBound=true;
-  container.addEventListener('click',function(e){
-    const numEl=e.target.closest('.daily-month-day-num-clickable');
-    if(!numEl||!numEl.dataset.date) return;
-    e.stopPropagation();
-    void loadDailyByDate(numEl.dataset.date).then(()=>{
-      setTimeout(()=>setDailyViewMode('day'),80);
-    });
-  });
-}
-
 function renderDailyMonthCalendar(){
   const container = document.getElementById('dailyMonthCalendar');
   if(!container) return;
-  ensureDailyMonthCalendarClickDelegation();
   container.innerHTML = '';
   updateDailyHeaderPeriodNav();
 
@@ -2628,15 +2627,6 @@ function renderDailyMonthCalendar(){
       else if(isSelected) cardHeader.classList.add('is-selected');
 
       dayNum.title='Open day view';
-      cardHeader.addEventListener('click',function(e){
-        if(e.target===dayNum||dayNum.contains(e.target)) return;
-        e.stopPropagation();
-        e.preventDefault();
-        const dateStr=fmtLocalDate(date);
-        void loadDailyByDate(dateStr).then(()=>{
-          setTimeout(()=>setDailyViewMode('day'),50);
-        });
-      });
       cardHeader.append(dayNum);
 
       const body=el('div','daily-month-day-card-body');
@@ -2694,10 +2684,13 @@ function renderDailyMonthCalendar(){
       });
       addFoot.appendChild(addDayBtn);
 
-      card.addEventListener('click',(e)=>{
-        if(e.target.closest('input,button,.daily-month-day-num-clickable,.daily-week-day-add-wrap,.daily-month-day-add-foot')) return;
-        dailySelectedDate=new Date(date);
-        renderDailyMonthCalendar();
+      card.addEventListener('click',function(e){
+        if(e.target.closest('.daily-month-day-add-btn')) return;
+        if(e.target.closest('.daily-month-inline-input')) return;
+        e.stopPropagation();
+        void loadDailyByDate(dstr).then(()=>{
+          setTimeout(()=>setDailyViewMode('day'),80);
+        });
       });
 
       card.append(cardHeader,body,addFoot);
