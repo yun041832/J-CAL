@@ -81,6 +81,8 @@
   let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
   let _searchQuery = '';
+  const MEMO_TAGS = ['dev', 'idea', 'todo', 'note', 'journal'];
+  let _activeTag = '';
   let _initPromise = null;
 
   function isMemoPageVisible() {
@@ -168,7 +170,7 @@
   }
 
   // ── 메모 저장 ──────────────────────────────────────
-  async function saveMemo(sectionId, { title, content, date, emoji, color }) {
+  async function saveMemo(sectionId, { title, content, date, emoji, color, tag }) {
     const userId = await getUserId();
     const row = {
       user_id: userId,
@@ -178,6 +180,7 @@
       date: date || todayStr(),
       emoji: emoji || '',
       color: color || '',
+      tag: tag || '',
       updated_at: new Date().toISOString(),
     };
     try {
@@ -282,15 +285,16 @@
         (m.title || '').toLowerCase().includes(q) ||
         (m.date || '').includes(q)
       );
-      return sortMemosForDisplay(filtered);
-    }
-
-    if (_viewMode === 'day') {
+    } else if (_viewMode === 'day') {
       const t = todayStr();
       filtered = base.filter(m => m.date === t);
     } else if (_viewMode === 'month') {
       const ym = todayStr().slice(0, 7);
       filtered = base.filter(m => m.date?.slice(0, 7) === ym);
+    }
+
+    if (_activeTag) {
+      filtered = filtered.filter(m => (m.tag || '') === _activeTag);
     }
     return sortMemosForDisplay(filtered);
   }
@@ -358,6 +362,20 @@
         renderMemoPage();
       };
     }
+    const tagWrap = document.createElement('div');
+    tagWrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    MEMO_TAGS.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.textContent = '#' + tag;
+      const active = _activeTag === tag;
+      btn.style.cssText = `padding:4px 8px;border-radius:12px;border:1px solid ${active ? '#5C8DFF' : '#e5e7eb'};background:${active ? '#5C8DFF' : '#fff'};color:${active ? '#fff' : '#6b7280'};font-size:11px;cursor:pointer;`;
+      btn.onclick = () => {
+        _activeTag = active ? '' : tag;
+        renderMemoPage();
+      };
+      tagWrap.appendChild(btn);
+    });
+    if (searchInput) searchInput.insertAdjacentElement('afterend', tagWrap);
     const undoBtn = header.querySelector('#memoUndoBtn');
     if (undoBtn) undoBtn.onclick = () => undoDeleteMemo();
     header.querySelectorAll('[data-view]').forEach(btn => {
@@ -476,7 +494,9 @@
     saveBtn.onclick = async () => {
       const content = ta.value.trim();
       if (!content) return;
-      await saveMemo(sectionId, { content, date: dateInput.value });
+      const tagMatch = content.match(/#(\w+)/);
+      const tag = tagMatch ? tagMatch[1].toLowerCase() : '';
+      await saveMemo(sectionId, { content, date: dateInput.value, tag });
       onDone();
     };
     cancelBtn.onclick = () => { form.remove(); onDone(); };
@@ -548,6 +568,12 @@
     };
 
     card.append(dateEl, content, delBtn);
+    if (memo.tag) {
+      const tagEl = document.createElement('span');
+      tagEl.textContent = '#' + memo.tag;
+      tagEl.style.cssText = 'font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(92,141,255,0.12);color:#5C8DFF;margin-top:6px;display:inline-block;';
+      card.appendChild(tagEl);
+    }
     return card;
   }
 
