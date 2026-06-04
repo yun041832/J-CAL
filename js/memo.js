@@ -101,6 +101,7 @@
   }
 
   const TITLE_POP_ICON = {
+    color: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z',
     emoji: 'M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z',
     size: 'M80-160v-160h160v-480h-80v-160h320v160h-80v480h80v160H80Zm400 0v-160h80v-120H560v-160h200v-40h-80v-160h320v160h-80v40H760v160h-40v120h80v160H480Z',
     bold: 'M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-490q25 11 55.5 41t30.5 90q0 89-65 124t-133 35H272Zm121-321h83q48 0 78-23.5t30-61.5q0-37-27-61t-83-24h-81v170Zm0 239h84q72 0 102-28.5t30-73.5q0-39-34.5-64.5T484-474h-91v192Z',
@@ -126,8 +127,8 @@
     btn.className = 'memo-sec-icon-btn' + (className ? ' ' + className : '');
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('xmlns', SVG_NS);
-    svg.setAttribute('height', '15px');
-    svg.setAttribute('width', '15px');
+    svg.setAttribute('height', '18px');
+    svg.setAttribute('width', '18px');
     svg.setAttribute('viewBox', '0 -960 960 960');
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', pathD);
@@ -944,6 +945,7 @@
     pop.className = 'memo-title-popup';
 
     const draft = {
+      title_color: memo.title_color || '',
       title_size: memo.title_size || '14px',
       title_bold: !!memo.title_bold,
       title_emoji: memo.title_emoji || '',
@@ -961,6 +963,28 @@
       row.append(iconWrap, label);
       if (trailing) row.appendChild(trailing);
       return row;
+    };
+
+    const applyTitleColor = async (color) => {
+      draft.title_color = color || '';
+      memo.title_color = draft.title_color;
+      applyTitleDom();
+      await updateMemo(memo.id, { title_color: draft.title_color }, { skipRender: true });
+    };
+
+    const colorRow = addRow(TITLE_POP_ICON.color, 'Change Color');
+    const colorExpand = document.createElement('div');
+    colorExpand.className = 'memo-title-popup-color-expand';
+    colorExpand.hidden = true;
+    const colorPicker = buildMemoColorPicker(draft.title_color || '', (color) => {
+      void applyTitleColor(color);
+    });
+    colorPicker.classList.add('memo-title-popup-color-picker');
+    colorExpand.appendChild(colorPicker);
+    colorRow.onclick = (e) => {
+      e.stopPropagation();
+      colorRow.classList.toggle('is-color-open');
+      colorExpand.hidden = !colorRow.classList.contains('is-color-open');
     };
 
     const emojiRow = addRow(TITLE_POP_ICON.emoji, 'Change Emoji');
@@ -984,14 +1008,19 @@
     sizeSelect.onclick = (e) => e.stopPropagation();
     const sizeRow = addRow(TITLE_POP_ICON.size, 'Text Size', sizeSelect);
 
-    const boldVal = document.createElement('span');
-    boldVal.className = 'memo-title-popup-val';
-    boldVal.textContent = draft.title_bold ? '굵게' : '보통';
-    const boldRow = addRow(TITLE_POP_ICON.bold, 'Bold', boldVal);
-    boldRow.onclick = (e) => {
+    const boldToggle = document.createElement('button');
+    boldToggle.type = 'button';
+    boldToggle.className = 'memo-title-popup-bold-toggle';
+    boldToggle.textContent = 'B';
+    const syncBoldToggle = () => {
+      boldToggle.classList.toggle('is-active', draft.title_bold);
+    };
+    syncBoldToggle();
+    const boldRow = addRow(TITLE_POP_ICON.bold, 'Bold', boldToggle);
+    boldToggle.onclick = (e) => {
       e.stopPropagation();
       draft.title_bold = !draft.title_bold;
-      boldVal.textContent = draft.title_bold ? '굵게' : '보통';
+      syncBoldToggle();
     };
 
     const divider = document.createElement('div');
@@ -1014,6 +1043,7 @@
     applyBtn.onclick = async (e) => {
       e.stopPropagation();
       const patch = {
+        title_color: draft.title_color,
         title_size: draft.title_size,
         title_bold: draft.title_bold,
         title_emoji: draft.title_emoji,
@@ -1027,7 +1057,7 @@
     };
     footer.append(closeBtn, applyBtn);
 
-    pop.append(emojiRow, sizeRow, boldRow, divider, footer);
+    pop.append(colorRow, colorExpand, emojiRow, sizeRow, boldRow, divider, footer);
     card.appendChild(pop);
 
     setTimeout(() => {

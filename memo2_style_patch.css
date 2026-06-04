@@ -5697,8 +5697,8 @@ aside.right:not(.hidden) .card {
 
 #memoPage .memo-sec-icon-btn svg {
   display: block;
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
 }
 
 #memoPage .memo-sec-del-btn:hover path {
@@ -5843,10 +5843,40 @@ aside.right:not(.hidden) .card {
   min-width: 0;
 }
 
-#memoPage .memo-title-popup-val {
-  font-size: 12px;
-  color: #888780;
+#memoPage .memo-title-popup-color-expand {
+  padding: 2px 10px 8px 36px;
+}
+
+#memoPage .memo-title-popup-color-expand[hidden] {
+  display: none;
+}
+
+#memoPage .memo-title-popup-color-picker {
+  flex-wrap: wrap;
+}
+
+#memoPage .memo-title-popup-row.is-color-open {
+  background: #f9fafb;
+}
+
+#memoPage .memo-title-popup-bold-toggle {
   flex-shrink: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 400;
+  color: #888780;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1.2;
+  font-family: inherit;
+}
+
+#memoPage .memo-title-popup-bold-toggle.is-active {
+  color: #111827;
+  font-weight: 700;
+  background: #f3f4f6;
 }
 
 #memoPage .memo-title-popup-select {
