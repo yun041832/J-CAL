@@ -1657,8 +1657,8 @@
 
     if (!isNew) {
       body.onblur = (e) => {
-        if (toolbar.contains(e.relatedTarget)) return;
-        if (footer.contains(e.relatedTarget)) return;
+        const next = e.relatedTarget;
+        if (next && shell.contains(next)) return;
         void finishEdit();
       };
     }
@@ -1950,7 +1950,11 @@
         titleMenuBtn = null;
         return;
       }
-      if (!titleRow) {
+      if (!titleRow || !titleRow.isConnected) {
+        titleRow = null;
+        titleEmojiEl = null;
+        titleTextEl = null;
+        titleMenuBtn = null;
         titleRow = document.createElement('div');
         titleRow.className = 'memo-card-title-row';
         titleEmojiEl = document.createElement('span');
@@ -1965,9 +1969,9 @@
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
-        titleRow.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
+        const stopTitleRowBubble = (e) => e.stopPropagation();
+        titleRow.addEventListener('mousedown', stopTitleRowBubble, true);
+        titleRow.addEventListener('click', stopTitleRowBubble, true);
 
         titleMenuBtn.onclick = (e) => {
           e.stopPropagation();
@@ -1976,8 +1980,10 @@
         };
 
         const bindTitleTextClick = () => {
+          titleTextEl.onmousedown = (e) => e.stopPropagation();
           titleTextEl.onclick = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             const input = document.createElement('input');
             input.type = 'text';
             input.className = 'memo-card-title-input';
@@ -2006,6 +2012,8 @@
             titleTextEl.replaceWith(input);
             input.focus();
             input.select();
+            input.onmousedown = (e) => e.stopPropagation();
+            input.onclick = (e) => e.stopPropagation();
             input.onblur = () => { void finishTitle(); };
             input.onkeydown = (ev) => {
               if (ev.key === 'Enter' || ev.key === 'NumpadEnter') {
@@ -2112,6 +2120,10 @@
     card.addEventListener('click', (e) => {
       if (e.target === content || e.target === previewEl) return;
       if (e.target.closest('.memo-card-title-row')) return;
+      if (e.target.closest('.memo-card-title-text')) return;
+      if (e.target.closest('.memo-card-title-menu')) return;
+      if (e.target.closest('.memo-card-title-input')) return;
+      if (e.target.closest('.memo-title-popup')) return;
       if (!card.classList.contains('memo-card--collapsed')) return;
       handleEditIntent(e);
     });
