@@ -5588,10 +5588,63 @@ aside.right:not(.hidden) .card {
   height: auto;
   opacity: 1;
   margin-top: 0;
+  white-space: pre-wrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  word-break: normal;
+  text-overflow: clip;
+  max-height: 80px;
+  word-break: break-word;
+}
+
+#memoPage .memo-input-title {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  outline: none;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #111827;
+  padding: 0 0 8px;
+  margin-bottom: 2px;
+  background: transparent;
+}
+
+#memoPage .memo-input-title::placeholder {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+#memoPage .memo-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+  padding-right: 52px;
+  box-sizing: border-box;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+#memoPage .memo-card-title-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  outline: none;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #111827;
+  padding: 0 0 6px;
+  margin-bottom: 6px;
+  padding-right: 52px;
+  background: transparent;
+}
+
+#memoPage .memo-card-title-input::placeholder {
+  color: #9ca3af;
+  font-weight: 600;
 }
 
 #memoPage .memo-card--collapsed .memo-card-content {

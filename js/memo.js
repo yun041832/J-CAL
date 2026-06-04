@@ -640,6 +640,11 @@
     background:#f8fafc;
   `;
 
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.className = 'memo-input-title';
+    titleInput.placeholder = 'Title (optional)';
+
     const ta = document.createElement('textarea');
     ta.placeholder = 'Write something...';
     ta.rows = 5;
@@ -697,7 +702,12 @@
     saveBtn.onclick = async () => {
       const content = ta.value.trim();
       if (!content) return;
-      await saveMemo(sectionId, { content, date: dateInput.value, color: _selectedColor });
+      await saveMemo(sectionId, {
+        title: titleInput.value.trim(),
+        content,
+        date: dateInput.value,
+        color: _selectedColor,
+      });
       onDone();
     };
 
@@ -715,7 +725,7 @@
 
     btns.append(cancelBtn, saveBtn);
     footer.append(colorWrap, btns);
-    form.append(dateInput, ta, footer);
+    form.append(dateInput, titleInput, ta, footer);
     return form;
   }
 
@@ -783,6 +793,20 @@
       dateEl.textContent = memo.date || '';
     }
 
+    let titleEl = null;
+    if ((memo.title || '').trim()) {
+      titleEl = document.createElement('div');
+      titleEl.className = 'memo-card-title';
+      if (_searchQuery.trim()) {
+        titleEl.innerHTML = highlightText(
+          (memo.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+          _searchQuery
+        );
+      } else {
+        titleEl.textContent = memo.title;
+      }
+    }
+
     const content = document.createElement('div');
     content.className = 'memo-card-content';
     if (_searchQuery.trim()) {
@@ -806,20 +830,38 @@
       card.appendChild(pinBtn);
     }
 
-    // 카드 클릭 → 인라인 편집
-    content.onclick = (e) => {
-      if (content.isContentEditable) return;
-      e.stopPropagation();
-
-      if (isMemoTouchUI() && !card.classList.contains('is-actions-visible')) {
-        card.closest('#memoPage')?.querySelectorAll('.memo-card.is-actions-visible').forEach(c => {
-          c.classList.remove('is-actions-visible');
-        });
-        card.classList.add('is-actions-visible');
+    const refreshTitleDisplay = (titleText) => {
+      const t = (titleText || '').trim();
+      if (!t) {
+        if (titleEl) {
+          titleEl.remove();
+          titleEl = null;
+        }
         return;
       }
+      if (!titleEl) {
+        titleEl = document.createElement('div');
+        titleEl.className = 'memo-card-title';
+        dateEl.insertAdjacentElement('afterend', titleEl);
+      }
+      if (_searchQuery.trim()) {
+        titleEl.innerHTML = highlightText(
+          t.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+          _searchQuery
+        );
+      } else {
+        titleEl.textContent = t;
+      }
+      titleEl.style.display = '';
+    };
 
-      let editColorWrap = null;
+    let editColorWrap = null;
+    let editTitleInput = null;
+    let savingEdit = false;
+
+    const enterMemoEdit = () => {
+      if (content.isContentEditable) return;
+      savingEdit = false;
 
       const restoreContentView = (text) => {
         content.contentEditable = 'false';
@@ -838,9 +880,21 @@
       const cleanupEdit = () => {
         editColorWrap?.remove();
         editColorWrap = null;
+        editTitleInput?.remove();
+        editTitleInput = null;
+        if (titleEl) titleEl.style.display = '';
         content.onblur = null;
         content.onkeydown = null;
+        if (editTitleInput) editTitleInput.onblur = null;
       };
+
+      if (titleEl) titleEl.style.display = 'none';
+      editTitleInput = document.createElement('input');
+      editTitleInput.type = 'text';
+      editTitleInput.className = 'memo-card-title-input';
+      editTitleInput.placeholder = 'Title (optional)';
+      editTitleInput.value = memo.title || '';
+      content.parentNode.insertBefore(editTitleInput, content);
 
       content.contentEditable = 'true';
       content.classList.add('is-editing');
@@ -853,39 +907,102 @@
       });
       content.insertAdjacentElement('afterend', editColorWrap);
 
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(content);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-      content.focus();
+      const finishEdit = async () => {
+        if (savingEdit) return;
+        savingEdit = true;
 
-      content.onblur = async (e) => {
-        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
-
+        const newTitle = editTitleInput ? editTitleInput.value.trim() : (memo.title || '');
         const newVal = content.textContent.trim();
+        const patch = {};
+        if (newVal !== (memo.content || '')) patch.content = newVal;
+        if (newTitle !== (memo.title || '')) patch.title = newTitle;
+
         cleanupEdit();
 
-        if (newVal !== (memo.content || '')) {
-          memo.content = newVal;
-          restoreContentView(newVal);
-          await updateMemo(memo.id, { content: newVal }, { skipRender: true });
+        if (patch.content !== undefined) {
+          memo.content = patch.content;
+          restoreContentView(patch.content);
         } else {
           restoreContentView(memo.content || '');
+        }
+
+        if (patch.title !== undefined) {
+          memo.title = patch.title;
+          refreshTitleDisplay(patch.title);
+        } else {
+          refreshTitleDisplay(memo.title || '');
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await updateMemo(memo.id, patch, { skipRender: true });
         }
         if (card.classList.contains('memo-card--collapsed')) syncPreview(memo.content || '');
       };
 
+      content.onblur = (e) => {
+        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
+        if (editTitleInput && e.relatedTarget === editTitleInput) return;
+        void finishEdit();
+      };
+
+      editTitleInput.onblur = (e) => {
+        if (e.relatedTarget === content) return;
+        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
+        void finishEdit();
+      };
+
       content.onkeydown = (e) => {
         if (e.key === 'Escape') {
-          restoreContentView(memo.content || '');
+          savingEdit = true;
           cleanupEdit();
+          restoreContentView(memo.content || '');
+          refreshTitleDisplay(memo.title || '');
         }
       };
+
+      editTitleInput.focus();
     };
 
-    card.append(actions, dateEl, previewEl, content);
+    const expandIfCollapsed = () => {
+      if (!card.classList.contains('memo-card--collapsed')) return false;
+      card.classList.remove('memo-card--collapsed');
+      collapseBtn.textContent = '∧';
+      collapseBtn.title = 'Collapse';
+      return true;
+    };
+
+    const handleEditIntent = (e) => {
+      if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
+      if (content.isContentEditable) return;
+      e.stopPropagation();
+
+      if (expandIfCollapsed()) {
+        enterMemoEdit();
+        return;
+      }
+
+      if (isMemoTouchUI() && !card.classList.contains('is-actions-visible')) {
+        card.closest('#memoPage')?.querySelectorAll('.memo-card.is-actions-visible').forEach(c => {
+          c.classList.remove('is-actions-visible');
+        });
+        card.classList.add('is-actions-visible');
+        return;
+      }
+
+      enterMemoEdit();
+    };
+
+    content.onclick = handleEditIntent;
+    previewEl.onclick = handleEditIntent;
+    card.addEventListener('click', (e) => {
+      if (e.target === content || e.target === previewEl) return;
+      if (!card.classList.contains('memo-card--collapsed')) return;
+      handleEditIntent(e);
+    });
+
+    card.append(actions, dateEl);
+    if (titleEl) card.appendChild(titleEl);
+    card.append(previewEl, content);
     return card;
   }
 
