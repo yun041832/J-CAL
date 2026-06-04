@@ -231,6 +231,172 @@
     return t.length <= 40 ? t : t.slice(0, 40) + '...';
   }
 
+  const TOOLBAR_FORE_COLORS = ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#2563eb', '#7c3aed'];
+  const TOOLBAR_HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#f5d0fe'];
+
+  function htmlToPlainText(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    return (div.textContent || '').replace(/\u00a0/g, ' ');
+  }
+
+  function looksLikeMemoHtml(str) {
+    return /<[a-z][\s\S]*>/i.test(String(str || ''));
+  }
+
+  function escapeMemoHtmlText(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function plainTextToMemoHtml(text) {
+    return escapeMemoHtmlText(text).replace(/\n/g, '<br>');
+  }
+
+  function memoContentToDisplayHtml(content) {
+    const s = String(content || '');
+    if (!s.trim()) return '';
+    if (looksLikeMemoHtml(s)) return s;
+    return plainTextToMemoHtml(s);
+  }
+
+  function isEmptyMemoHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    const text = (div.textContent || '').replace(/\u00a0/g, ' ').trim();
+    if (text) return false;
+    return !div.querySelector('img, video, iframe, table, ul, ol, h1, h2, h3, blockquote, a');
+  }
+
+  function getMemoEditorHtml(el) {
+    const html = (el.innerHTML || '').trim();
+    return isEmptyMemoHtml(html) ? '' : html;
+  }
+
+  function renderMemoContentHtml(content) {
+    if (_searchQuery.trim()) {
+      const plain = htmlToPlainText(content);
+      return highlightText(escapeMemoHtmlText(plain), _searchQuery);
+    }
+    return memoContentToDisplayHtml(content);
+  }
+
+  function growMemoEditor(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  function buildMemoMiniToolbar(editorEl) {
+    const bar = document.createElement('div');
+    bar.className = 'memo-mini-toolbar';
+    bar.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.memo-toolbar-color-pop')) return;
+      e.preventDefault();
+    });
+
+    const focusExec = (fn) => {
+      editorEl.focus();
+      fn();
+    };
+
+    const exec = (cmd, val) => {
+      focusExec(() => document.execCommand(cmd, false, val ?? null));
+    };
+
+    const wrapHeading = (tag) => {
+      focusExec(() => {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        if (range.collapsed || !editorEl.contains(range.commonAncestorContainer)) return;
+        const el = document.createElement(tag);
+        try {
+          range.surroundContents(el);
+        } catch {
+          el.appendChild(range.extractContents());
+          range.insertNode(el);
+        }
+        sel.removeAllRanges();
+        const nr = document.createRange();
+        nr.selectNodeContents(el);
+        nr.collapse(false);
+        sel.addRange(nr);
+      });
+    };
+
+    const showColorPop = (anchorBtn, colors, command) => {
+      anchorBtn.querySelector('.memo-toolbar-color-pop')?.remove();
+      const pop = document.createElement('div');
+      pop.className = 'memo-toolbar-color-pop';
+      colors.forEach(color => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.title = color;
+        dot.style.background = color;
+        dot.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          exec(command, color);
+          pop.remove();
+        };
+        pop.appendChild(dot);
+      });
+      anchorBtn.classList.add('has-color-pop');
+      anchorBtn.appendChild(pop);
+    };
+
+    const addBtn = (label, title, onClick) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'memo-toolbar-btn';
+      btn.textContent = label;
+      btn.title = title;
+      btn.onclick = (e) => {
+        e.preventDefault();
+        onClick(btn);
+      };
+      return btn;
+    };
+
+    const addDivider = () => {
+      const d = document.createElement('span');
+      d.className = 'memo-toolbar-divider';
+      return d;
+    };
+
+    bar.append(
+      addBtn('B', 'Bold', () => exec('bold')),
+      addBtn('I', 'Italic', () => exec('italic')),
+      addBtn('U', 'Underline', () => exec('underline')),
+      addBtn('S', 'Strikethrough', () => exec('strikeThrough')),
+      addDivider(),
+      addBtn('H1', 'Heading 1', () => wrapHeading('h1')),
+      addBtn('H2', 'Heading 2', () => wrapHeading('h2')),
+      addDivider(),
+      addBtn('A', 'Text color', (btn) => showColorPop(btn, TOOLBAR_FORE_COLORS, 'foreColor')),
+      addBtn('HL', 'Highlight', (btn) => showColorPop(btn, TOOLBAR_HIGHLIGHT_COLORS, 'hiliteColor')),
+      addDivider(),
+      addBtn('•', 'Bullet list', () => exec('insertUnorderedList')),
+      addBtn('1.', 'Numbered list', () => exec('insertOrderedList')),
+      addDivider(),
+      addBtn('🔗', 'Link', () => {
+        const url = window.prompt('URL', 'https://');
+        if (url) exec('createLink', url.trim());
+      }),
+      addBtn('😊', 'Emoji', (btn) => {
+        showSectionEmojiPicker(btn, (emoji) => {
+          if (!emoji) return;
+          editorEl.focus();
+          document.execCommand('insertText', false, emoji);
+        });
+      })
+    );
+
+    return bar;
+  }
+
   function isMemoTouchUI() {
     return window.matchMedia('(hover: none)').matches;
   }
@@ -636,7 +802,7 @@
     if (_searchQuery.trim()) {
       const q = _searchQuery.trim().toLowerCase();
       filtered = base.filter(m =>
-        (m.content || '').toLowerCase().includes(q) ||
+        htmlToPlainText(m.content || '').toLowerCase().includes(q) ||
         (m.title || '').toLowerCase().includes(q) ||
         (m.date || '').includes(q)
       );
@@ -863,7 +1029,7 @@
         if (existing) { existing.remove(); return; }
         const form = buildInputForm(sec.id, () => {});
         list.prepend(form);
-        form.querySelector('textarea')?.focus();
+        form.querySelector('.memo-input-body')?.focus();
       };
 
       filtered.forEach(memo => {
@@ -921,14 +1087,17 @@
     titleInput.className = 'memo-input-title';
     titleInput.placeholder = 'Title (optional)';
 
-    const ta = document.createElement('textarea');
-    ta.placeholder = 'Write something...';
-    ta.rows = 2;
-    const resizeTa = () => {
-      ta.style.height = 'auto';
-      ta.style.height = ta.scrollHeight + 'px';
-    };
-    ta.addEventListener('input', resizeTa);
+    const editArea = document.createElement('div');
+    editArea.className = 'memo-input-edit-area';
+
+    const body = document.createElement('div');
+    body.className = 'memo-input-body';
+    body.contentEditable = 'true';
+    body.dataset.placeholder = 'Write something...';
+    body.addEventListener('input', () => growMemoEditor(body));
+
+    const inputToolbar = buildMemoMiniToolbar(body);
+    editArea.append(inputToolbar, body);
 
     const footer = document.createElement('div');
     footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
@@ -970,7 +1139,7 @@
   `;
 
     saveBtn.onclick = async () => {
-      const content = ta.value.trim();
+      const content = getMemoEditorHtml(body);
       if (!content) return;
       await saveMemo(sectionId, {
         title: titleInput.value.trim(),
@@ -983,8 +1152,9 @@
 
     cancelBtn.onclick = () => { form.remove(); onDone(); };
 
-    ta.onkeydown = (e) => {
+    body.onkeydown = (e) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
         saveBtn.onclick();
       }
       if (e.key === 'Escape') {
@@ -995,8 +1165,8 @@
 
     btns.append(cancelBtn, saveBtn);
     footer.append(colorWrap, btns);
-    form.append(dateInput, titleInput, ta, footer);
-    resizeTa();
+    form.append(dateInput, titleInput, editArea, footer);
+    growMemoEditor(body);
     return form;
   }
 
@@ -1188,8 +1358,8 @@
     const previewEl = document.createElement('div');
     previewEl.className = 'memo-card-preview';
 
-    const syncPreview = (text) => {
-      previewEl.textContent = memoContentPreview(text);
+    const syncPreview = (contentVal) => {
+      previewEl.textContent = memoContentPreview(htmlToPlainText(contentVal));
     };
 
     collapseBtn.onclick = (e) => {
@@ -1321,14 +1491,7 @@
 
     const content = document.createElement('div');
     content.className = 'memo-card-content';
-    if (_searchQuery.trim()) {
-      content.innerHTML = highlightText(
-        (memo.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-        _searchQuery
-      );
-    } else {
-      content.textContent = memo.content || '';
-    }
+    content.innerHTML = renderMemoContentHtml(memo.content || '');
 
     syncPreview(memo.content || '');
 
@@ -1343,6 +1506,7 @@
     }
 
     let editColorWrap = null;
+    let editMiniToolbar = null;
     let editContentInputHandler = null;
     let savingEdit = false;
 
@@ -1351,21 +1515,16 @@
       savingEdit = false;
       closeMemoFloatingPop();
 
-      const restoreContentView = (text) => {
+      const restoreContentView = (html) => {
         content.contentEditable = 'false';
         content.classList.remove('is-editing');
-        if (_searchQuery.trim()) {
-          content.innerHTML = highlightText(
-            (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-            _searchQuery
-          );
-        } else {
-          content.textContent = text || '';
-        }
-        syncPreview(text);
+        content.innerHTML = renderMemoContentHtml(html || '');
+        syncPreview(html || '');
       };
 
       const cleanupEdit = () => {
+        editMiniToolbar?.remove();
+        editMiniToolbar = null;
         editColorWrap?.remove();
         editColorWrap = null;
         if (editContentInputHandler) {
@@ -1377,16 +1536,18 @@
         content.onkeydown = null;
       };
 
+      editMiniToolbar = buildMemoMiniToolbar(content);
+      content.insertAdjacentElement('beforebegin', editMiniToolbar);
+
       content.contentEditable = 'true';
       content.classList.add('is-editing');
-      content.textContent = memo.content || '';
+      content.innerHTML = memoContentToDisplayHtml(memo.content || '');
 
       editContentInputHandler = function onContentInput() {
-        content.style.height = 'auto';
-        content.style.height = content.scrollHeight + 'px';
+        growMemoEditor(content);
       };
       content.addEventListener('input', editContentInputHandler);
-      editContentInputHandler();
+      growMemoEditor(content);
 
       editColorWrap = buildMemoColorPicker(memo.color || '', (color) => {
         memo.color = color;
@@ -1399,9 +1560,10 @@
         if (savingEdit) return;
         savingEdit = true;
 
-        const newVal = content.textContent.trim();
+        const newHtml = getMemoEditorHtml(content);
+        const prevHtml = memo.content || '';
         const patch = {};
-        if (newVal !== (memo.content || '')) patch.content = newVal;
+        if (newHtml !== prevHtml) patch.content = newHtml;
 
         cleanupEdit();
 
@@ -1409,7 +1571,7 @@
           memo.content = patch.content;
           restoreContentView(patch.content);
         } else {
-          restoreContentView(memo.content || '');
+          restoreContentView(prevHtml);
         }
 
         if (Object.keys(patch).length > 0) {
@@ -1419,6 +1581,7 @@
       };
 
       content.onblur = (e) => {
+        if (editMiniToolbar?.contains(e.relatedTarget)) return;
         if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
         void finishEdit();
       };
@@ -1445,6 +1608,7 @@
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
       if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-title-popup')) return;
+      if (e.target.closest('.memo-mini-toolbar')) return;
       if (content.isContentEditable) return;
       e.stopPropagation();
 

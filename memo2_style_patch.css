@@ -5472,7 +5472,7 @@ aside.right:not(.hidden) .card {
 }
 
 #memoPage .memo-card-content {
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
   line-height: 1.6;
   box-sizing: border-box;
@@ -5481,10 +5481,109 @@ aside.right:not(.hidden) .card {
   padding-right: 52px;
 }
 
+#memoPage .memo-card-content h1 {
+  font-size: 1.35em;
+  font-weight: 700;
+  margin: 0.35em 0;
+}
+
+#memoPage .memo-card-content h2 {
+  font-size: 1.15em;
+  font-weight: 700;
+  margin: 0.3em 0;
+}
+
+#memoPage .memo-card-content ul,
+#memoPage .memo-card-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.4em;
+}
+
+#memoPage .memo-mini-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px;
+  background: #f8fafc;
+  border-bottom: 0.5px solid #e5e7eb;
+  border-radius: 8px 8px 0 0;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+#memoPage .memo-card .memo-mini-toolbar {
+  border: 1.5px solid #5c8dff;
+  border-bottom: 0.5px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(92, 141, 255, 0.08);
+}
+
+#memoPage .memo-toolbar-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#memoPage .memo-toolbar-btn:hover {
+  background: #e5e7eb;
+}
+
+#memoPage .memo-toolbar-btn.is-active {
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 700;
+}
+
+#memoPage .memo-toolbar-divider {
+  width: 0.5px;
+  height: 16px;
+  background: #d1d5db;
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+#memoPage .memo-toolbar-color-pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+}
+
+#memoPage .memo-toolbar-color-pop button {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 #memoPage .memo-card-content.is-editing {
   outline: none;
   border: 1.5px solid #5c8dff;
-  border-radius: 8px;
+  border-top: 0.5px solid #e5e7eb;
+  border-radius: 0 0 8px 8px;
   padding: 8px;
   padding-right: 8px;
   min-height: 60px;
@@ -5602,19 +5701,48 @@ aside.right:not(.hidden) .card {
   word-break: break-word;
 }
 
-#memoPage .memo-input-form textarea {
-  resize: none;
-  border: none;
+#memoPage .memo-input-edit-area {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+#memoPage .memo-input-edit-area .memo-mini-toolbar {
+  border-radius: 8px 8px 0 0;
+}
+
+#memoPage .memo-input-body {
+  min-height: 80px;
   outline: none;
+  overflow: hidden;
   font-size: 14px;
   font-family: inherit;
   line-height: 1.6;
   width: 100%;
   box-sizing: border-box;
   color: #111827;
-  min-height: 80px;
+  padding: 8px 10px;
   height: auto;
-  overflow: hidden;
+  word-break: break-word;
+}
+
+#memoPage .memo-input-body:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+#memoPage .memo-input-body h1 {
+  font-size: 1.35em;
+  font-weight: 700;
+  margin: 0.35em 0;
+}
+
+#memoPage .memo-input-body h2 {
+  font-size: 1.15em;
+  font-weight: 700;
+  margin: 0.3em 0;
 }
 
 #memoPage .memo-input-title {
