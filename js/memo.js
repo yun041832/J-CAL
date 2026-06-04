@@ -77,6 +77,52 @@
     { name: 'lavender', bg: '#e1bee7', label: 'Lavender' },
   ];
 
+  function applyMemoCardColorStyle(card, color) {
+    card.style.background = color || '#fff';
+    card.style.border = `1px solid ${color ? color : '#f3f4f6'}`;
+  }
+
+  function buildMemoColorPicker(selectedColor, onSelect) {
+    const colorWrap = document.createElement('div');
+    colorWrap.className = 'memo-color-picker';
+    colorWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+    MEMO_COLORS.forEach(c => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      const isSelected = c.name === 'none' ? !selectedColor : selectedColor === c.bg;
+      dot.style.cssText = `
+    width:18px;height:18px;border-radius:50%;
+    background:${c.bg};
+    border:2px solid ${isSelected ? '#5C8DFF' : (c.name === 'none' ? '#e5e7eb' : c.bg)};
+    cursor:pointer;padding:0;flex-shrink:0;
+    transition:transform 0.1s;
+    ${isSelected ? 'transform:scale(1.25);' : ''}
+  `;
+      if (c.name === 'none') {
+        dot.textContent = '×';
+        dot.className = 'memo-color-clear-btn';
+      }
+      dot.addEventListener('mousedown', (e) => e.preventDefault());
+      dot.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextColor = c.name === 'none' ? '' : c.bg;
+        colorWrap.querySelectorAll('button').forEach(b => {
+          b.style.transform = 'scale(1)';
+          const isClear = b.classList.contains('memo-color-clear-btn');
+          b.style.borderColor = isClear ? '#e5e7eb' : b.style.background;
+        });
+        dot.style.transform = 'scale(1.25)';
+        dot.style.borderColor = '#5C8DFF';
+        onSelect(nextColor);
+      };
+      colorWrap.appendChild(dot);
+    });
+
+    return colorWrap;
+  }
+
   function sectionTitle(sec) {
     return (sec?.title || sec?.name || '').trim() || 'Section';
   }
@@ -209,13 +255,18 @@
   }
 
   // ── 메모 수정 ──────────────────────────────────────
-  async function updateMemo(id, patch) {
+  async function updateMemo(id, patch, options = {}) {
+    getSb();
+    if (!_sb) {
+      console.error('[memo] updateMemo: supabase not ready');
+      return;
+    }
     try {
       const { error } = await _sb.from('memo').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
-      const idx = _memos.findIndex(m => m.id === id);
+      const idx = _memos.findIndex(m => String(m.id) === String(id));
       if (idx > -1) _memos[idx] = { ..._memos[idx], ...patch };
-      renderMemoPage();
+      if (!options.skipRender) renderMemoPage();
     } catch (e) { console.error('[memo] updateMemo', e); }
   }
 
@@ -515,30 +566,8 @@
 
     let _selectedColor = '';
 
-    const colorWrap = document.createElement('div');
-    colorWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
-
-    MEMO_COLORS.forEach(c => {
-      const dot = document.createElement('button');
-      dot.style.cssText = `
-    width:18px;height:18px;border-radius:50%;
-    background:${c.bg};
-    border:2px solid ${c.name === 'none' ? '#e5e7eb' : c.bg};
-    cursor:pointer;padding:0;flex-shrink:0;
-    transition:transform 0.1s;
-  `;
-      if (c.name === 'none') dot.textContent = '×';
-      dot.onclick = (e) => {
-        e.preventDefault();
-        _selectedColor = c.name === 'none' ? '' : c.bg;
-        colorWrap.querySelectorAll('button').forEach(b => {
-          b.style.transform = 'scale(1)';
-          b.style.borderColor = b.style.background === c.bg ? '#5C8DFF' : (c.name === 'none' ? '#e5e7eb' : b.style.background);
-        });
-        dot.style.transform = 'scale(1.25)';
-        dot.style.borderColor = '#5C8DFF';
-      };
-      colorWrap.appendChild(dot);
+    const colorWrap = buildMemoColorPicker(_selectedColor, (color) => {
+      _selectedColor = color;
     });
 
     const btns = document.createElement('div');
@@ -607,11 +636,10 @@
   function buildMemoCard(memo) {
     const card = document.createElement('div');
     card.dataset.memoCard = 'true';
-    card.style.cssText = `
-  background:${memo.color || '#fff'};
+    applyMemoCardColorStyle(card, memo.color);
+    card.style.cssText += `
   border-radius:8px;
   padding:10px 36px 10px 10px;
-  border:1px solid ${memo.color ? memo.color : '#f3f4f6'};
   font-size:13px;
   position:relative;
 `;
@@ -651,8 +679,31 @@
     }
 
     // 카드 클릭 → 인라인 편집
-    content.onclick = () => {
+    content.onclick = (e) => {
       if (content.isContentEditable) return;
+      e.stopPropagation();
+
+      let editColorWrap = null;
+
+      const restoreContentView = (text) => {
+        content.contentEditable = 'false';
+        content.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.6;';
+        if (_searchQuery.trim()) {
+          content.innerHTML = highlightText(
+            (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+            _searchQuery
+          );
+        } else {
+          content.textContent = text || '';
+        }
+      };
+
+      const cleanupEdit = () => {
+        editColorWrap?.remove();
+        editColorWrap = null;
+        content.onblur = null;
+        content.onkeydown = null;
+      };
 
       content.contentEditable = 'true';
       content.style.cssText = `
@@ -670,30 +721,41 @@
   `;
       content.textContent = memo.content || '';
 
+      editColorWrap = buildMemoColorPicker(memo.color || '', (color) => {
+        memo.color = color;
+        applyMemoCardColorStyle(card, color);
+        updateMemo(memo.id, { color: color || '' }, { skipRender: true });
+      });
+      editColorWrap.style.marginTop = '8px';
+      content.insertAdjacentElement('afterend', editColorWrap);
+
       const range = document.createRange();
       const sel = window.getSelection();
       range.selectNodeContents(content);
       range.collapse(false);
       sel.removeAllRanges();
       sel.addRange(range);
+      content.focus();
 
-      content.onblur = async () => {
+      content.onblur = async (e) => {
+        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
+
         const newVal = content.textContent.trim();
-        content.contentEditable = 'false';
-        content.style.cssText = `
-      white-space:pre-wrap;
-      word-break:break-word;
-      line-height:1.6;
-    `;
-        if (newVal !== memo.content) {
-          await updateMemo(memo.id, { content: newVal });
+        cleanupEdit();
+
+        if (newVal !== (memo.content || '')) {
+          memo.content = newVal;
+          restoreContentView(newVal);
+          await updateMemo(memo.id, { content: newVal }, { skipRender: true });
+        } else {
+          restoreContentView(memo.content || '');
         }
       };
 
       content.onkeydown = (e) => {
         if (e.key === 'Escape') {
-          content.textContent = memo.content || '';
-          content.blur();
+          restoreContentView(memo.content || '');
+          cleanupEdit();
         }
       };
     };
