@@ -2082,12 +2082,11 @@
 
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
-      if (
-        e.target.closest('.memo-card-title-row')
-        || e.target.closest('.memo-title-popup')
-        || e.target.closest('.memo-card-title-text')
-        || e.target.closest('.memo-card-title-menu')
-      ) return;
+      if (e.target.closest('.memo-card-title-row')) return;
+      if (e.target.closest('.memo-card-title-text')) return;
+      if (e.target.closest('.memo-card-title-menu')) return;
+      if (e.target.closest('.memo-card-title-input')) return;
+      if (e.target.closest('.memo-title-popup')) return;
       if (e.target.closest('.memo-mini-toolbar') || e.target.closest('.memo-card-edit-shell')) return;
       if (card.dataset.memoEditing === '1') return;
       e.stopPropagation();
@@ -2112,6 +2111,7 @@
     previewEl.onclick = handleEditIntent;
     card.addEventListener('click', (e) => {
       if (e.target === content || e.target === previewEl) return;
+      if (e.target.closest('.memo-card-title-row')) return;
       if (!card.classList.contains('memo-card--collapsed')) return;
       handleEditIntent(e);
     });

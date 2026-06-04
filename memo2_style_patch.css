@@ -6158,8 +6158,8 @@ aside.right:not(.hidden) .card {
 #calendarPage ::-webkit-scrollbar,
 #timerPage ::-webkit-scrollbar,
 #logsPage ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 2px;
+  height: 2px;
 }
 
 #memoPage ::-webkit-scrollbar-track,
@@ -6195,4 +6195,21 @@ aside.right:not(.hidden) .card {
 #logsPage * {
   scrollbar-width: thin;
   scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
+
+/* 카드 액션 버튼 우측 고정 */
+#memoPage .memo-card-actions {
+  position: absolute !important;
+  top: 6px !important;
+  right: 6px !important;
+  left: auto !important;
+}
+
+/* 타이틀 ··· 버튼 우측 고정 */
+#memoPage .memo-card-title-row {
+  padding-right: 0 !important;
+}
+#memoPage .memo-card-title-menu {
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
