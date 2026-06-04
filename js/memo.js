@@ -77,6 +77,16 @@
     { name: 'lavender', bg: '#e1bee7', label: 'Lavender' },
   ];
 
+  const MEMO_TITLE_COLORS = [
+    { name: 'none', color: '#111827', label: 'Default' },
+    { name: 'red', color: '#dc2626', label: 'Red' },
+    { name: 'orange', color: '#ea580c', label: 'Orange' },
+    { name: 'yellow', color: '#ca8a04', label: 'Yellow' },
+    { name: 'green', color: '#16a34a', label: 'Green' },
+    { name: 'blue', color: '#2563eb', label: 'Blue' },
+    { name: 'purple', color: '#7c3aed', label: 'Purple' },
+  ];
+
   const MEMO_TITLE_STYLE_SQL = [
     "ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_color text DEFAULT '';",
     "ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_size text DEFAULT '14px';",
@@ -88,7 +98,6 @@
   const SEC_ICON_PATH = {
     color: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z',
     emoji: 'M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z',
-    delete: 'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z',
   };
 
   let _memoFloatingPop = null;
@@ -261,6 +270,50 @@
           b.style.transform = 'scale(1)';
           const isClear = b.classList.contains('memo-color-clear-btn');
           b.style.borderColor = isClear ? '#e5e7eb' : b.style.background;
+        });
+        dot.style.transform = 'scale(1.25)';
+        dot.style.borderColor = '#5C8DFF';
+        onSelect(nextColor);
+      };
+      colorWrap.appendChild(dot);
+    });
+
+    return colorWrap;
+  }
+
+  function isMemoTitleColorSelected(c, selectedColor) {
+    if (c.name === 'none') {
+      return !selectedColor || selectedColor === '#111827';
+    }
+    return selectedColor === c.color;
+  }
+
+  function buildMemoTitleColorPicker(selectedColor, onSelect) {
+    const colorWrap = document.createElement('div');
+    colorWrap.className = 'memo-title-color-picker';
+    colorWrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+
+    MEMO_TITLE_COLORS.forEach(c => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      const isSelected = isMemoTitleColorSelected(c, selectedColor);
+      dot.style.cssText = `
+    width:18px;height:18px;border-radius:50%;
+    background:${c.color};
+    border:2px solid ${isSelected ? '#5C8DFF' : c.color};
+    cursor:pointer;padding:0;flex-shrink:0;
+    transition:transform 0.1s;
+    ${isSelected ? 'transform:scale(1.25);' : ''}
+  `;
+      dot.title = c.label;
+      dot.addEventListener('mousedown', (e) => e.preventDefault());
+      dot.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextColor = c.name === 'none' ? '' : c.color;
+        colorWrap.querySelectorAll('button').forEach(b => {
+          b.style.transform = 'scale(1)';
+          b.style.borderColor = b.style.background;
         });
         dot.style.transform = 'scale(1.25)';
         dot.style.borderColor = '#5C8DFF';
@@ -787,16 +840,7 @@
         });
       };
 
-      const secDelBtn = createSecIconBtn(SEC_ICON_PATH.delete, '#888780', 'memo-sec-del-btn');
-      secDelBtn.title = 'Delete section';
-      secDelBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (window.confirm('이 섹션과 포함된 메모를 모두 삭제할까요?')) {
-          void deleteSection(sec.id);
-        }
-      };
-
-      hoverActions.append(secColorBtn, secEmojiBtn, secDelBtn);
+      hoverActions.append(secColorBtn, secEmojiBtn);
 
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
@@ -993,7 +1037,7 @@
     const colorExpand = document.createElement('div');
     colorExpand.className = 'memo-title-popup-color-expand';
     colorExpand.hidden = true;
-    const colorPicker = buildMemoColorPicker(draft.title_color || '', (color) => {
+    const colorPicker = buildMemoTitleColorPicker(draft.title_color || '', (color) => {
       void applyTitleColor(color);
     });
     colorPicker.classList.add('memo-title-popup-color-picker');
@@ -1012,18 +1056,38 @@
       });
     };
 
-    const sizeSelect = document.createElement('select');
-    sizeSelect.className = 'memo-title-popup-select';
-    ['14px', '16px', '20px', '24px'].forEach(sz => {
-      const opt = document.createElement('option');
-      opt.value = sz;
-      opt.textContent = sz;
-      if (draft.title_size === sz) opt.selected = true;
-      sizeSelect.appendChild(opt);
-    });
-    sizeSelect.onchange = () => { draft.title_size = sizeSelect.value; };
-    sizeSelect.onclick = (e) => e.stopPropagation();
-    const sizeRow = addRow(TITLE_POP_ICON.size, 'Text Size', sizeSelect);
+    const sizeBtnWrap = document.createElement('div');
+    sizeBtnWrap.className = 'memo-title-size-btns';
+    const sizeNormalBtn = document.createElement('button');
+    sizeNormalBtn.type = 'button';
+    sizeNormalBtn.className = 'memo-title-size-btn';
+    sizeNormalBtn.textContent = '보통';
+    const sizeLargeBtn = document.createElement('button');
+    sizeLargeBtn.type = 'button';
+    sizeLargeBtn.className = 'memo-title-size-btn';
+    sizeLargeBtn.textContent = '크게';
+    const syncSizeBtns = () => {
+      const isLarge = draft.title_size === '20px' || draft.title_size === '24px';
+      sizeNormalBtn.classList.toggle('is-active', !isLarge);
+      sizeLargeBtn.classList.toggle('is-active', isLarge);
+    };
+    syncSizeBtns();
+    sizeNormalBtn.onclick = (e) => {
+      e.stopPropagation();
+      draft.title_size = '14px';
+      memo.title_size = '14px';
+      syncSizeBtns();
+      applyTitleDom();
+    };
+    sizeLargeBtn.onclick = (e) => {
+      e.stopPropagation();
+      draft.title_size = '20px';
+      memo.title_size = '20px';
+      syncSizeBtns();
+      applyTitleDom();
+    };
+    sizeBtnWrap.append(sizeNormalBtn, sizeLargeBtn);
+    const sizeRow = addRow(TITLE_POP_ICON.size, 'Text Size', sizeBtnWrap);
 
     const boldToggle = document.createElement('button');
     boldToggle.type = 'button';
