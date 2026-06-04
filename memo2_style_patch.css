@@ -6151,3 +6151,48 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-sec-header-hover-actions .memo-sec-icon-btn {
   opacity: 1 !important;
 }
+
+/* 제이캘 전체 스크롤바 슬림화 — 저스트닥 스타일 통일 */
+#memoPage ::-webkit-scrollbar,
+#dailyPage ::-webkit-scrollbar,
+#calendarPage ::-webkit-scrollbar,
+#timerPage ::-webkit-scrollbar,
+#logsPage ::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+#memoPage ::-webkit-scrollbar-track,
+#dailyPage ::-webkit-scrollbar-track,
+#calendarPage ::-webkit-scrollbar-track,
+#timerPage ::-webkit-scrollbar-track,
+#logsPage ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#memoPage ::-webkit-scrollbar-thumb,
+#dailyPage ::-webkit-scrollbar-thumb,
+#calendarPage ::-webkit-scrollbar-thumb,
+#timerPage ::-webkit-scrollbar-thumb,
+#logsPage ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+
+#memoPage ::-webkit-scrollbar-thumb:hover,
+#dailyPage ::-webkit-scrollbar-thumb:hover,
+#calendarPage ::-webkit-scrollbar-thumb:hover,
+#timerPage ::-webkit-scrollbar-thumb:hover,
+#logsPage ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* Firefox */
+#memoPage *,
+#dailyPage *,
+#calendarPage *,
+#timerPage *,
+#logsPage * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
