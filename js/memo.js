@@ -158,7 +158,15 @@
       const finishEdit = async () => {
         if (finished) return;
         finished = true;
-        const newName = (input.value || '').trim() || sectionTitle(sec);
+        const prevName = sectionTitle(sec);
+        const newName = (input.value || '').trim() || prevName;
+
+        const idx = _sections.findIndex(s => String(s.id) === String(sec.id));
+        if (idx > -1) {
+          _sections[idx] = normalizeMemoSection({ ..._sections[idx], name: newName });
+        }
+        sec.name = newName;
+        sec.title = newName;
 
         const span = document.createElement('span');
         span.className = 'sec-name-' + sec.id;
@@ -168,7 +176,13 @@
         bindSectionNameEdit(span, sec);
         input.replaceWith(span);
 
-        await updateSection(sec.id, { name: newName });
+        const ok = await updateSection(sec.id, { name: newName }, { skipRender: true });
+        if (!ok) {
+          span.textContent = prevName;
+          sec.name = prevName;
+          sec.title = prevName;
+          if (idx > -1) _sections[idx] = normalizeMemoSection({ ..._sections[idx], name: prevName });
+        }
       };
 
       labelEl.replaceWith(input);
@@ -364,25 +378,29 @@
   }
 
   // ── 섹션명 수정 ────────────────────────────────────
-  async function updateSection(id, patch) {
+  async function updateSection(id, patch, options = {}) {
     getSb();
     if (!_sb) {
       console.error('[memo] updateSection: supabase not ready');
-      return;
+      return false;
     }
     const dbPatch = { ...patch };
     if (dbPatch.title !== undefined) {
       dbPatch.name = dbPatch.title;
       delete dbPatch.title;
     }
-    if (!('name' in dbPatch)) return;
+    if (!('name' in dbPatch)) return false;
     try {
       const { error } = await _sb.from('memo_sections').update(dbPatch).eq('id', id);
       if (error) throw error;
       const idx = _sections.findIndex(s => String(s.id) === String(id));
       if (idx > -1) _sections[idx] = normalizeMemoSection({ ..._sections[idx], ...dbPatch });
-      renderMemoPage();
-    } catch (e) { console.error('[memo] updateSection', e); }
+      if (!options.skipRender) renderMemoPage();
+      return true;
+    } catch (e) {
+      console.error('[memo] updateSection', e);
+      return false;
+    }
   }
 
   // ── 보기 필터 ──────────────────────────────────────
@@ -714,6 +732,9 @@
     card.dataset.memoCard = 'true';
     applyMemoCardColorStyle(card, memo.color);
     card.className = 'memo-card';
+    card.style.height = 'auto';
+    card.style.maxHeight = 'none';
+    card.style.overflow = 'visible';
 
     const actions = document.createElement('div');
     actions.className = 'memo-card-actions';
