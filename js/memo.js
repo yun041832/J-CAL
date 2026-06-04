@@ -1299,11 +1299,15 @@
     } = options;
 
     if (card.dataset.memoEditing === '1') return null;
+    if (card.querySelector('.memo-input-title')) return null;
     card.dataset.memoEditing = '1';
-    card.classList.add('memo-card--editing');
+    card.classList.add('memo-card--editing', 'is-editing');
     closeMemoFloatingPop();
 
-    if (!isNew) setMemoCardViewVisible(card, false);
+    if (!isNew) {
+      card.querySelectorAll('.memo-card-title, .memo-card-title-row, [data-memo-title]').forEach(el => el.remove());
+      setMemoCardViewVisible(card, false);
+    }
 
     let selectedColor = isNew ? '' : (memo.color || '');
     if (isNew) applyMemoCardColorStyle(card, '');
@@ -1403,9 +1407,12 @@
       body.onblur = null;
       body.onkeydown = null;
       shell.remove();
-      card.classList.remove('memo-card--editing');
+      card.classList.remove('memo-card--editing', 'is-editing');
       delete card.dataset.memoEditing;
-      if (!isNew) setMemoCardViewVisible(card, true);
+      if (!isNew) {
+        setMemoCardViewVisible(card, true);
+        onMountTitleRow?.();
+      }
     };
 
     const cancelEdit = () => {
@@ -1458,7 +1465,6 @@
 
       if (patch.title !== undefined) {
         memo.title = patch.title;
-        onMountTitleRow?.();
       }
 
       if (Object.keys(patch).length > 0) {

@@ -2655,7 +2655,7 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  transition: all 0.2s;
+  transition: box-shadow 0.2s, background 0.2s, border-color 0.2s;
   min-height: 120px;
   display: flex;
   flex-direction: column;
@@ -2664,7 +2664,6 @@ aside.right .todo-item{display:flex;align-items:center;gap:2px}
 
 .memo-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,.12);
-  transform: translateY(-2px);
 }
 
 .memo-card__header {
@@ -6113,4 +6112,24 @@ aside.right:not(.hidden) .card {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
+}
+
+/* 카드가 flex 목록 안에서 줄어들지 않도록 — 본문이 박스 밖으로 삐져나오는 현상 방지 */
+#memoPage:not(.hidden) .memo-sec-header + div > .memo-card,
+#memoPage:not(.hidden) .memo-sec-header + div > .memo-input-form {
+  flex-shrink: 0 !important;
+  min-height: min-content !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 메모 카드 본문 overflow 봉인 */
+#memoPage .memo-card {
+  overflow: hidden !important;
+}
+
+#memoPage .memo-card.is-editing,
+#memoPage .memo-card.memo-card--editing {
+  overflow: visible !important;
 }
