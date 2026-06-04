@@ -1249,9 +1249,9 @@
       secHeader.querySelector('[data-add]').onclick = () => {
         const existing = list.querySelector('.memo-input-form');
         if (existing) { existing.remove(); return; }
-        const form = buildInputForm(sec.id, () => {});
+        const form = buildNewMemoCard(sec.id, () => {});
         list.prepend(form);
-        form.querySelector('.memo-input-body')?.focus();
+        form.querySelector('.memo-card-content.is-editing')?.focus();
       };
 
       filtered.forEach(memo => {
@@ -1277,120 +1277,249 @@
     }
   }
 
-  // ── 입력폼 ─────────────────────────────────────────
-  function buildInputForm(sectionId, onDone) {
-    const form = document.createElement('div');
-    form.className = 'memo-input-form';
-    form.style.cssText = `
-    background:#fff;
-    border:1.5px solid #5C8DFF;
-    border-radius:12px;
-    padding:14px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    box-shadow:0 2px 12px rgba(92,141,255,0.10);
-  `;
+  // ── 통합 편집 UI ───────────────────────────────────
+  const MEMO_CARD_VIEW_SEL = ':scope > .memo-card-actions, :scope > .memo-card-date, :scope > .memo-card-preview, :scope > .memo-card-content, :scope > .memo-card-title-row, :scope > .memo-pin-btn';
 
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = todayStr();
-    dateInput.style.cssText = `
-    font-size:11px;
-    border:1px solid #e5e7eb;
-    border-radius:6px;
-    padding:3px 8px;
-    color:#6b7280;
-    background:#f8fafc;
-  `;
+  function setMemoCardViewVisible(card, visible) {
+    card.querySelectorAll(MEMO_CARD_VIEW_SEL).forEach(el => {
+      el.hidden = !visible;
+    });
+  }
+
+  function buildMemoCardEditUI(card, options) {
+    const {
+      isNew = false,
+      sectionId = null,
+      memo = null,
+      onDone = () => {},
+      onRestoreView = null,
+      onSyncPreview = null,
+      onMountTitleRow = null,
+      onCollapseToggle = null,
+    } = options;
+
+    if (card.dataset.memoEditing === '1') return null;
+    card.dataset.memoEditing = '1';
+    card.classList.add('memo-card--editing');
+    closeMemoFloatingPop();
+
+    if (!isNew) setMemoCardViewVisible(card, false);
+
+    let selectedColor = isNew ? '' : (memo.color || '');
+    if (isNew) applyMemoCardColorStyle(card, '');
+    else applyMemoCardColorStyle(card, selectedColor);
+
+    const shell = document.createElement('div');
+    shell.className = 'memo-card-edit-shell';
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'memo-card-date';
+    let dateInput = null;
+    if (isNew) {
+      dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.value = todayStr();
+      dateInput.className = 'memo-card-edit-date';
+      dateEl.appendChild(dateInput);
+    } else {
+      dateEl.textContent = memo.date || '';
+    }
 
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.className = 'memo-input-title';
     titleInput.placeholder = 'Title (optional)';
-
-    const editArea = document.createElement('div');
-    editArea.className = 'memo-input-edit-area';
+    if (!isNew) titleInput.value = memo.title || '';
 
     const body = document.createElement('div');
-    body.className = 'memo-input-body';
+    body.className = 'memo-card-content is-editing memo-input-body';
     body.contentEditable = 'true';
     body.dataset.placeholder = 'Write something...';
     bindMemoAutoListKeydown(body);
-    body.addEventListener('input', () => growMemoEditor(body));
 
-    const inputToolbar = buildMemoMiniToolbar(body);
-    editArea.append(inputToolbar, body);
+    if (!isNew) body.innerHTML = memoContentToDisplayHtml(memo.content || '');
+
+    const toolbar = buildMemoMiniToolbar(body);
 
     const footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+    footer.className = 'memo-card-edit-footer';
+    footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px;';
 
-    let _selectedColor = '';
+    const footerLeft = document.createElement('div');
+    footerLeft.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
 
-    const colorWrap = buildMemoColorPicker(_selectedColor, (color) => {
-      _selectedColor = color;
+    const colorWrap = buildMemoColorPicker(selectedColor, (color) => {
+      selectedColor = color;
+      applyMemoCardColorStyle(card, color);
+      if (!isNew) {
+        memo.color = color;
+        updateMemo(memo.id, { color: color || '' }, { skipRender: true });
+      }
     });
 
+    footerLeft.appendChild(colorWrap);
+
+    if (!isNew && onCollapseToggle) {
+      const footCollapse = document.createElement('button');
+      footCollapse.type = 'button';
+      footCollapse.className = 'memo-card-collapse-btn';
+      footCollapse.textContent = card.classList.contains('memo-card--collapsed') ? '∨' : '∧';
+      footCollapse.title = 'Collapse';
+      footCollapse.onclick = (e) => {
+        e.stopPropagation();
+        onCollapseToggle(e, footCollapse);
+      };
+      footerLeft.appendChild(footCollapse);
+    }
+
     const btns = document.createElement('div');
-    btns.style.cssText = 'display:flex;gap:6px;';
+    btns.style.cssText = 'display:flex;gap:6px;margin-left:auto;';
 
     const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = `
-    background:#f3f4f6;
-    color:#6b7280;
-    border:none;
-    border-radius:8px;
-    padding:6px 14px;
-    font-size:12px;
-    cursor:pointer;
-    font-family:inherit;
-  `;
+    cancelBtn.style.cssText = 'background:#f3f4f6;color:#6b7280;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;';
 
     const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = `
-    background:#5C8DFF;
-    color:#fff;
-    border:none;
-    border-radius:8px;
-    padding:6px 14px;
-    font-size:12px;
-    font-weight:600;
-    cursor:pointer;
-    font-family:inherit;
-  `;
+    saveBtn.style.cssText = 'background:#5C8DFF;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;';
 
-    saveBtn.onclick = async () => {
-      const content = getMemoEditorHtml(body);
-      if (!content) return;
-      await saveMemo(sectionId, {
-        title: titleInput.value.trim(),
-        content,
-        date: dateInput.value,
-        color: _selectedColor,
-      });
-      onDone();
+    btns.append(cancelBtn, saveBtn);
+    footer.append(footerLeft, btns);
+
+    shell.append(dateEl, titleInput, toolbar, body, footer);
+    card.appendChild(shell);
+
+    let editContentInputHandler = null;
+    let savingEdit = false;
+
+    const cleanupEdit = () => {
+      if (editContentInputHandler) {
+        body.removeEventListener('input', editContentInputHandler);
+        editContentInputHandler = null;
+      }
+      body.style.height = '';
+      body.onblur = null;
+      body.onkeydown = null;
+      shell.remove();
+      card.classList.remove('memo-card--editing');
+      delete card.dataset.memoEditing;
+      if (!isNew) setMemoCardViewVisible(card, true);
     };
 
-    cancelBtn.onclick = () => { form.remove(); onDone(); };
+    const cancelEdit = () => {
+      savingEdit = true;
+      cleanupEdit();
+      if (isNew) {
+        card.remove();
+        onDone();
+      } else if (onRestoreView) {
+        onRestoreView(memo.content || '');
+      }
+    };
+
+    const finishEdit = async () => {
+      if (savingEdit) return;
+      savingEdit = true;
+
+      const newHtml = getMemoEditorHtml(body);
+      const newTitle = titleInput.value.trim();
+
+      if (isNew) {
+        if (!newHtml) {
+          savingEdit = false;
+          return;
+        }
+        cleanupEdit();
+        await saveMemo(sectionId, {
+          title: newTitle,
+          content: newHtml,
+          date: dateInput?.value || todayStr(),
+          color: selectedColor,
+        });
+        onDone();
+        return;
+      }
+
+      const prevHtml = memo.content || '';
+      const patch = {};
+      if (newHtml !== prevHtml) patch.content = newHtml;
+      if (newTitle !== (memo.title || '')) patch.title = newTitle;
+
+      cleanupEdit();
+
+      if (patch.content !== undefined) {
+        memo.content = patch.content;
+        if (onRestoreView) onRestoreView(patch.content);
+      } else if (onRestoreView) {
+        onRestoreView(prevHtml);
+      }
+
+      if (patch.title !== undefined) {
+        memo.title = patch.title;
+        onMountTitleRow?.();
+      }
+
+      if (Object.keys(patch).length > 0) {
+        await updateMemo(memo.id, patch, { skipRender: true });
+      }
+      if (card.classList.contains('memo-card--collapsed') && onSyncPreview) {
+        onSyncPreview(memo.content || '');
+      }
+    };
+
+    editContentInputHandler = function onContentInput() {
+      growMemoEditor(body);
+    };
+    body.addEventListener('input', editContentInputHandler);
+    growMemoEditor(body);
+
+    if (!isNew) {
+      body.onblur = (e) => {
+        if (toolbar.contains(e.relatedTarget)) return;
+        if (footer.contains(e.relatedTarget)) return;
+        void finishEdit();
+      };
+    }
 
     body.onkeydown = (e) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        saveBtn.onclick();
+        void finishEdit();
       }
-      if (e.key === 'Escape') {
-        form.remove();
-        onDone();
-      }
+      if (e.key === 'Escape') cancelEdit();
     };
 
-    btns.append(cancelBtn, saveBtn);
-    footer.append(colorWrap, btns);
-    form.append(dateInput, titleInput, editArea, footer);
-    growMemoEditor(body);
-    return form;
+    cancelBtn.onmousedown = (e) => {
+      e.preventDefault();
+      savingEdit = true;
+    };
+    cancelBtn.onclick = (e) => {
+      e.stopPropagation();
+      savingEdit = false;
+      cancelEdit();
+    };
+    saveBtn.onclick = (e) => {
+      e.stopPropagation();
+      void finishEdit();
+    };
+
+    footer.addEventListener('mousedown', (e) => e.preventDefault());
+
+    body.focus();
+    return { cleanupEdit, finishEdit, body, titleInput };
+  }
+
+  function buildNewMemoCard(sectionId, onDone) {
+    const card = document.createElement('div');
+    card.className = 'memo-card memo-input-form';
+    card.dataset.memoCard = 'true';
+    card.style.height = 'auto';
+    card.style.maxHeight = 'none';
+    card.style.overflow = 'visible';
+    buildMemoCardEditUI(card, { isNew: true, sectionId, onDone });
+    return card;
   }
 
   function showMemoTitleStylePopup(card, anchor, memo, applyTitleDom) {
@@ -1729,96 +1858,29 @@
       card.appendChild(pinBtn);
     }
 
-    let editColorWrap = null;
-    let editMiniToolbar = null;
-    let editContentInputHandler = null;
-    let savingEdit = false;
+    const restoreContentView = (html) => {
+      content.contentEditable = 'false';
+      content.classList.remove('is-editing');
+      content.innerHTML = renderMemoContentHtml(html || '');
+      syncPreview(html || '');
+    };
 
     const enterMemoEdit = () => {
-      if (content.isContentEditable) return;
-      savingEdit = false;
+      if (card.dataset.memoEditing === '1') return;
       closeMemoFloatingPop();
 
-      const restoreContentView = (html) => {
-        content.contentEditable = 'false';
-        content.classList.remove('is-editing');
-        content.innerHTML = renderMemoContentHtml(html || '');
-        syncPreview(html || '');
-      };
-
-      const cleanupEdit = () => {
-        editMiniToolbar?.remove();
-        editMiniToolbar = null;
-        editColorWrap?.remove();
-        editColorWrap = null;
-        if (editContentInputHandler) {
-          content.removeEventListener('input', editContentInputHandler);
-          editContentInputHandler = null;
-        }
-        content.style.height = '';
-        content.onblur = null;
-        content.onkeydown = null;
-      };
-
-      editMiniToolbar = buildMemoMiniToolbar(content);
-      content.insertAdjacentElement('beforebegin', editMiniToolbar);
-
-      content.contentEditable = 'true';
-      content.classList.add('is-editing');
-      content.innerHTML = memoContentToDisplayHtml(memo.content || '');
-
-      editContentInputHandler = function onContentInput() {
-        growMemoEditor(content);
-      };
-      content.addEventListener('input', editContentInputHandler);
-      growMemoEditor(content);
-
-      editColorWrap = buildMemoColorPicker(memo.color || '', (color) => {
-        memo.color = color;
-        applyMemoCardColorStyle(card, color);
-        updateMemo(memo.id, { color: color || '' }, { skipRender: true });
+      buildMemoCardEditUI(card, {
+        isNew: false,
+        memo,
+        onRestoreView: restoreContentView,
+        onSyncPreview: syncPreview,
+        onMountTitleRow: mountTitleRow,
+        onCollapseToggle: (e, btn) => {
+          collapseBtn.onclick(e);
+          btn.textContent = collapseBtn.textContent;
+          btn.title = collapseBtn.title;
+        },
       });
-      content.insertAdjacentElement('afterend', editColorWrap);
-
-      const finishEdit = async () => {
-        if (savingEdit) return;
-        savingEdit = true;
-
-        const newHtml = getMemoEditorHtml(content);
-        const prevHtml = memo.content || '';
-        const patch = {};
-        if (newHtml !== prevHtml) patch.content = newHtml;
-
-        cleanupEdit();
-
-        if (patch.content !== undefined) {
-          memo.content = patch.content;
-          restoreContentView(patch.content);
-        } else {
-          restoreContentView(prevHtml);
-        }
-
-        if (Object.keys(patch).length > 0) {
-          await updateMemo(memo.id, patch, { skipRender: true });
-        }
-        if (card.classList.contains('memo-card--collapsed')) syncPreview(memo.content || '');
-      };
-
-      content.onblur = (e) => {
-        if (editMiniToolbar?.contains(e.relatedTarget)) return;
-        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
-        void finishEdit();
-      };
-
-      content.onkeydown = (e) => {
-        if (e.key === 'Escape') {
-          savingEdit = true;
-          cleanupEdit();
-          restoreContentView(memo.content || '');
-        }
-      };
-
-      content.focus();
     };
 
     const expandIfCollapsed = () => {
@@ -1832,8 +1894,8 @@
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
       if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-title-popup')) return;
-      if (e.target.closest('.memo-mini-toolbar')) return;
-      if (content.isContentEditable) return;
+      if (e.target.closest('.memo-mini-toolbar') || e.target.closest('.memo-card-edit-shell')) return;
+      if (card.dataset.memoEditing === '1') return;
       e.stopPropagation();
 
       if (expandIfCollapsed()) {
