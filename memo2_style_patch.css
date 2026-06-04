@@ -5450,41 +5450,96 @@ aside.right:not(.hidden) .card {
   cursor: pointer;
 }
 
-.memo-card-del-btn {
+#memoPage .memo-card-actions {
   position: absolute;
   top: 6px;
+  right: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  pointer-events: none;
+}
+
+#memoPage .memo-card:hover .memo-card-actions,
+#memoPage .memo-card.is-actions-visible .memo-card-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+#memoPage .memo-card:has(.memo-pin-btn) .memo-card-actions {
   right: 28px;
-  background: none;
+}
+
+#memoPage .memo-card-actions .memo-card-collapse-btn,
+#memoPage .memo-card-actions .memo-card-del-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.6);
   border: none;
-  color: #d1d5db;
-  font-size: 16px;
-  cursor: pointer;
+  font-size: 11px;
   line-height: 1;
+  color: #374151;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: static;
+}
+
+#memoPage .memo-card-actions .memo-card-collapse-btn:hover {
+  color: #5c8dff;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+#memoPage .memo-card-actions .memo-card-del-btn:hover {
+  color: #ef4444;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+#memoPage .memo-card-preview {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #374151;
+  word-break: break-word;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+
+#memoPage .memo-card--collapsed .memo-card-preview {
+  visibility: visible;
+  height: auto;
+  opacity: 1;
+  margin-top: 0;
+}
+
+#memoPage .memo-card--collapsed .memo-card-content {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
   padding: 0;
 }
 
-.memo-card-del-btn:hover {
-  color: #ef4444;
-}
-
-.memo-card-collapse-btn {
-  position: absolute;
-  top: 6px;
-  right: 48px;
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 12px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 2px 4px;
-}
-
-.memo-card-collapse-btn:hover {
-  color: #5c8dff;
-}
-
-.memo-card--collapsed .memo-card-content,
-.memo-card--collapsed .memo-color-picker {
-  display: none;
+#memoPage .memo-card--collapsed .memo-color-picker {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
 }

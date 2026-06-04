@@ -82,6 +82,16 @@
     card.style.border = `1px solid ${color ? color : '#f3f4f6'}`;
   }
 
+  function memoContentPreview(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return '';
+    return t.length <= 40 ? t : t.slice(0, 40) + '...';
+  }
+
+  function isMemoTouchUI() {
+    return window.matchMedia('(hover: none)').matches;
+  }
+
   function buildMemoColorPicker(selectedColor, onSelect) {
     const colorWrap = document.createElement('div');
     colorWrap.className = 'memo-color-picker';
@@ -409,6 +419,29 @@
     return sortMemosForDisplay(filtered);
   }
 
+  let _memoActionsBound = false;
+  function bindMemoCardActions(page) {
+    if (_memoActionsBound || !page) return;
+    _memoActionsBound = true;
+
+    const hideAllCardActions = () => {
+      page.querySelectorAll('.memo-card.is-actions-visible').forEach(c => {
+        c.classList.remove('is-actions-visible');
+      });
+    };
+
+    page.addEventListener('click', (e) => {
+      if (!isMemoTouchUI()) return;
+      const card = e.target.closest('.memo-card');
+      if (card && page.contains(card) && !e.target.closest('.memo-card-actions') && !e.target.closest('.memo-pin-btn')) {
+        hideAllCardActions();
+        card.classList.add('is-actions-visible');
+        return;
+      }
+      if (!e.target.closest('.memo-card')) hideAllCardActions();
+    });
+  }
+
   let _memoPinDelegationBound = false;
   function bindMemoPinDelegation(page) {
     if (_memoPinDelegationBound || !page) return;
@@ -436,6 +469,7 @@
     if (!page) return;
 
     bindMemoPinDelegation(page);
+    bindMemoCardActions(page);
 
     page.innerHTML = '';
     page.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
@@ -682,10 +716,49 @@
     card.className = 'memo-card';
     card.style.cssText += `
   border-radius:8px;
-  padding:10px 56px 10px 10px;
+  padding:10px 10px 10px 10px;
   font-size:13px;
   position:relative;
 `;
+
+    const actions = document.createElement('div');
+    actions.className = 'memo-card-actions';
+
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'memo-card-collapse-btn';
+    collapseBtn.textContent = '∧';
+    collapseBtn.title = 'Collapse';
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'memo-card-del-btn';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete';
+
+    const previewEl = document.createElement('div');
+    previewEl.className = 'memo-card-preview';
+
+    const syncPreview = (text) => {
+      previewEl.textContent = memoContentPreview(text);
+    };
+
+    collapseBtn.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const collapsed = card.classList.toggle('memo-card--collapsed');
+      collapseBtn.textContent = collapsed ? '∨' : '∧';
+      collapseBtn.title = collapsed ? 'Expand' : 'Collapse';
+      if (collapsed) syncPreview(memo.content || '');
+    };
+
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      deleteMemoWithUndo(memo.id, memo);
+    };
+
+    actions.append(collapseBtn, delBtn);
 
     const dateEl = document.createElement('div');
     dateEl.className = 'memo-card-date';
@@ -708,28 +781,7 @@
       content.textContent = memo.content || '';
     }
 
-    const collapseBtn = document.createElement('button');
-    collapseBtn.type = 'button';
-    collapseBtn.className = 'memo-card-collapse-btn';
-    collapseBtn.textContent = '∧';
-    collapseBtn.title = 'Collapse';
-    collapseBtn.onclick = (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      const collapsed = card.classList.toggle('memo-card--collapsed');
-      collapseBtn.textContent = collapsed ? '∨' : '∧';
-      collapseBtn.title = collapsed ? 'Expand' : 'Collapse';
-    };
-
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'memo-card-del-btn';
-    delBtn.textContent = '×';
-    delBtn.title = 'Delete';
-    delBtn.onclick = (e) => {
-      e.stopPropagation();
-      deleteMemoWithUndo(memo.id, memo);
-    };
+    syncPreview(memo.content || '');
 
     if (_userId) {
       const pinBtn = document.createElement('button');
@@ -746,6 +798,14 @@
       if (content.isContentEditable) return;
       e.stopPropagation();
 
+      if (isMemoTouchUI() && !card.classList.contains('is-actions-visible')) {
+        card.closest('#memoPage')?.querySelectorAll('.memo-card.is-actions-visible').forEach(c => {
+          c.classList.remove('is-actions-visible');
+        });
+        card.classList.add('is-actions-visible');
+        return;
+      }
+
       let editColorWrap = null;
 
       const restoreContentView = (text) => {
@@ -759,6 +819,7 @@
         } else {
           content.textContent = text || '';
         }
+        syncPreview(text);
       };
 
       const cleanupEdit = () => {
@@ -813,6 +874,7 @@
         } else {
           restoreContentView(memo.content || '');
         }
+        if (card.classList.contains('memo-card--collapsed')) syncPreview(memo.content || '');
       };
 
       content.onkeydown = (e) => {
@@ -823,7 +885,7 @@
       };
     };
 
-    card.append(collapseBtn, delBtn, dateEl, content);
+    card.append(actions, dateEl, previewEl, content);
     return card;
   }
 
