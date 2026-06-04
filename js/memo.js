@@ -548,7 +548,7 @@
 
     // 3패널 컨테이너
     const panels = document.createElement('div');
-    panels.style.cssText = 'display:flex;flex:1;overflow:hidden;';
+    panels.style.cssText = 'display:flex;flex:1;overflow:visible;';
 
     if (_sections.length === 0) {
       const box = document.createElement('div');
@@ -561,7 +561,7 @@
 
     _sections.forEach((sec, si) => {
       const col = document.createElement('div');
-      col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:hidden;background:#fff;`;
+      col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:visible;background:#fff;`;
 
       // 섹션 헤더
       const secHeader = document.createElement('div');
