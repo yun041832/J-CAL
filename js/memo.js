@@ -10,6 +10,21 @@
   };
   const todayStr = () => fmtLocalDate(new Date());
 
+  function makeChevronSvg(direction) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '12');
+    svg.setAttribute('height', '12');
+    svg.setAttribute('fill', '#4B5563');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', direction === 'up'
+      ? 'M12 8L5 15h14z'
+      : 'M12 16L5 9h14z'
+    );
+    svg.appendChild(path);
+    return svg;
+  }
+
   // ── Supabase ───────────────────────────────────────
   let _sb = null;
   let _userId = null;
@@ -1864,7 +1879,7 @@
     const collapseBtn = document.createElement('button');
     collapseBtn.type = 'button';
     collapseBtn.className = 'memo-card-collapse-btn';
-    collapseBtn.textContent = '∧';
+    collapseBtn.appendChild(makeChevronSvg('up'));
     collapseBtn.title = 'Collapse';
 
     const delBtn = document.createElement('button');
@@ -1884,7 +1899,8 @@
       e.stopPropagation();
       e.preventDefault();
       const collapsed = card.classList.toggle('memo-card--collapsed');
-      collapseBtn.textContent = collapsed ? '∨' : '∧';
+      collapseBtn.innerHTML = '';
+      collapseBtn.appendChild(makeChevronSvg(collapsed ? 'down' : 'up'));
       collapseBtn.title = collapsed ? 'Expand' : 'Collapse';
       if (collapsed) syncPreview(memo.content || '');
     };
@@ -2048,7 +2064,8 @@
         onMountTitleRow: mountTitleRow,
         onCollapseToggle: (e, btn) => {
           collapseBtn.onclick(e);
-          btn.textContent = collapseBtn.textContent;
+          btn.innerHTML = '';
+          btn.appendChild(makeChevronSvg(card.classList.contains('memo-card--collapsed') ? 'down' : 'up'));
           btn.title = collapseBtn.title;
         },
       });
@@ -2057,7 +2074,8 @@
     const expandIfCollapsed = () => {
       if (!card.classList.contains('memo-card--collapsed')) return false;
       card.classList.remove('memo-card--collapsed');
-      collapseBtn.textContent = '∧';
+      collapseBtn.innerHTML = '';
+      collapseBtn.appendChild(makeChevronSvg('up'));
       collapseBtn.title = 'Collapse';
       return true;
     };
