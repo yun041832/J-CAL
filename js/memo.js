@@ -92,12 +92,26 @@
   };
 
   let _memoFloatingPop = null;
+  let _memoTitlePopup = null;
+  let _memoTitlePopupOutsideHandler = null;
+
+  function closeMemoTitlePopup() {
+    if (_memoTitlePopupOutsideHandler) {
+      document.removeEventListener('mousedown', _memoTitlePopupOutsideHandler);
+      _memoTitlePopupOutsideHandler = null;
+    }
+    if (_memoTitlePopup) {
+      _memoTitlePopup.remove();
+      _memoTitlePopup = null;
+    }
+  }
 
   function closeMemoFloatingPop() {
     if (_memoFloatingPop) {
       _memoFloatingPop.remove();
       _memoFloatingPop = null;
     }
+    closeMemoTitlePopup();
   }
 
   const TITLE_POP_ICON = {
@@ -190,7 +204,10 @@
 
   function logMemoTitleStyleSqlHint(err) {
     if (err?.code === 'PGRST204' || /column/i.test(String(err?.message || ''))) {
-      console.info('[memo] title 스타일 컬럼이 없습니다. Supabase SQL Editor에서 실행:\n' + MEMO_TITLE_STYLE_SQL);
+      console.info(
+        '[memo] Supabase SQL Editor에서 실행 필요 — memo 테이블에 title 스타일 컬럼이 없습니다:\n' +
+        MEMO_TITLE_STYLE_SQL
+      );
     }
   }
 
@@ -1031,16 +1048,18 @@
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'memo-title-popup-btn memo-title-popup-btn--ghost';
-    closeBtn.textContent = '닫기';
+    closeBtn.textContent = 'Cancel';
     closeBtn.onclick = (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      closeMemoFloatingPop();
+      closeMemoTitlePopup();
     };
     const applyBtn = document.createElement('button');
     applyBtn.type = 'button';
     applyBtn.className = 'memo-title-popup-btn memo-title-popup-btn--apply';
-    applyBtn.textContent = '적용';
+    applyBtn.textContent = 'Apply';
     applyBtn.onclick = async (e) => {
+      e.preventDefault();
       e.stopPropagation();
       const patch = {
         title_color: draft.title_color,
@@ -1052,21 +1071,21 @@
       if (ok) {
         Object.assign(memo, patch);
         applyTitleDom();
-        closeMemoFloatingPop();
+        closeMemoTitlePopup();
       }
     };
     footer.append(closeBtn, applyBtn);
 
     pop.append(colorRow, colorExpand, emojiRow, sizeRow, boldRow, divider, footer);
     card.appendChild(pop);
+    _memoTitlePopup = pop;
 
+    _memoTitlePopupOutsideHandler = function onOut(e) {
+      if (pop.contains(e.target) || anchor.contains(e.target)) return;
+      closeMemoTitlePopup();
+    };
     setTimeout(() => {
-      document.addEventListener('mousedown', function onOut(e) {
-        if (!pop.contains(e.target) && !anchor.contains(e.target)) {
-          closeMemoFloatingPop();
-          document.removeEventListener('mousedown', onOut);
-        }
-      });
+      document.addEventListener('mousedown', _memoTitlePopupOutsideHandler);
     }, 10);
   }
 
