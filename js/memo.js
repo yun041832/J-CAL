@@ -183,12 +183,12 @@
         _sections = data.map(normalizeMemoSection);
       } else {
         const { data: existing, error: existErr } = await _sb.from('memo_sections')
-          .select('title,name').eq('user_id', userId);
+          .select('name').eq('user_id', userId);
         if (existErr) throw existErr;
-        const existingTitles = new Set((existing || []).map(r => (r.title || r.name || '').trim()));
+        const existingNames = new Set((existing || []).map(r => (r.name || '').trim()));
         const rows = DEFAULT_SECTIONS
-          .filter(s => !existingTitles.has(s.title))
-          .map(s => ({ title: s.title, emoji: s.emoji, color: s.color, sort_order: s.sort_order, user_id: userId }));
+          .filter(s => !existingNames.has(s.title))
+          .map(s => ({ name: s.title, emoji: s.emoji, color: s.color, sort_order: s.sort_order, user_id: userId }));
         if (rows.length > 0) {
           const { error: insErr } = await _sb.from('memo_sections').insert(rows);
           if (insErr) throw insErr;
@@ -311,11 +311,17 @@
 
   // ── 섹션명 수정 ────────────────────────────────────
   async function updateSection(id, patch) {
+    getSb();
+    const dbPatch = { ...patch };
+    if (dbPatch.title !== undefined) {
+      dbPatch.name = dbPatch.title;
+      delete dbPatch.title;
+    }
     try {
-      const { error } = await _sb.from('memo_sections').update(patch).eq('id', id);
+      const { error } = await _sb.from('memo_sections').update(dbPatch).eq('id', id);
       if (error) throw error;
       const idx = _sections.findIndex(s => s.id === id);
-      if (idx > -1) _sections[idx] = { ..._sections[idx], ...patch };
+      if (idx > -1) _sections[idx] = normalizeMemoSection({ ..._sections[idx], ...dbPatch });
       renderMemoPage();
     } catch (e) { console.error('[memo] updateSection', e); }
   }
@@ -474,7 +480,7 @@
         input.select();
         const done = () => {
           const newTitle = input.value.trim() || sectionTitle(sec);
-          updateSection(sec.id, { title: newTitle });
+          updateSection(sec.id, { name: newTitle });
         };
         input.onblur = done;
         input.onkeydown = e => { if (e.key === 'Enter') done(); };
