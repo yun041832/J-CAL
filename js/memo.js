@@ -1209,13 +1209,13 @@
       const hoverActions = document.createElement('div');
       hoverActions.className = 'memo-sec-header-hover-actions';
 
-      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#555555');
+      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#4B5563');
       secColorBtn.title = 'Change Color';
       secColorBtn.onclick = (e) => {
         e.stopPropagation();
         showSectionColorPicker(secColorBtn, sec.color || '', async (color) => {
           sec.color = color || '';
-          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#555555');
+          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#4B5563');
           await updateSection(sec.id, { color: sec.color }, { skipRender: true });
         });
       };
@@ -1231,7 +1231,28 @@
         });
       };
 
-      hoverActions.append(secColorBtn, secEmojiBtn);
+      const secCopyBtn = document.createElement('button');
+      secCopyBtn.type = 'button';
+      secCopyBtn.className = 'memo-sec-icon-btn memo-sec-copy-btn';
+      secCopyBtn.textContent = '📋';
+      secCopyBtn.title = '섹션 전체 복사';
+      secCopyBtn.onclick = async (e) => {
+        e.stopPropagation();
+        const blocks = getFilteredMemos(sec.id).map((m) => {
+          const bodyText = htmlToPlainText(m.content || '').trim();
+          const titleText = (m.title || '').trim();
+          if (titleText) return `[${titleText}]\n${bodyText}`;
+          return bodyText;
+        }).filter(Boolean);
+        try {
+          await navigator.clipboard.writeText(blocks.join('\n---\n'));
+          const orig = secCopyBtn.textContent;
+          secCopyBtn.textContent = '✓';
+          setTimeout(() => { secCopyBtn.textContent = orig; }, 800);
+        } catch (_err) { /* clipboard unavailable */ }
+      };
+
+      hoverActions.append(secColorBtn, secEmojiBtn, secCopyBtn);
 
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
@@ -1506,19 +1527,6 @@
     });
 
     footerLeft.appendChild(colorWrap);
-
-    if (!isNew && onCollapseToggle) {
-      const footCollapse = document.createElement('button');
-      footCollapse.type = 'button';
-      footCollapse.className = 'memo-card-collapse-btn';
-      footCollapse.textContent = card.classList.contains('memo-card--collapsed') ? '∨' : '∧';
-      footCollapse.title = 'Collapse';
-      footCollapse.onclick = (e) => {
-        e.stopPropagation();
-        onCollapseToggle(e, footCollapse);
-      };
-      footerLeft.appendChild(footCollapse);
-    }
 
     const btns = document.createElement('div');
     btns.style.cssText = 'display:flex;gap:6px;margin-left:auto;';
@@ -1860,12 +1868,6 @@
     delBtn.textContent = '×';
     delBtn.title = 'Delete';
 
-    const copyBtn = document.createElement('button');
-    copyBtn.type = 'button';
-    copyBtn.className = 'memo-card-copy-btn';
-    copyBtn.textContent = '📋';
-    copyBtn.title = 'Copy';
-
     const previewEl = document.createElement('div');
     previewEl.className = 'memo-card-preview';
 
@@ -1888,23 +1890,7 @@
       deleteMemoWithUndo(memo.id, memo);
     };
 
-    copyBtn.onclick = async (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      const parts = [];
-      const titleText = (memo.title || '').trim();
-      if (titleText) parts.push(titleText);
-      const bodyText = htmlToPlainText(memo.content || '').trim();
-      if (bodyText) parts.push(bodyText);
-      try {
-        await navigator.clipboard.writeText(parts.join('\n'));
-        const orig = copyBtn.textContent;
-        copyBtn.textContent = '✓';
-        setTimeout(() => { copyBtn.textContent = orig; }, 800);
-      } catch (_err) { /* clipboard unavailable */ }
-    };
-
-    actions.append(collapseBtn, copyBtn, delBtn);
+    actions.append(collapseBtn, delBtn);
 
     const dateEl = document.createElement('div');
     dateEl.className = 'memo-card-date';

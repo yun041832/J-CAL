@@ -6148,26 +6148,6 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-sec-icon-btn svg path {
   opacity: 1 !important;
 }
-
-/* 복사 버튼 */
-#memoPage .memo-card-copy-btn {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.6);
-  border: none;
-  font-size: 11px;
-  line-height: 1;
-  color: #374151;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: static;
-}
-#memoPage .memo-card-copy-btn:hover {
-  color: #5c8dff;
-  background: rgba(255, 255, 255, 0.85);
+#memoPage .memo-sec-header-hover-actions .memo-sec-icon-btn {
+  opacity: 1 !important;
 }
