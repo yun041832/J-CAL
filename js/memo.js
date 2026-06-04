@@ -288,6 +288,231 @@
     el.style.height = el.scrollHeight + 'px';
   }
 
+  function buildCharMap(editorEl) {
+    const map = [];
+    const pushChar = (node, offset, ch, meta) => {
+      map.push({ node, offset, ch, ...meta });
+    };
+
+    function walkInline(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        for (let i = 0; i < node.textContent.length; i++) {
+          pushChar(node, i, node.textContent[i]);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.tagName === 'BR') pushChar(node, 0, '\n', { isBr: true });
+        else Array.from(node.childNodes).forEach(walkInline);
+      }
+    }
+
+    const children = Array.from(editorEl.childNodes);
+    children.forEach((child, idx) => {
+      if (idx > 0) pushChar(child, 0, '\n', { lineBreak: true });
+      if (child.nodeType === Node.TEXT_NODE || child.tagName === 'BR') walkInline(child);
+      else if (child.tagName === 'DIV' || child.tagName === 'P') walkInline(child);
+      else walkInline(child);
+    });
+    return map;
+  }
+
+  function plainFromCharMap(map) {
+    return map.map(pt => pt.ch).join('');
+  }
+
+  function getCaretCharIndex(editorEl, range) {
+    const map = buildCharMap(editorEl);
+    for (let i = 0; i < map.length; i++) {
+      const probe = document.createRange();
+      probe.setStart(map[i].node, map[i].offset);
+      probe.collapse(true);
+      const cmp = range.compareBoundaryPoints(Range.START_TO_START, probe);
+      if (cmp <= 0) return i;
+    }
+    return map.length;
+  }
+
+  function getLineContext(editorEl) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return null;
+    const range = sel.getRangeAt(0);
+    if (!editorEl.contains(range.commonAncestorContainer)) return null;
+
+    const map = buildCharMap(editorEl);
+    const plain = plainFromCharMap(map);
+    const caret = getCaretCharIndex(editorEl, range);
+    const lineStart = plain.lastIndexOf('\n', Math.max(0, caret - 1)) + 1;
+    const nextBreak = plain.indexOf('\n', caret);
+    const lineEnd = nextBreak === -1 ? plain.length : nextBreak;
+    const lineText = plain.slice(lineStart, lineEnd);
+    const lineBeforeCaret = plain.slice(lineStart, caret);
+
+    return { map, plain, lineText, lineStart, lineEnd, caret, lineBeforeCaret };
+  }
+
+  function rangeFromMapSlice(editorEl, map, start, end) {
+    const range = document.createRange();
+    if (!map.length) {
+      range.selectNodeContents(editorEl);
+      return range;
+    }
+    const startPt = map[Math.min(start, map.length - 1)];
+    range.setStart(startPt.node, startPt.offset);
+    if (end >= map.length) {
+      range.setEnd(editorEl, editorEl.childNodes.length);
+    } else {
+      const endPt = map[end];
+      range.setEnd(endPt.node, endPt.offset);
+    }
+    return range;
+  }
+
+  function collapseRangeAtChar(editorEl, map, pos) {
+    const range = document.createRange();
+    if (!map.length || pos <= 0) {
+      range.setStart(editorEl, 0);
+      range.collapse(true);
+      return range;
+    }
+    if (pos >= map.length) {
+      range.selectNodeContents(editorEl);
+      range.collapse(false);
+      return range;
+    }
+    const pt = map[pos];
+    range.setStart(pt.node, pt.offset);
+    range.collapse(true);
+    return range;
+  }
+
+  function setSelectionRange(range) {
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function placeCaretAtChar(editorEl, map, pos) {
+    setSelectionRange(collapseRangeAtChar(editorEl, map, pos));
+  }
+
+  function insertLineBreakWithPrefix(editorEl, atChar, prefix) {
+    const map = buildCharMap(editorEl);
+    const range = collapseRangeAtChar(editorEl, map, atChar);
+    const br = document.createElement('br');
+    range.insertNode(br);
+    const text = document.createTextNode(prefix);
+    range.setStartAfter(br);
+    range.collapse(true);
+    range.insertNode(text);
+    const caret = document.createRange();
+    caret.setStart(text, prefix.length);
+    caret.collapse(true);
+    setSelectionRange(caret);
+  }
+
+  function replaceLineWithEmptyBreak(editorEl, lineStart, lineEnd) {
+    const map = buildCharMap(editorEl);
+    const lineRange = rangeFromMapSlice(editorEl, map, lineStart, lineEnd);
+    lineRange.deleteContents();
+    const br = document.createElement('br');
+    lineRange.insertNode(br);
+    const caret = document.createRange();
+    caret.setStartAfter(br);
+    caret.collapse(true);
+    setSelectionRange(caret);
+  }
+
+  function replaceLineText(editorEl, lineStart, lineEnd, newText) {
+    const map = buildCharMap(editorEl);
+    const lineRange = rangeFromMapSlice(editorEl, map, lineStart, lineEnd);
+    lineRange.deleteContents();
+    const text = document.createTextNode(newText);
+    lineRange.insertNode(text);
+    const caret = document.createRange();
+    caret.setStart(text, newText.length);
+    caret.collapse(true);
+    setSelectionRange(caret);
+  }
+
+  function handleMemoAutoListSpace(e, editorEl) {
+    const ctx = getLineContext(editorEl);
+    if (!ctx) return false;
+
+    const { lineText, lineStart, lineEnd, lineBeforeCaret } = ctx;
+
+    if (lineBeforeCaret === '-' || lineBeforeCaret === '*') {
+      e.preventDefault();
+      replaceLineText(editorEl, lineStart, lineEnd, '• ');
+      growMemoEditor(editorEl);
+      return true;
+    }
+
+    const numDot = lineBeforeCaret.match(/^(\d+)\.$/);
+    if (numDot) {
+      e.preventDefault();
+      replaceLineText(editorEl, lineStart, lineEnd, `${numDot[1]}. `);
+      growMemoEditor(editorEl);
+      return true;
+    }
+
+    return false;
+  }
+
+  function handleMemoAutoListEnter(e, editorEl) {
+    const ctx = getLineContext(editorEl);
+    if (!ctx) return false;
+
+    const { lineText, lineStart, lineEnd } = ctx;
+    const numberedEmpty = lineText.match(/^(\d+)\.\s*$/);
+    const numberedFull = lineText.match(/^(\d+)\.\s(.+)$/);
+    const bulletEmpty = lineText.match(/^•\s*$/);
+    const bulletFull = lineText.match(/^•\s(.+)$/);
+
+    if (!numberedEmpty && !numberedFull && !bulletEmpty && !bulletFull) return false;
+
+    e.preventDefault();
+
+    if (numberedEmpty || bulletEmpty) {
+      replaceLineWithEmptyBreak(editorEl, lineStart, lineEnd);
+      growMemoEditor(editorEl);
+      return true;
+    }
+
+    if (numberedFull) {
+      const nextPrefix = `${parseInt(numberedFull[1], 10) + 1}. `;
+      insertLineBreakWithPrefix(editorEl, lineEnd, nextPrefix);
+      growMemoEditor(editorEl);
+      return true;
+    }
+
+    if (bulletFull) {
+      insertLineBreakWithPrefix(editorEl, lineEnd, '• ');
+      growMemoEditor(editorEl);
+      return true;
+    }
+
+    return false;
+  }
+
+  function onMemoAutoListKeydown(e) {
+    const editorEl = e.currentTarget;
+    if (editorEl.getAttribute('contenteditable') !== 'true') return;
+
+    if (e.key === ' ') {
+      handleMemoAutoListSpace(e, editorEl);
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      handleMemoAutoListEnter(e, editorEl);
+    }
+  }
+
+  function bindMemoAutoListKeydown(editorEl) {
+    if (!editorEl || editorEl.dataset.autoListBound === '1') return;
+    editorEl.dataset.autoListBound = '1';
+    editorEl.addEventListener('keydown', onMemoAutoListKeydown);
+  }
+
   function buildMemoMiniToolbar(editorEl) {
     const bar = document.createElement('div');
     bar.className = 'memo-mini-toolbar';
@@ -377,9 +602,6 @@
       addDivider(),
       addBtn('A', 'Text color', (btn) => showColorPop(btn, TOOLBAR_FORE_COLORS, 'foreColor')),
       addBtn('HL', 'Highlight', (btn) => showColorPop(btn, TOOLBAR_HIGHLIGHT_COLORS, 'hiliteColor')),
-      addDivider(),
-      addBtn('•', 'Bullet list', () => exec('insertUnorderedList')),
-      addBtn('1.', 'Numbered list', () => exec('insertOrderedList')),
       addDivider(),
       addBtn('🔗', 'Link', () => {
         const url = window.prompt('URL', 'https://');
@@ -1094,6 +1316,7 @@
     body.className = 'memo-input-body';
     body.contentEditable = 'true';
     body.dataset.placeholder = 'Write something...';
+    bindMemoAutoListKeydown(body);
     body.addEventListener('input', () => growMemoEditor(body));
 
     const inputToolbar = buildMemoMiniToolbar(body);
@@ -1492,6 +1715,7 @@
     const content = document.createElement('div');
     content.className = 'memo-card-content';
     content.innerHTML = renderMemoContentHtml(memo.content || '');
+    bindMemoAutoListKeydown(content);
 
     syncPreview(memo.content || '');
 
