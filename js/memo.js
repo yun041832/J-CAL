@@ -830,7 +830,6 @@
         applyMemoCardColorStyle(card, color);
         updateMemo(memo.id, { color: color || '' }, { skipRender: true });
       });
-      editColorWrap.style.marginTop = '8px';
       content.insertAdjacentElement('afterend', editColorWrap);
 
       const range = document.createRange();
