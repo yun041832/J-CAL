@@ -5427,12 +5427,64 @@ aside.right:not(.hidden) .card {
 
 .memo-color-clear-btn {
   color: #374151;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 14px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.1s, background 0.1s, color 0.1s;
+  box-sizing: border-box;
 }
 
 .memo-color-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
   color: #111827;
   cursor: pointer;
+}
+
+.memo-card-del-btn {
+  position: absolute;
+  top: 6px;
+  right: 28px;
+  background: none;
+  border: none;
+  color: #d1d5db;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.memo-card-del-btn:hover {
+  color: #ef4444;
+}
+
+.memo-card-collapse-btn {
+  position: absolute;
+  top: 6px;
+  right: 48px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.memo-card-collapse-btn:hover {
+  color: #5c8dff;
+}
+
+.memo-card--collapsed .memo-card-content,
+.memo-card--collapsed .memo-color-picker {
+  display: none;
 }

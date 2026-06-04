@@ -91,17 +91,22 @@
       const dot = document.createElement('button');
       dot.type = 'button';
       const isSelected = c.name === 'none' ? !selectedColor : selectedColor === c.bg;
-      dot.style.cssText = `
+      if (c.name === 'none') {
+        dot.textContent = '×';
+        dot.className = 'memo-color-clear-btn';
+        if (isSelected) {
+          dot.style.borderColor = '#5C8DFF';
+          dot.style.transform = 'scale(1.25)';
+        }
+      } else {
+        dot.style.cssText = `
     width:18px;height:18px;border-radius:50%;
     background:${c.bg};
-    border:2px solid ${isSelected ? '#5C8DFF' : (c.name === 'none' ? '#e5e7eb' : c.bg)};
+    border:2px solid ${isSelected ? '#5C8DFF' : c.bg};
     cursor:pointer;padding:0;flex-shrink:0;
     transition:transform 0.1s;
     ${isSelected ? 'transform:scale(1.25);' : ''}
   `;
-      if (c.name === 'none') {
-        dot.textContent = '×';
-        dot.className = 'memo-color-clear-btn';
       }
       dot.addEventListener('mousedown', (e) => e.preventDefault());
       dot.onclick = (e) => {
@@ -674,14 +679,16 @@
     const card = document.createElement('div');
     card.dataset.memoCard = 'true';
     applyMemoCardColorStyle(card, memo.color);
+    card.className = 'memo-card';
     card.style.cssText += `
   border-radius:8px;
-  padding:10px 36px 10px 10px;
+  padding:10px 56px 10px 10px;
   font-size:13px;
   position:relative;
 `;
 
     const dateEl = document.createElement('div');
+    dateEl.className = 'memo-card-date';
     dateEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:4px;';
     if (_searchQuery.trim()) {
       dateEl.innerHTML = highlightText(memo.date || '', _searchQuery);
@@ -690,6 +697,7 @@
     }
 
     const content = document.createElement('div');
+    content.className = 'memo-card-content';
     content.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.6;';
     if (_searchQuery.trim()) {
       content.innerHTML = highlightText(
@@ -700,10 +708,28 @@
       content.textContent = memo.content || '';
     }
 
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'memo-card-collapse-btn';
+    collapseBtn.textContent = '∧';
+    collapseBtn.title = 'Collapse';
+    collapseBtn.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const collapsed = card.classList.toggle('memo-card--collapsed');
+      collapseBtn.textContent = collapsed ? '∨' : '∧';
+      collapseBtn.title = collapsed ? 'Expand' : 'Collapse';
+    };
+
     const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'memo-card-del-btn';
     delBtn.textContent = '×';
-    delBtn.style.cssText = 'position:absolute;top:6px;right:28px;background:none;border:none;color:#d1d5db;font-size:16px;cursor:pointer;line-height:1;';
-    delBtn.onclick = () => { deleteMemoWithUndo(memo.id, memo); };
+    delBtn.title = 'Delete';
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteMemoWithUndo(memo.id, memo);
+    };
 
     if (_userId) {
       const pinBtn = document.createElement('button');
@@ -797,7 +823,7 @@
       };
     };
 
-    card.append(dateEl, content, delBtn);
+    card.append(collapseBtn, delBtn, dateEl, content);
     return card;
   }
 
