@@ -647,18 +647,12 @@
 
     const ta = document.createElement('textarea');
     ta.placeholder = 'Write something...';
-    ta.rows = 5;
-    ta.style.cssText = `
-    resize:none;
-    border:none;
-    outline:none;
-    font-size:14px;
-    font-family:inherit;
-    line-height:1.6;
-    width:100%;
-    box-sizing:border-box;
-    color:#111827;
-  `;
+    ta.rows = 2;
+    const resizeTa = () => {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    };
+    ta.addEventListener('input', resizeTa);
 
     const footer = document.createElement('div');
     footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
@@ -726,6 +720,7 @@
     btns.append(cancelBtn, saveBtn);
     footer.append(colorWrap, btns);
     form.append(dateInput, titleInput, ta, footer);
+    resizeTa();
     return form;
   }
 
@@ -857,6 +852,7 @@
 
     let editColorWrap = null;
     let editTitleInput = null;
+    let editContentInputHandler = null;
     let savingEdit = false;
 
     const enterMemoEdit = () => {
@@ -883,6 +879,11 @@
         editTitleInput?.remove();
         editTitleInput = null;
         if (titleEl) titleEl.style.display = '';
+        if (editContentInputHandler) {
+          content.removeEventListener('input', editContentInputHandler);
+          editContentInputHandler = null;
+        }
+        content.style.height = '';
         content.onblur = null;
         content.onkeydown = null;
         if (editTitleInput) editTitleInput.onblur = null;
@@ -899,6 +900,13 @@
       content.contentEditable = 'true';
       content.classList.add('is-editing');
       content.textContent = memo.content || '';
+
+      editContentInputHandler = function onContentInput() {
+        content.style.height = 'auto';
+        content.style.height = content.scrollHeight + 'px';
+      };
+      content.addEventListener('input', editContentInputHandler);
+      editContentInputHandler();
 
       editColorWrap = buildMemoColorPicker(memo.color || '', (color) => {
         memo.color = color;

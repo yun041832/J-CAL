@@ -5488,13 +5488,14 @@ aside.right:not(.hidden) .card {
   padding: 8px;
   padding-right: 8px;
   min-height: 60px;
-  max-height: 240px !important;
+  height: auto;
+  max-height: none !important;
   background: #fff;
   box-shadow: 0 2px 8px rgba(92, 141, 255, 0.1);
   cursor: text;
   overflow-wrap: break-word;
   overflow-x: hidden;
-  overflow-y: auto !important;
+  overflow-y: hidden !important;
   display: block;
 }
 
@@ -5583,16 +5584,37 @@ aside.right:not(.hidden) .card {
   transition: opacity 0.15s, visibility 0.15s;
 }
 
+#memoPage .memo-card--collapsed {
+  padding-bottom: 10px;
+}
+
 #memoPage .memo-card--collapsed .memo-card-preview {
   visibility: visible;
   height: auto;
   opacity: 1;
   margin-top: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
   white-space: pre-wrap;
   overflow: hidden;
   text-overflow: clip;
-  max-height: 80px;
+  max-height: none;
   word-break: break-word;
+}
+
+#memoPage .memo-input-form textarea {
+  resize: none;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  width: 100%;
+  box-sizing: border-box;
+  color: #111827;
+  min-height: 80px;
+  height: auto;
+  overflow: hidden;
 }
 
 #memoPage .memo-input-title {
