@@ -1289,6 +1289,150 @@
     });
   }
 
+  function setupMemoEditDatePicker(card, dateEl, config) {
+    const { isNew, memo, getDate, setDate } = config;
+    const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    let calendarPop = null;
+    let outsideHandler = null;
+    let viewYear = 0;
+    let viewMonth = 0;
+
+    dateEl.style.cssText = 'font-size:11px;color:#9ca3af;cursor:pointer;display:inline-block;position:relative;';
+    dateEl.textContent = getDate();
+    dateEl.onmouseenter = () => { dateEl.style.textDecoration = 'underline'; };
+    dateEl.onmouseleave = () => {
+      if (!calendarPop) dateEl.style.textDecoration = 'none';
+    };
+
+    const closeCalendar = () => {
+      if (outsideHandler) {
+        document.removeEventListener('mousedown', outsideHandler);
+        outsideHandler = null;
+      }
+      calendarPop?.remove();
+      calendarPop = null;
+      dateEl.style.textDecoration = 'none';
+    };
+
+    const paintCalendar = () => {
+      if (!calendarPop) return;
+      calendarPop.innerHTML = '';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.type = 'button';
+      prevBtn.textContent = '‹';
+      prevBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:16px;padding:4px 8px;color:#374151;line-height:1;';
+
+      const monthLabel = document.createElement('span');
+      monthLabel.style.cssText = 'font-size:13px;font-weight:600;color:#111827;';
+      monthLabel.textContent = viewYear + '-' + String(viewMonth + 1).padStart(2, '0');
+
+      const nextBtn = document.createElement('button');
+      nextBtn.type = 'button';
+      nextBtn.textContent = '›';
+      nextBtn.style.cssText = prevBtn.style.cssText;
+
+      prevBtn.onclick = (e) => {
+        e.stopPropagation();
+        viewMonth -= 1;
+        if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+        paintCalendar();
+      };
+      nextBtn.onclick = (e) => {
+        e.stopPropagation();
+        viewMonth += 1;
+        if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+        paintCalendar();
+      };
+
+      header.append(prevBtn, monthLabel, nextBtn);
+      calendarPop.appendChild(header);
+
+      const weekRow = document.createElement('div');
+      weekRow.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;';
+      WEEKDAYS.forEach((label) => {
+        const cell = document.createElement('div');
+        cell.textContent = label;
+        cell.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;padding:2px 0;';
+        weekRow.appendChild(cell);
+      });
+      calendarPop.appendChild(weekRow);
+
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;';
+
+      const selectedStr = getDate();
+      const today = todayStr();
+      const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i += 1) {
+        grid.appendChild(document.createElement('div'));
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const dateStr = fmtLocalDate(new Date(viewYear, viewMonth, day));
+        const dayBtn = document.createElement('button');
+        dayBtn.type = 'button';
+        dayBtn.textContent = String(day);
+        dayBtn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:12px;width:28px;height:28px;border-radius:50%;padding:0;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#374151;font-family:inherit;';
+
+        if (dateStr === today) {
+          dayBtn.style.border = '1.5px solid #5C8DFF';
+          dayBtn.style.color = '#5C8DFF';
+        }
+        if (dateStr === selectedStr) {
+          dayBtn.style.background = '#5C8DFF';
+          dayBtn.style.color = '#fff';
+          dayBtn.style.border = 'none';
+        }
+
+        dayBtn.onclick = (e) => {
+          e.stopPropagation();
+          setDate(dateStr);
+          dateEl.textContent = dateStr;
+          if (!isNew && memo) {
+            memo.date = dateStr;
+            const viewDateEl = card.querySelector(':scope > .memo-card-date');
+            if (viewDateEl) viewDateEl.textContent = dateStr;
+            void updateMemo(memo.id, { date: dateStr }, { skipRender: true });
+          }
+          closeCalendar();
+        };
+
+        grid.appendChild(dayBtn);
+      }
+
+      calendarPop.appendChild(grid);
+    };
+
+    dateEl.onclick = (e) => {
+      e.stopPropagation();
+      closeCalendar();
+      const parts = getDate().split('-').map(Number);
+      viewYear = parts[0];
+      viewMonth = parts[1] - 1;
+
+      calendarPop = document.createElement('div');
+      calendarPop.style.cssText = 'position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:20;padding:8px;min-width:220px;box-sizing:border-box;';
+      calendarPop.onmousedown = (ev) => ev.stopPropagation();
+      calendarPop.onclick = (ev) => ev.stopPropagation();
+      paintCalendar();
+      dateEl.appendChild(calendarPop);
+
+      outsideHandler = (ev) => {
+        if (dateEl.contains(ev.target)) return;
+        closeCalendar();
+      };
+      setTimeout(() => document.addEventListener('mousedown', outsideHandler), 10);
+    };
+
+    return { closeCalendar };
+  }
+
   function buildMemoCardEditUI(card, options) {
     const {
       isNew = false,
@@ -1321,16 +1465,13 @@
 
     const dateEl = document.createElement('div');
     dateEl.className = 'memo-card-date';
-    let dateInput = null;
-    if (isNew) {
-      dateInput = document.createElement('input');
-      dateInput.type = 'date';
-      dateInput.value = todayStr();
-      dateInput.className = 'memo-card-edit-date';
-      dateEl.appendChild(dateInput);
-    } else {
-      dateEl.textContent = memo.date || '';
-    }
+    let selectedDate = isNew ? todayStr() : (memo.date || todayStr());
+    const datePicker = setupMemoEditDatePicker(card, dateEl, {
+      isNew,
+      memo,
+      getDate: () => selectedDate,
+      setDate: (str) => { selectedDate = str; },
+    });
 
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
@@ -1402,6 +1543,7 @@
     let savingEdit = false;
 
     const cleanupEdit = () => {
+      datePicker.closeCalendar();
       if (editContentInputHandler) {
         body.removeEventListener('input', editContentInputHandler);
         editContentInputHandler = null;
@@ -1445,7 +1587,7 @@
         await saveMemo(sectionId, {
           title: newTitle,
           content: newHtml,
-          date: dateInput?.value || todayStr(),
+          date: selectedDate,
           color: selectedColor,
         });
         onDone();
@@ -1476,6 +1618,7 @@
       if (card.classList.contains('memo-card--collapsed') && onSyncPreview) {
         onSyncPreview(memo.content || '');
       }
+      onMountTitleRow?.();
     };
 
     editContentInputHandler = function onContentInput() {
