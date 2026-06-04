@@ -5697,6 +5697,8 @@ aside.right:not(.hidden) .card {
 
 #memoPage .memo-sec-icon-btn svg {
   display: block;
+  width: 15px;
+  height: 15px;
 }
 
 #memoPage .memo-sec-del-btn:hover path {
@@ -5793,100 +5795,107 @@ aside.right:not(.hidden) .card {
   background: transparent;
 }
 
-#memoPage .memo-card-title-style-pop {
+#memoPage .memo-title-popup {
   position: absolute;
   top: 6px;
   right: 8px;
   z-index: 12;
-  min-width: 200px;
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 6px 0;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  min-width: 180px;
   box-sizing: border-box;
+  color: #374151;
 }
 
-#memoPage .memo-title-pop-row {
+#memoPage .memo-title-popup-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border: none;
-  background: none;
+  padding: 8px 10px;
+  border-radius: 6px;
   font-size: 13px;
   color: #374151;
   cursor: pointer;
-  text-align: left;
   box-sizing: border-box;
 }
 
-#memoPage .memo-title-pop-row:hover {
+#memoPage .memo-title-popup-row:hover {
   background: #f9fafb;
 }
 
-#memoPage .memo-title-pop-icon {
+#memoPage .memo-title-popup-icon {
   flex-shrink: 0;
-  width: 20px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
-#memoPage .memo-title-pop-label {
+#memoPage .memo-title-popup-icon svg {
+  display: block;
+}
+
+#memoPage .memo-title-popup-label {
   flex: 1;
   min-width: 0;
 }
 
-#memoPage .memo-title-pop-color-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+#memoPage .memo-title-popup-val {
+  font-size: 12px;
+  color: #888780;
   flex-shrink: 0;
 }
 
-#memoPage .memo-title-pop-emoji-val,
-#memoPage .memo-title-pop-bold-val {
+#memoPage .memo-title-popup-select {
   font-size: 12px;
-  color: #6b7280;
-  flex-shrink: 0;
-}
-
-#memoPage .memo-title-pop-select {
-  font-size: 12px;
+  color: #374151;
   padding: 2px 4px;
-  border: 1px solid #e5e7eb;
+  border: 0.5px solid #e5e7eb;
   border-radius: 4px;
+  background: #fff;
   flex-shrink: 0;
 }
 
-#memoPage .memo-title-pop-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  padding: 8px 10px 6px;
-  border-top: 1px solid #f3f4f6;
-  margin-top: 4px;
+#memoPage .memo-title-popup-divider {
+  height: 0.5px;
+  background: #f3f4f6;
+  margin: 4px 0;
 }
 
-#memoPage .memo-title-pop-close,
-#memoPage .memo-title-pop-apply {
+#memoPage .memo-title-popup-footer {
+  display: flex;
+  gap: 6px;
+  padding: 6px 4px 2px;
+  justify-content: flex-end;
+}
+
+#memoPage .memo-title-popup-btn {
   padding: 4px 12px;
   border-radius: 6px;
   font-size: 12px;
   cursor: pointer;
-  border: 1px solid #e5e7eb;
-  background: #fff;
   color: #374151;
 }
 
-#memoPage .memo-title-pop-apply {
-  background: #5c8dff;
-  border-color: #5c8dff;
-  color: #fff;
+#memoPage .memo-title-popup-btn--ghost {
+  border: 0.5px solid #e5e7eb;
+  background: #fff;
 }
 
-#memoPage .memo-title-pop-apply:hover {
-  background: #4a7ae8;
+#memoPage .memo-title-popup-btn--ghost:hover {
+  background: #f9fafb;
+}
+
+#memoPage .memo-title-popup-btn--apply {
+  border: 0.5px solid #e5e7eb;
+  background: #f3f4f6;
+}
+
+#memoPage .memo-title-popup-btn--apply:hover {
+  background: #e5e7eb;
 }
 
 #memoPage .memo-card--collapsed .memo-card-content {

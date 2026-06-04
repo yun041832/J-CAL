@@ -100,14 +100,34 @@
     }
   }
 
+  const TITLE_POP_ICON = {
+    emoji: 'M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z',
+    size: 'M80-160v-160h160v-480h-80v-160h320v160h-80v480h80v160H80Zm400 0v-160h80v-120H560v-160h200v-40h-80v-160h320v160h-80v40H760v160h-40v120h80v160H480Z',
+    bold: 'M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-490q25 11 55.5 41t30.5 90q0 89-65 124t-133 35H272Zm121-321h83q48 0 78-23.5t30-61.5q0-37-27-61t-83-24h-81v170Zm0 239h84q72 0 102-28.5t30-73.5q0-39-34.5-64.5T484-474h-91v192Z',
+  };
+
+  function createTitlePopSvg(pathD) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('xmlns', SVG_NS);
+    svg.setAttribute('height', '18px');
+    svg.setAttribute('width', '18px');
+    svg.setAttribute('viewBox', '0 -960 960 960');
+    svg.setAttribute('fill', '#888780');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('fill', '#888780');
+    svg.appendChild(path);
+    return svg;
+  }
+
   function createSecIconBtn(pathD, fill, className) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'memo-sec-icon-btn' + (className ? ' ' + className : '');
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('xmlns', SVG_NS);
-    svg.setAttribute('height', '22px');
-    svg.setAttribute('width', '22px');
+    svg.setAttribute('height', '15px');
+    svg.setAttribute('width', '15px');
     svg.setAttribute('viewBox', '0 -960 960 960');
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', pathD);
@@ -921,57 +941,38 @@
   function showMemoTitleStylePopup(card, anchor, memo, applyTitleDom) {
     closeMemoFloatingPop();
     const pop = document.createElement('div');
-    pop.className = 'memo-card-title-style-pop';
+    pop.className = 'memo-title-popup';
 
     const draft = {
-      title_color: memo.title_color || '',
       title_size: memo.title_size || '14px',
       title_bold: !!memo.title_bold,
       title_emoji: memo.title_emoji || '',
     };
 
-    const addRow = (icon, labelText, control) => {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'memo-title-pop-row';
-      const iconEl = document.createElement('span');
-      iconEl.className = 'memo-title-pop-icon';
-      iconEl.textContent = icon;
+    const addRow = (pathD, labelText, trailing) => {
+      const row = document.createElement('div');
+      row.className = 'memo-title-popup-row';
+      const iconWrap = document.createElement('span');
+      iconWrap.className = 'memo-title-popup-icon';
+      iconWrap.appendChild(createTitlePopSvg(pathD));
       const label = document.createElement('span');
-      label.className = 'memo-title-pop-label';
+      label.className = 'memo-title-popup-label';
       label.textContent = labelText;
-      row.append(iconEl, label, control);
+      row.append(iconWrap, label);
+      if (trailing) row.appendChild(trailing);
       return row;
     };
 
-    const colorPreview = document.createElement('span');
-    colorPreview.className = 'memo-title-pop-color-dot';
-    colorPreview.style.background = draft.title_color || '#fff';
-    colorPreview.style.border = '1px solid #e5e7eb';
-
-    const colorRow = addRow('🎨', 'Change Color', colorPreview);
-    colorRow.onclick = (e) => {
-      e.stopPropagation();
-      showSectionColorPicker(colorRow, draft.title_color, (c) => {
-        draft.title_color = c || '';
-        colorPreview.style.background = draft.title_color || '#fff';
-      });
-    };
-
-    const emojiVal = document.createElement('span');
-    emojiVal.className = 'memo-title-pop-emoji-val';
-    emojiVal.textContent = draft.title_emoji || '—';
-    const emojiRow = addRow('😊', 'Change Emoji', emojiVal);
+    const emojiRow = addRow(TITLE_POP_ICON.emoji, 'Change Emoji');
     emojiRow.onclick = (e) => {
       e.stopPropagation();
       showSectionEmojiPicker(emojiRow, (emo) => {
         draft.title_emoji = emo || '';
-        emojiVal.textContent = draft.title_emoji || '—';
       });
     };
 
     const sizeSelect = document.createElement('select');
-    sizeSelect.className = 'memo-title-pop-select';
+    sizeSelect.className = 'memo-title-popup-select';
     ['14px', '16px', '20px', '24px'].forEach(sz => {
       const opt = document.createElement('option');
       opt.value = sz;
@@ -981,24 +982,26 @@
     });
     sizeSelect.onchange = () => { draft.title_size = sizeSelect.value; };
     sizeSelect.onclick = (e) => e.stopPropagation();
-    const sizeRow = addRow('🔠', 'Text Size', sizeSelect);
-    sizeRow.onclick = (e) => e.stopPropagation();
+    const sizeRow = addRow(TITLE_POP_ICON.size, 'Text Size', sizeSelect);
 
-    const boldBtn = document.createElement('span');
-    boldBtn.className = 'memo-title-pop-bold-val';
-    boldBtn.textContent = draft.title_bold ? '굵게' : '보통';
-    const boldRow = addRow('B', 'Bold', boldBtn);
+    const boldVal = document.createElement('span');
+    boldVal.className = 'memo-title-popup-val';
+    boldVal.textContent = draft.title_bold ? '굵게' : '보통';
+    const boldRow = addRow(TITLE_POP_ICON.bold, 'Bold', boldVal);
     boldRow.onclick = (e) => {
       e.stopPropagation();
       draft.title_bold = !draft.title_bold;
-      boldBtn.textContent = draft.title_bold ? '굵게' : '보통';
+      boldVal.textContent = draft.title_bold ? '굵게' : '보통';
     };
 
+    const divider = document.createElement('div');
+    divider.className = 'memo-title-popup-divider';
+
     const footer = document.createElement('div');
-    footer.className = 'memo-title-pop-footer';
+    footer.className = 'memo-title-popup-footer';
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
-    closeBtn.className = 'memo-title-pop-close';
+    closeBtn.className = 'memo-title-popup-btn memo-title-popup-btn--ghost';
     closeBtn.textContent = '닫기';
     closeBtn.onclick = (e) => {
       e.stopPropagation();
@@ -1006,12 +1009,11 @@
     };
     const applyBtn = document.createElement('button');
     applyBtn.type = 'button';
-    applyBtn.className = 'memo-title-pop-apply';
+    applyBtn.className = 'memo-title-popup-btn memo-title-popup-btn--apply';
     applyBtn.textContent = '적용';
     applyBtn.onclick = async (e) => {
       e.stopPropagation();
       const patch = {
-        title_color: draft.title_color,
         title_size: draft.title_size,
         title_bold: draft.title_bold,
         title_emoji: draft.title_emoji,
@@ -1025,7 +1027,7 @@
     };
     footer.append(closeBtn, applyBtn);
 
-    pop.append(colorRow, emojiRow, sizeRow, boldRow, footer);
+    pop.append(emojiRow, sizeRow, boldRow, divider, footer);
     card.appendChild(pop);
 
     setTimeout(() => {
@@ -1329,7 +1331,7 @@
 
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
-      if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-card-title-style-pop')) return;
+      if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-title-popup')) return;
       if (content.isContentEditable) return;
       e.stopPropagation();
 
