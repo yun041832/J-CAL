@@ -77,6 +77,102 @@
     { name: 'lavender', bg: '#e1bee7', label: 'Lavender' },
   ];
 
+  const MEMO_TITLE_STYLE_SQL = [
+    "ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_color text DEFAULT '';",
+    "ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_size text DEFAULT '14px';",
+    'ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_bold boolean DEFAULT false;',
+    "ALTER TABLE memo ADD COLUMN IF NOT EXISTS title_emoji text DEFAULT '';",
+  ].join('\n');
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const SEC_ICON_PATH = {
+    color: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z',
+    emoji: 'M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z',
+    delete: 'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z',
+  };
+
+  let _memoFloatingPop = null;
+
+  function closeMemoFloatingPop() {
+    if (_memoFloatingPop) {
+      _memoFloatingPop.remove();
+      _memoFloatingPop = null;
+    }
+  }
+
+  function createSecIconBtn(pathD, fill, className) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'memo-sec-icon-btn' + (className ? ' ' + className : '');
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('xmlns', SVG_NS);
+    svg.setAttribute('height', '22px');
+    svg.setAttribute('width', '22px');
+    svg.setAttribute('viewBox', '0 -960 960 960');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', pathD);
+    path.setAttribute('fill', fill);
+    svg.appendChild(path);
+    btn.appendChild(svg);
+    return btn;
+  }
+
+  function positionFloatingPop(pop, anchor) {
+    const rect = anchor.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    pop.style.left = Math.min(rect.left, window.innerWidth - pop.offsetWidth - 8) + 'px';
+    pop.style.top = rect.bottom + 4 + 'px';
+    pop.style.zIndex = '10050';
+  }
+
+  function showSectionColorPicker(anchor, currentColor, onPick) {
+    closeMemoFloatingPop();
+    const pop = document.createElement('div');
+    pop.className = 'memo-sec-color-pop';
+    const picker = buildMemoColorPicker(currentColor || '', (color) => {
+      closeMemoFloatingPop();
+      onPick(color);
+    });
+    pop.appendChild(picker);
+    document.body.appendChild(pop);
+    _memoFloatingPop = pop;
+    positionFloatingPop(pop, anchor);
+    setTimeout(() => {
+      document.addEventListener('mousedown', function close(e) {
+        if (!pop.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) {
+          closeMemoFloatingPop();
+          document.removeEventListener('mousedown', close);
+        }
+      });
+    }, 10);
+  }
+
+  function showSectionEmojiPicker(anchor, onPick) {
+    if (typeof window.showEmojiPicker === 'function') {
+      window.showEmojiPicker(anchor, (emoji) => onPick(emoji || ''));
+      return;
+    }
+    const emoji = window.prompt('이모지 입력', '📝');
+    if (emoji != null) onPick(emoji.trim() || '📝');
+  }
+
+  function applyMemoTitleStyles(textEl, emojiEl, memo) {
+    if (emojiEl) {
+      emojiEl.textContent = memo.title_emoji || '';
+      emojiEl.style.display = memo.title_emoji ? '' : 'none';
+    }
+    if (!textEl) return;
+    textEl.style.color = memo.title_color || '#111827';
+    textEl.style.fontSize = memo.title_size || '14px';
+    textEl.style.fontWeight = memo.title_bold ? '700' : '400';
+  }
+
+  function logMemoTitleStyleSqlHint(err) {
+    if (err?.code === 'PGRST204' || /column/i.test(String(err?.message || ''))) {
+      console.info('[memo] title 스타일 컬럼이 없습니다. Supabase SQL Editor에서 실행:\n' + MEMO_TITLE_STYLE_SQL);
+    }
+  }
+
   function applyMemoCardColorStyle(card, color) {
     card.style.background = color || '#fff';
     card.style.border = `1px solid ${color ? color : '#f3f4f6'}`;
@@ -327,7 +423,7 @@
     getSb();
     if (!_sb) {
       console.error('[memo] updateMemo: supabase not ready');
-      return;
+      return false;
     }
     try {
       const { error } = await _sb.from('memo').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
@@ -335,7 +431,12 @@
       const idx = _memos.findIndex(m => String(m.id) === String(id));
       if (idx > -1) _memos[idx] = { ..._memos[idx], ...patch };
       if (!options.skipRender) renderMemoPage();
-    } catch (e) { console.error('[memo] updateMemo', e); }
+      return true;
+    } catch (e) {
+      console.error('[memo] updateMemo', e);
+      logMemoTitleStyleSqlHint(e);
+      return false;
+    }
   }
 
   // ── 메모 삭제 ──────────────────────────────────────
@@ -389,7 +490,7 @@
       dbPatch.name = dbPatch.title;
       delete dbPatch.title;
     }
-    if (!('name' in dbPatch)) return false;
+    if (!Object.keys(dbPatch).length) return false;
     try {
       const { error } = await _sb.from('memo_sections').update(dbPatch).eq('id', id);
       if (error) throw error;
@@ -399,6 +500,28 @@
       return true;
     } catch (e) {
       console.error('[memo] updateSection', e);
+      return false;
+    }
+  }
+
+  async function deleteSection(id) {
+    if (String(id).startsWith('guest_memo_section_')) return false;
+    if (_sections.length <= 1) {
+      console.warn('[memo] 최소 1개 섹션은 유지해야 합니다.');
+      return false;
+    }
+    getSb();
+    if (!_sb) return false;
+    try {
+      await _sb.from('memo').delete().eq('section_id', id);
+      const { error } = await _sb.from('memo_sections').delete().eq('id', id);
+      if (error) throw error;
+      _sections = _sections.filter(s => String(s.id) !== String(id));
+      _memos = _memos.filter(m => String(m.section_id) !== String(id));
+      renderMemoPage();
+      return true;
+    } catch (e) {
+      console.error('[memo] deleteSection', e);
       return false;
     }
   }
@@ -460,6 +583,29 @@
     });
   }
 
+  let _secHeaderActionsBound = false;
+  function bindMemoSectionHeaderActions(page) {
+    if (_secHeaderActionsBound || !page) return;
+    _secHeaderActionsBound = true;
+    page.addEventListener('click', (e) => {
+      if (!isMemoTouchUI()) return;
+      if (e.target.closest('.memo-sec-header-hover-actions') || e.target.closest('.memo-sec-add-btn')) return;
+      const header = e.target.closest('.memo-sec-header');
+      if (header && page.contains(header)) {
+        page.querySelectorAll('.memo-sec-header.is-actions-visible').forEach(h => {
+          if (h !== header) h.classList.remove('is-actions-visible');
+        });
+        header.classList.toggle('is-actions-visible');
+        return;
+      }
+      if (!e.target.closest('.memo-sec-header')) {
+        page.querySelectorAll('.memo-sec-header.is-actions-visible').forEach(h => {
+          h.classList.remove('is-actions-visible');
+        });
+      }
+    });
+  }
+
   let _memoPinDelegationBound = false;
   function bindMemoPinDelegation(page) {
     if (_memoPinDelegationBound || !page) return;
@@ -488,6 +634,7 @@
 
     bindMemoPinDelegation(page);
     bindMemoCardActions(page);
+    bindMemoSectionHeaderActions(page);
 
     page.innerHTML = '';
     page.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
@@ -565,14 +712,61 @@
 
       // 섹션 헤더
       const secHeader = document.createElement('div');
-      secHeader.style.cssText = 'display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
-      secHeader.innerHTML = `
-        <span style="font-size:16px;">${sec.emoji || '📝'}</span>
-        <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="Click to rename">${sectionTitle(sec)}</span>
-        <button data-add="${sec.id}" style="font-size:18px;background:none;border:none;cursor:pointer;color:#5C8DFF;line-height:1;">+</button>
-      `;
-      const nameLabel = secHeader.querySelector('.sec-name-' + sec.id);
-      if (nameLabel) bindSectionNameEdit(nameLabel, sec);
+      secHeader.className = 'memo-sec-header';
+
+      const emojiSpan = document.createElement('span');
+      emojiSpan.className = 'memo-sec-emoji';
+      emojiSpan.textContent = sec.emoji || '📝';
+
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'sec-name-' + sec.id;
+      nameLabel.title = 'Click to rename';
+      nameLabel.textContent = sectionTitle(sec);
+      bindSectionNameEdit(nameLabel, sec);
+
+      const hoverActions = document.createElement('div');
+      hoverActions.className = 'memo-sec-header-hover-actions';
+
+      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#888780');
+      secColorBtn.title = 'Change Color';
+      secColorBtn.onclick = (e) => {
+        e.stopPropagation();
+        showSectionColorPicker(secColorBtn, sec.color || '', async (color) => {
+          sec.color = color || '';
+          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#888780');
+          await updateSection(sec.id, { color: sec.color }, { skipRender: true });
+        });
+      };
+
+      const secEmojiBtn = createSecIconBtn(SEC_ICON_PATH.emoji, '#888780');
+      secEmojiBtn.title = 'Change Emoji';
+      secEmojiBtn.onclick = (e) => {
+        e.stopPropagation();
+        showSectionEmojiPicker(secEmojiBtn, async (emoji) => {
+          sec.emoji = emoji || '📝';
+          emojiSpan.textContent = sec.emoji;
+          await updateSection(sec.id, { emoji: sec.emoji }, { skipRender: true });
+        });
+      };
+
+      const secDelBtn = createSecIconBtn(SEC_ICON_PATH.delete, '#888780', 'memo-sec-del-btn');
+      secDelBtn.title = 'Delete section';
+      secDelBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (window.confirm('이 섹션과 포함된 메모를 모두 삭제할까요?')) {
+          void deleteSection(sec.id);
+        }
+      };
+
+      hoverActions.append(secColorBtn, secEmojiBtn, secDelBtn);
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'memo-sec-add-btn';
+      addBtn.dataset.add = sec.id;
+      addBtn.textContent = '+';
+
+      secHeader.append(emojiSpan, nameLabel, hoverActions, addBtn);
       col.appendChild(secHeader);
 
       // 메모 목록
@@ -724,6 +918,126 @@
     return form;
   }
 
+  function showMemoTitleStylePopup(card, anchor, memo, applyTitleDom) {
+    closeMemoFloatingPop();
+    const pop = document.createElement('div');
+    pop.className = 'memo-card-title-style-pop';
+
+    const draft = {
+      title_color: memo.title_color || '',
+      title_size: memo.title_size || '14px',
+      title_bold: !!memo.title_bold,
+      title_emoji: memo.title_emoji || '',
+    };
+
+    const addRow = (icon, labelText, control) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'memo-title-pop-row';
+      const iconEl = document.createElement('span');
+      iconEl.className = 'memo-title-pop-icon';
+      iconEl.textContent = icon;
+      const label = document.createElement('span');
+      label.className = 'memo-title-pop-label';
+      label.textContent = labelText;
+      row.append(iconEl, label, control);
+      return row;
+    };
+
+    const colorPreview = document.createElement('span');
+    colorPreview.className = 'memo-title-pop-color-dot';
+    colorPreview.style.background = draft.title_color || '#fff';
+    colorPreview.style.border = '1px solid #e5e7eb';
+
+    const colorRow = addRow('🎨', 'Change Color', colorPreview);
+    colorRow.onclick = (e) => {
+      e.stopPropagation();
+      showSectionColorPicker(colorRow, draft.title_color, (c) => {
+        draft.title_color = c || '';
+        colorPreview.style.background = draft.title_color || '#fff';
+      });
+    };
+
+    const emojiVal = document.createElement('span');
+    emojiVal.className = 'memo-title-pop-emoji-val';
+    emojiVal.textContent = draft.title_emoji || '—';
+    const emojiRow = addRow('😊', 'Change Emoji', emojiVal);
+    emojiRow.onclick = (e) => {
+      e.stopPropagation();
+      showSectionEmojiPicker(emojiRow, (emo) => {
+        draft.title_emoji = emo || '';
+        emojiVal.textContent = draft.title_emoji || '—';
+      });
+    };
+
+    const sizeSelect = document.createElement('select');
+    sizeSelect.className = 'memo-title-pop-select';
+    ['14px', '16px', '20px', '24px'].forEach(sz => {
+      const opt = document.createElement('option');
+      opt.value = sz;
+      opt.textContent = sz;
+      if (draft.title_size === sz) opt.selected = true;
+      sizeSelect.appendChild(opt);
+    });
+    sizeSelect.onchange = () => { draft.title_size = sizeSelect.value; };
+    sizeSelect.onclick = (e) => e.stopPropagation();
+    const sizeRow = addRow('🔠', 'Text Size', sizeSelect);
+    sizeRow.onclick = (e) => e.stopPropagation();
+
+    const boldBtn = document.createElement('span');
+    boldBtn.className = 'memo-title-pop-bold-val';
+    boldBtn.textContent = draft.title_bold ? '굵게' : '보통';
+    const boldRow = addRow('B', 'Bold', boldBtn);
+    boldRow.onclick = (e) => {
+      e.stopPropagation();
+      draft.title_bold = !draft.title_bold;
+      boldBtn.textContent = draft.title_bold ? '굵게' : '보통';
+    };
+
+    const footer = document.createElement('div');
+    footer.className = 'memo-title-pop-footer';
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'memo-title-pop-close';
+    closeBtn.textContent = '닫기';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeMemoFloatingPop();
+    };
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'memo-title-pop-apply';
+    applyBtn.textContent = '적용';
+    applyBtn.onclick = async (e) => {
+      e.stopPropagation();
+      const patch = {
+        title_color: draft.title_color,
+        title_size: draft.title_size,
+        title_bold: draft.title_bold,
+        title_emoji: draft.title_emoji,
+      };
+      const ok = await updateMemo(memo.id, patch, { skipRender: true });
+      if (ok) {
+        Object.assign(memo, patch);
+        applyTitleDom();
+        closeMemoFloatingPop();
+      }
+    };
+    footer.append(closeBtn, applyBtn);
+
+    pop.append(colorRow, emojiRow, sizeRow, boldRow, footer);
+    card.appendChild(pop);
+
+    setTimeout(() => {
+      document.addEventListener('mousedown', function onOut(e) {
+        if (!pop.contains(e.target) && !anchor.contains(e.target)) {
+          closeMemoFloatingPop();
+          document.removeEventListener('mousedown', onOut);
+        }
+      });
+    }, 10);
+  }
+
   // ── 메모 카드 ──────────────────────────────────────
   function highlightText(text, query) {
     if (!query || !query.trim()) return text;
@@ -788,19 +1102,107 @@
       dateEl.textContent = memo.date || '';
     }
 
-    let titleEl = null;
-    if ((memo.title || '').trim()) {
-      titleEl = document.createElement('div');
-      titleEl.className = 'memo-card-title';
+    let titleRow = null;
+    let titleEmojiEl = null;
+    let titleTextEl = null;
+    let titleMenuBtn = null;
+
+    const paintTitleRow = () => {
+      const t = (memo.title || '').trim();
+      if (!t || !titleRow || !titleTextEl) return;
       if (_searchQuery.trim()) {
-        titleEl.innerHTML = highlightText(
-          (memo.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        titleTextEl.innerHTML = highlightText(
+          t.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
           _searchQuery
         );
       } else {
-        titleEl.textContent = memo.title;
+        titleTextEl.textContent = t;
       }
-    }
+      applyMemoTitleStyles(titleTextEl, titleEmojiEl, memo);
+    };
+
+    const mountTitleRow = () => {
+      const t = (memo.title || '').trim();
+      if (!t) {
+        titleRow?.remove();
+        titleRow = null;
+        titleEmojiEl = null;
+        titleTextEl = null;
+        titleMenuBtn = null;
+        return;
+      }
+      if (!titleRow) {
+        titleRow = document.createElement('div');
+        titleRow.className = 'memo-card-title-row';
+        titleEmojiEl = document.createElement('span');
+        titleEmojiEl.className = 'memo-card-title-emoji';
+        titleTextEl = document.createElement('span');
+        titleTextEl.className = 'memo-card-title-text';
+        titleMenuBtn = document.createElement('button');
+        titleMenuBtn.type = 'button';
+        titleMenuBtn.className = 'memo-card-title-menu';
+        titleMenuBtn.textContent = '···';
+        titleMenuBtn.title = 'Title options';
+        titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
+        dateEl.insertAdjacentElement('afterend', titleRow);
+
+        titleMenuBtn.onclick = (e) => {
+          e.stopPropagation();
+          showMemoTitleStylePopup(card, titleMenuBtn, memo, paintTitleRow);
+        };
+
+        const bindTitleTextClick = () => {
+          titleTextEl.onclick = (e) => {
+            e.stopPropagation();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'memo-card-title-input';
+            input.value = memo.title || '';
+            const finishTitle = async () => {
+              const newTitle = input.value.trim();
+              if (newTitle !== (memo.title || '')) {
+                memo.title = newTitle;
+                await updateMemo(memo.id, { title: newTitle }, { skipRender: true });
+              }
+              if (!newTitle) {
+                titleRow.remove();
+                titleRow = null;
+                titleTextEl = null;
+                titleEmojiEl = null;
+                titleMenuBtn = null;
+                return;
+              }
+              const span = document.createElement('span');
+              span.className = 'memo-card-title-text';
+              titleTextEl = span;
+              titleRow.replaceChild(span, input);
+              bindTitleTextClick();
+              paintTitleRow();
+            };
+            titleTextEl.replaceWith(input);
+            input.focus();
+            input.select();
+            input.onblur = () => { void finishTitle(); };
+            input.onkeydown = (ev) => {
+              if (ev.key === 'Enter' || ev.key === 'NumpadEnter') {
+                ev.preventDefault();
+                void finishTitle();
+              }
+              if (ev.key === 'Escape') {
+                const span = document.createElement('span');
+                span.className = 'memo-card-title-text';
+                titleTextEl = span;
+                titleRow.replaceChild(span, input);
+                bindTitleTextClick();
+                paintTitleRow();
+              }
+            };
+          };
+        };
+        bindTitleTextClick();
+      }
+      paintTitleRow();
+    };
 
     const content = document.createElement('div');
     content.className = 'memo-card-content';
@@ -825,39 +1227,14 @@
       card.appendChild(pinBtn);
     }
 
-    const refreshTitleDisplay = (titleText) => {
-      const t = (titleText || '').trim();
-      if (!t) {
-        if (titleEl) {
-          titleEl.remove();
-          titleEl = null;
-        }
-        return;
-      }
-      if (!titleEl) {
-        titleEl = document.createElement('div');
-        titleEl.className = 'memo-card-title';
-        dateEl.insertAdjacentElement('afterend', titleEl);
-      }
-      if (_searchQuery.trim()) {
-        titleEl.innerHTML = highlightText(
-          t.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-          _searchQuery
-        );
-      } else {
-        titleEl.textContent = t;
-      }
-      titleEl.style.display = '';
-    };
-
     let editColorWrap = null;
-    let editTitleInput = null;
     let editContentInputHandler = null;
     let savingEdit = false;
 
     const enterMemoEdit = () => {
       if (content.isContentEditable) return;
       savingEdit = false;
+      closeMemoFloatingPop();
 
       const restoreContentView = (text) => {
         content.contentEditable = 'false';
@@ -876,9 +1253,6 @@
       const cleanupEdit = () => {
         editColorWrap?.remove();
         editColorWrap = null;
-        editTitleInput?.remove();
-        editTitleInput = null;
-        if (titleEl) titleEl.style.display = '';
         if (editContentInputHandler) {
           content.removeEventListener('input', editContentInputHandler);
           editContentInputHandler = null;
@@ -886,16 +1260,7 @@
         content.style.height = '';
         content.onblur = null;
         content.onkeydown = null;
-        if (editTitleInput) editTitleInput.onblur = null;
       };
-
-      if (titleEl) titleEl.style.display = 'none';
-      editTitleInput = document.createElement('input');
-      editTitleInput.type = 'text';
-      editTitleInput.className = 'memo-card-title-input';
-      editTitleInput.placeholder = 'Title (optional)';
-      editTitleInput.value = memo.title || '';
-      content.parentNode.insertBefore(editTitleInput, content);
 
       content.contentEditable = 'true';
       content.classList.add('is-editing');
@@ -919,11 +1284,9 @@
         if (savingEdit) return;
         savingEdit = true;
 
-        const newTitle = editTitleInput ? editTitleInput.value.trim() : (memo.title || '');
         const newVal = content.textContent.trim();
         const patch = {};
         if (newVal !== (memo.content || '')) patch.content = newVal;
-        if (newTitle !== (memo.title || '')) patch.title = newTitle;
 
         cleanupEdit();
 
@@ -934,13 +1297,6 @@
           restoreContentView(memo.content || '');
         }
 
-        if (patch.title !== undefined) {
-          memo.title = patch.title;
-          refreshTitleDisplay(patch.title);
-        } else {
-          refreshTitleDisplay(memo.title || '');
-        }
-
         if (Object.keys(patch).length > 0) {
           await updateMemo(memo.id, patch, { skipRender: true });
         }
@@ -948,13 +1304,6 @@
       };
 
       content.onblur = (e) => {
-        if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
-        if (editTitleInput && e.relatedTarget === editTitleInput) return;
-        void finishEdit();
-      };
-
-      editTitleInput.onblur = (e) => {
-        if (e.relatedTarget === content) return;
         if (editColorWrap && e.relatedTarget && editColorWrap.contains(e.relatedTarget)) return;
         void finishEdit();
       };
@@ -964,11 +1313,10 @@
           savingEdit = true;
           cleanupEdit();
           restoreContentView(memo.content || '');
-          refreshTitleDisplay(memo.title || '');
         }
       };
 
-      editTitleInput.focus();
+      content.focus();
     };
 
     const expandIfCollapsed = () => {
@@ -981,6 +1329,7 @@
 
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
+      if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-card-title-style-pop')) return;
       if (content.isContentEditable) return;
       e.stopPropagation();
 
@@ -1008,9 +1357,8 @@
       handleEditIntent(e);
     });
 
-    card.append(actions, dateEl);
-    if (titleEl) card.appendChild(titleEl);
-    card.append(previewEl, content);
+    card.append(actions, dateEl, previewEl, content);
+    if ((memo.title || '').trim()) mountTitleRow();
     return card;
   }
 

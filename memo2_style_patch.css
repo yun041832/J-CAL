@@ -5637,36 +5637,256 @@ aside.right:not(.hidden) .card {
   font-weight: 600;
 }
 
-#memoPage .memo-card-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111827;
+/* ── 메모 섹션 헤더 (hover 액션 + [+]) ── */
+#memoPage .memo-sec-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e7eb;
+  min-width: 0;
+}
+
+#memoPage .memo-sec-emoji {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+#memoPage .memo-sec-header > span[class^="sec-name-"] {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#memoPage .memo-sec-header-hover-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  pointer-events: none;
+}
+
+#memoPage .memo-sec-header:hover .memo-sec-header-hover-actions,
+#memoPage .memo-sec-header.is-actions-visible .memo-sec-header-hover-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+#memoPage .memo-sec-icon-btn {
+  border: none;
+  background: none;
+  padding: 2px;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+#memoPage .memo-sec-icon-btn svg {
+  display: block;
+}
+
+#memoPage .memo-sec-del-btn:hover path {
+  fill: #ef4444 !important;
+}
+
+#memoPage .memo-sec-add-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#memoPage .memo-sec-add-btn:hover {
+  background: #e5e7eb;
+}
+
+#memoPage .memo-sec-color-pop {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 메모 카드 타이틀 행 + ··· 팝업 ── */
+#memoPage .memo-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-bottom: 4px;
   padding-right: 52px;
   box-sizing: border-box;
+  min-width: 0;
+  position: relative;
+}
+
+#memoPage .memo-card-title-emoji {
+  flex-shrink: 0;
+  font-size: 1em;
+  line-height: 1;
+}
+
+#memoPage .memo-card-title-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
   word-break: break-word;
   line-height: 1.4;
+  cursor: text;
+}
+
+#memoPage .memo-card-title-menu {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0 2px;
+  margin: 0;
+  font-size: 16px;
+  color: #888780;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#memoPage .memo-card-title-menu:hover {
+  color: #374151;
 }
 
 #memoPage .memo-card-title-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
   border: none;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #5c8dff;
   outline: none;
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
   color: #111827;
-  padding: 0 0 6px;
-  margin-bottom: 6px;
-  padding-right: 52px;
+  padding: 0 0 4px;
+  margin: 0;
   background: transparent;
 }
 
-#memoPage .memo-card-title-input::placeholder {
-  color: #9ca3af;
-  font-weight: 600;
+#memoPage .memo-card-title-style-pop {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 12;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 6px 0;
+  box-sizing: border-box;
+}
+
+#memoPage .memo-title-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+#memoPage .memo-title-pop-row:hover {
+  background: #f9fafb;
+}
+
+#memoPage .memo-title-pop-icon {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+#memoPage .memo-title-pop-label {
+  flex: 1;
+  min-width: 0;
+}
+
+#memoPage .memo-title-pop-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#memoPage .memo-title-pop-emoji-val,
+#memoPage .memo-title-pop-bold-val {
+  font-size: 12px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+#memoPage .memo-title-pop-select {
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+#memoPage .memo-title-pop-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 4px;
+}
+
+#memoPage .memo-title-pop-close,
+#memoPage .memo-title-pop-apply {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+}
+
+#memoPage .memo-title-pop-apply {
+  background: #5c8dff;
+  border-color: #5c8dff;
+  color: #fff;
+}
+
+#memoPage .memo-title-pop-apply:hover {
+  background: #4a7ae8;
 }
 
 #memoPage .memo-card--collapsed .memo-card-content {
