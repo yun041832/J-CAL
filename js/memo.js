@@ -1843,7 +1843,40 @@
     };
     footer.append(closeBtn, applyBtn);
 
+    const titleEditInput = document.createElement('input');
+    titleEditInput.type = 'text';
+    titleEditInput.value = memo.title || '';
+    titleEditInput.placeholder = 'Title';
+    titleEditInput.style.cssText = `
+  width:100%;box-sizing:border-box;
+  border:none;border-bottom:1px solid #e5e7eb;
+  outline:none;font-size:14px;font-weight:700;
+  font-family:inherit;color:#111827;
+  padding:4px 0 8px;margin-bottom:8px;
+  background:transparent;
+`;
+    titleEditInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const newTitle = titleEditInput.value.trim();
+        memo.title = newTitle;
+        updateMemo(memo.id, { title: newTitle }, { skipRender: true });
+        applyTitleDom();
+        closeMemoTitlePopup();
+      }
+      if (e.key === 'Escape') closeMemoTitlePopup();
+    });
+    titleEditInput.addEventListener('blur', async () => {
+      const newTitle = titleEditInput.value.trim();
+      if (newTitle !== (memo.title || '')) {
+        memo.title = newTitle;
+        await updateMemo(memo.id, { title: newTitle }, { skipRender: true });
+        applyTitleDom();
+      }
+    });
+
     pop.append(colorRow, colorExpand, emojiRow, sizeRow, boldRow, divider, footer);
+    pop.prepend(titleEditInput);
+    setTimeout(() => titleEditInput.focus(), 50);
     card.appendChild(pop);
     card.classList.add('has-title-popup');
     _memoTitlePopup = pop;
@@ -1980,6 +2013,7 @@
         titleMenuBtn.className = 'memo-card-title-menu';
         titleMenuBtn.textContent = '···';
         titleMenuBtn.title = 'Title options';
+        titleMenuBtn.style.display = 'none';
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
@@ -1994,55 +2028,9 @@
         };
 
         const bindTitleTextClick = () => {
-          titleTextEl.onmousedown = (e) => e.stopPropagation();
           titleTextEl.onclick = (e) => {
             e.stopPropagation();
-            e.preventDefault();
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'memo-card-title-input';
-            input.value = memo.title || '';
-            const finishTitle = async () => {
-              const newTitle = input.value.trim();
-              if (newTitle !== (memo.title || '')) {
-                memo.title = newTitle;
-                await updateMemo(memo.id, { title: newTitle }, { skipRender: true });
-              }
-              if (!newTitle) {
-                titleRow.remove();
-                titleRow = null;
-                titleTextEl = null;
-                titleEmojiEl = null;
-                titleMenuBtn = null;
-                return;
-              }
-              const span = document.createElement('span');
-              span.className = 'memo-card-title-text';
-              titleTextEl = span;
-              titleRow.replaceChild(span, input);
-              bindTitleTextClick();
-              paintTitleRow();
-            };
-            titleTextEl.replaceWith(input);
-            input.focus();
-            input.select();
-            input.onmousedown = (e) => e.stopPropagation();
-            input.onclick = (e) => e.stopPropagation();
-            input.onblur = () => { void finishTitle(); };
-            input.onkeydown = (ev) => {
-              if (ev.key === 'Enter' || ev.key === 'NumpadEnter') {
-                ev.preventDefault();
-                void finishTitle();
-              }
-              if (ev.key === 'Escape') {
-                const span = document.createElement('span');
-                span.className = 'memo-card-title-text';
-                titleTextEl = span;
-                titleRow.replaceChild(span, input);
-                bindTitleTextClick();
-                paintTitleRow();
-              }
-            };
+            showMemoTitleStylePopup(card, titleTextEl, memo, paintTitleRow);
           };
         };
         bindTitleTextClick();
