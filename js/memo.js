@@ -132,6 +132,45 @@
     return { ...row, title, name: title };
   }
 
+  function bindSectionNameEdit(labelEl, sec) {
+    labelEl.onclick = function () {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = sectionTitle(sec);
+      input.style.cssText = 'font-weight:600;font-size:13px;flex:1;border:1px solid #5C8DFF;border-radius:4px;padding:2px 4px;width:80px;box-sizing:border-box;';
+      let finished = false;
+
+      const finishEdit = async () => {
+        if (finished) return;
+        finished = true;
+        const newName = (input.value || '').trim() || sectionTitle(sec);
+
+        const span = document.createElement('span');
+        span.className = 'sec-name-' + sec.id;
+        span.style.cssText = 'font-weight:600;font-size:13px;flex:1;cursor:pointer;';
+        span.title = 'Click to rename';
+        span.textContent = newName;
+        bindSectionNameEdit(span, sec);
+        input.replaceWith(span);
+
+        await updateSection(sec.id, { name: newName });
+      };
+
+      labelEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      input.addEventListener('blur', () => { void finishEdit(); });
+      input.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== 'NumpadEnter') return;
+        if (e.isComposing) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void finishEdit();
+      });
+    };
+  }
+
   let _sections = []; // { id, title, name, emoji, color, sort_order }
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
   let _lastDeletedMemo = null;
@@ -312,15 +351,20 @@
   // ── 섹션명 수정 ────────────────────────────────────
   async function updateSection(id, patch) {
     getSb();
+    if (!_sb) {
+      console.error('[memo] updateSection: supabase not ready');
+      return;
+    }
     const dbPatch = { ...patch };
     if (dbPatch.title !== undefined) {
       dbPatch.name = dbPatch.title;
       delete dbPatch.title;
     }
+    if (!('name' in dbPatch)) return;
     try {
       const { error } = await _sb.from('memo_sections').update(dbPatch).eq('id', id);
       if (error) throw error;
-      const idx = _sections.findIndex(s => s.id === id);
+      const idx = _sections.findIndex(s => String(s.id) === String(id));
       if (idx > -1) _sections[idx] = normalizeMemoSection({ ..._sections[idx], ...dbPatch });
       renderMemoPage();
     } catch (e) { console.error('[memo] updateSection', e); }
@@ -470,21 +514,8 @@
         <span class="sec-name-${sec.id}" style="font-weight:600;font-size:13px;flex:1;cursor:pointer;" title="Click to rename">${sectionTitle(sec)}</span>
         <button data-add="${sec.id}" style="font-size:18px;background:none;border:none;cursor:pointer;color:#5C8DFF;line-height:1;">+</button>
       `;
-      // 섹션명 클릭 → 인라인 편집
-      secHeader.querySelector('.sec-name-' + sec.id).onclick = function () {
-        const input = document.createElement('input');
-        input.value = sectionTitle(sec);
-        input.style.cssText = 'font-weight:600;font-size:13px;flex:1;border:1px solid #5C8DFF;border-radius:4px;padding:2px 4px;width:80px;';
-        this.replaceWith(input);
-        input.focus();
-        input.select();
-        const done = () => {
-          const newTitle = input.value.trim() || sectionTitle(sec);
-          updateSection(sec.id, { name: newTitle });
-        };
-        input.onblur = done;
-        input.onkeydown = e => { if (e.key === 'Enter') done(); };
-      };
+      const nameLabel = secHeader.querySelector('.sec-name-' + sec.id);
+      if (nameLabel) bindSectionNameEdit(nameLabel, sec);
       col.appendChild(secHeader);
 
       // 메모 목록
