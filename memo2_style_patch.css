@@ -5450,6 +5450,55 @@ aside.right:not(.hidden) .card {
   cursor: pointer;
 }
 
+#memoPage .memo-card {
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+#memoPage .memo-card-date {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-right: 52px;
+}
+
+#memoPage .memo-card-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding-right: 52px;
+}
+
+#memoPage .memo-card-content.is-editing {
+  outline: none;
+  border: 1.5px solid #5c8dff;
+  border-radius: 8px;
+  padding: 8px;
+  padding-right: 8px;
+  min-height: 60px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(92, 141, 255, 0.1);
+  cursor: text;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
+}
+
+#memoPage .memo-card .memo-color-picker {
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
 #memoPage .memo-card-actions {
   position: absolute;
   top: 6px;
@@ -5509,13 +5558,17 @@ aside.right:not(.hidden) .card {
   font-size: 13px;
   line-height: 1.6;
   color: #374151;
-  word-break: break-word;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-right: 52px;
   visibility: hidden;
   height: 0;
   overflow: hidden;
   opacity: 0;
   margin: 0;
-  padding: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
   transition: opacity 0.15s, visibility 0.15s;
 }
 
@@ -5524,6 +5577,10 @@ aside.right:not(.hidden) .card {
   height: auto;
   opacity: 1;
   margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 #memoPage .memo-card--collapsed .memo-card-content {

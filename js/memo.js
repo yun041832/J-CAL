@@ -714,12 +714,6 @@
     card.dataset.memoCard = 'true';
     applyMemoCardColorStyle(card, memo.color);
     card.className = 'memo-card';
-    card.style.cssText += `
-  border-radius:8px;
-  padding:10px 10px 10px 10px;
-  font-size:13px;
-  position:relative;
-`;
 
     const actions = document.createElement('div');
     actions.className = 'memo-card-actions';
@@ -762,7 +756,6 @@
 
     const dateEl = document.createElement('div');
     dateEl.className = 'memo-card-date';
-    dateEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:4px;';
     if (_searchQuery.trim()) {
       dateEl.innerHTML = highlightText(memo.date || '', _searchQuery);
     } else {
@@ -771,7 +764,6 @@
 
     const content = document.createElement('div');
     content.className = 'memo-card-content';
-    content.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.6;';
     if (_searchQuery.trim()) {
       content.innerHTML = highlightText(
         (memo.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
@@ -810,7 +802,7 @@
 
       const restoreContentView = (text) => {
         content.contentEditable = 'false';
-        content.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.6;';
+        content.classList.remove('is-editing');
         if (_searchQuery.trim()) {
           content.innerHTML = highlightText(
             (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
@@ -830,19 +822,7 @@
       };
 
       content.contentEditable = 'true';
-      content.style.cssText = `
-    white-space:pre-wrap;
-    word-break:break-word;
-    line-height:1.6;
-    outline:none;
-    border:1.5px solid #5C8DFF;
-    border-radius:8px;
-    padding:8px;
-    min-height:60px;
-    background:#fff;
-    box-shadow:0 2px 8px rgba(92,141,255,0.10);
-    cursor:text;
-  `;
+      content.classList.add('is-editing');
       content.textContent = memo.content || '';
 
       editColorWrap = buildMemoColorPicker(memo.color || '', (color) => {
