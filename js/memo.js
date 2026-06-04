@@ -1209,13 +1209,13 @@
       const hoverActions = document.createElement('div');
       hoverActions.className = 'memo-sec-header-hover-actions';
 
-      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#888780');
+      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#555555');
       secColorBtn.title = 'Change Color';
       secColorBtn.onclick = (e) => {
         e.stopPropagation();
         showSectionColorPicker(secColorBtn, sec.color || '', async (color) => {
           sec.color = color || '';
-          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#888780');
+          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#555555');
           await updateSection(sec.id, { color: sec.color }, { skipRender: true });
         });
       };
@@ -1860,6 +1860,12 @@
     delBtn.textContent = '×';
     delBtn.title = 'Delete';
 
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'memo-card-copy-btn';
+    copyBtn.textContent = '📋';
+    copyBtn.title = 'Copy';
+
     const previewEl = document.createElement('div');
     previewEl.className = 'memo-card-preview';
 
@@ -1882,7 +1888,23 @@
       deleteMemoWithUndo(memo.id, memo);
     };
 
-    actions.append(collapseBtn, delBtn);
+    copyBtn.onclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const parts = [];
+      const titleText = (memo.title || '').trim();
+      if (titleText) parts.push(titleText);
+      const bodyText = htmlToPlainText(memo.content || '').trim();
+      if (bodyText) parts.push(bodyText);
+      try {
+        await navigator.clipboard.writeText(parts.join('\n'));
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = '✓';
+        setTimeout(() => { copyBtn.textContent = orig; }, 800);
+      } catch (_err) { /* clipboard unavailable */ }
+    };
+
+    actions.append(collapseBtn, copyBtn, delBtn);
 
     const dateEl = document.createElement('div');
     dateEl.className = 'memo-card-date';
