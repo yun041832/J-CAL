@@ -113,6 +113,9 @@
       _memoTitlePopup.remove();
       _memoTitlePopup = null;
     }
+    document.querySelectorAll('.memo-card.has-title-popup').forEach(c => {
+      c.classList.remove('has-title-popup');
+    });
   }
 
   function closeMemoFloatingPop() {
@@ -1670,6 +1673,7 @@
 
     pop.append(colorRow, colorExpand, emojiRow, sizeRow, boldRow, divider, footer);
     card.appendChild(pop);
+    card.classList.add('has-title-popup');
     _memoTitlePopup = pop;
 
     _memoTitlePopupOutsideHandler = function onOut(e) {
@@ -1789,8 +1793,13 @@
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
+        titleRow.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+
         titleMenuBtn.onclick = (e) => {
           e.stopPropagation();
+          e.preventDefault();
           showMemoTitleStylePopup(card, titleMenuBtn, memo, paintTitleRow);
         };
 
@@ -1899,7 +1908,12 @@
 
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
-      if (e.target.closest('.memo-card-title-row') || e.target.closest('.memo-title-popup')) return;
+      if (
+        e.target.closest('.memo-card-title-row')
+        || e.target.closest('.memo-title-popup')
+        || e.target.closest('.memo-card-title-text')
+        || e.target.closest('.memo-card-title-menu')
+      ) return;
       if (e.target.closest('.memo-mini-toolbar') || e.target.closest('.memo-card-edit-shell')) return;
       if (card.dataset.memoEditing === '1') return;
       e.stopPropagation();

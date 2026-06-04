@@ -6133,3 +6133,13 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-card.memo-card--editing {
   overflow: visible !important;
 }
+
+/* 타이틀 팝업이 카드 overflow:hidden에 잘리지 않도록 */
+#memoPage .memo-card:has(.memo-title-popup) {
+  overflow: visible !important;
+}
+
+/* :has() 미지원 브라우저 대비 — JS에서 클래스 추가 방식 병행 */
+#memoPage .memo-card.has-title-popup {
+  overflow: visible !important;
+}
