@@ -1209,17 +1209,6 @@
       const hoverActions = document.createElement('div');
       hoverActions.className = 'memo-sec-header-hover-actions';
 
-      const secColorBtn = createSecIconBtn(SEC_ICON_PATH.color, sec.color || '#4B5563');
-      secColorBtn.title = 'Change Color';
-      secColorBtn.onclick = (e) => {
-        e.stopPropagation();
-        showSectionColorPicker(secColorBtn, sec.color || '', async (color) => {
-          sec.color = color || '';
-          secColorBtn.querySelector('path')?.setAttribute('fill', sec.color || '#4B5563');
-          await updateSection(sec.id, { color: sec.color }, { skipRender: true });
-        });
-      };
-
       const secEmojiBtn = createSecIconBtn(SEC_ICON_PATH.emoji, '#888780');
       secEmojiBtn.title = 'Change Emoji';
       secEmojiBtn.onclick = (e) => {
@@ -1234,8 +1223,25 @@
       const secCopyBtn = document.createElement('button');
       secCopyBtn.type = 'button';
       secCopyBtn.className = 'memo-sec-icon-btn memo-sec-copy-btn';
-      secCopyBtn.textContent = '📋';
       secCopyBtn.title = '섹션 전체 복사';
+
+      const mountSecCopySvg = () => {
+        secCopyBtn.textContent = '';
+        const copySvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        copySvg.setAttribute('viewBox', '0 0 24 24');
+        copySvg.setAttribute('width', '16');
+        copySvg.setAttribute('height', '16');
+        copySvg.setAttribute('fill', 'none');
+        copySvg.setAttribute('stroke', '#4B5563');
+        copySvg.setAttribute('stroke-width', '2');
+        copySvg.setAttribute('stroke-linecap', 'round');
+        copySvg.setAttribute('stroke-linejoin', 'round');
+        copySvg.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+        secCopyBtn.appendChild(copySvg);
+      };
+
+      mountSecCopySvg();
+
       secCopyBtn.onclick = async (e) => {
         e.stopPropagation();
         const blocks = getFilteredMemos(sec.id).map((m) => {
@@ -1246,13 +1252,12 @@
         }).filter(Boolean);
         try {
           await navigator.clipboard.writeText(blocks.join('\n---\n'));
-          const orig = secCopyBtn.textContent;
           secCopyBtn.textContent = '✓';
-          setTimeout(() => { secCopyBtn.textContent = orig; }, 800);
+          setTimeout(() => { mountSecCopySvg(); }, 800);
         } catch (_err) { /* clipboard unavailable */ }
       };
 
-      hoverActions.append(secColorBtn, secEmojiBtn, secCopyBtn);
+      hoverActions.append(secEmojiBtn, secCopyBtn);
 
       const addBtn = document.createElement('button');
       addBtn.type = 'button';
