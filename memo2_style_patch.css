@@ -6213,3 +6213,68 @@ aside.right:not(.hidden) .card {
   margin-left: auto !important;
   flex-shrink: 0 !important;
 }
+
+/* ── 모바일 메모 섹션 탭 (A안) ── */
+@media (max-width: 768px) {
+  /* 모바일 탭 버튼 바 */
+  .memo-mobile-tabs {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .memo-mobile-tabs::-webkit-scrollbar { display: none; }
+
+  .memo-tab-btn {
+    flex: 1;
+    min-width: max-content;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .memo-tab-btn.active {
+    color: #5C8DFF;
+    border-bottom: 2px solid #5C8DFF;
+    font-weight: 600;
+  }
+
+  /* 모바일에서 패널 숨김 처리 */
+  .memo-panel.hidden {
+    display: none !important;
+  }
+
+  /* 모바일에서 3패널 → 단일 컬럼 전환 */
+  .memo-panels-wrapper {
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 모바일에서 패널이 full width 사용 */
+  .memo-panel {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* PC에서는 #memo-mobile-tabs 숨김 */
+@media (min-width: 769px) {
+  #memo-mobile-tabs {
+    display: none !important;
+  }
+  /* PC에서 패널 hidden 클래스 무효화 — 3패널 항상 표시 */
+  .memo-panel.hidden {
+    display: flex !important;
+  }
+}

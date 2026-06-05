@@ -797,6 +797,7 @@
   let _memos = [];    // { id, section_id, title, content, date, emoji, color }
   let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
+  let _memoMobileTabIdx = 0;
   let _searchQuery = '';
   let _initPromise = null;
 
@@ -1125,6 +1126,20 @@
   }
 
   // ── 렌더 ───────────────────────────────────────────
+  function switchMemoTab(idx) {
+    const page = document.getElementById('memoPage');
+    if (!page) return;
+    const panels = page.querySelectorAll('.memo-panels-wrapper .memo-panel');
+    if (idx < 0 || idx >= panels.length) return;
+    _memoMobileTabIdx = idx;
+    page.querySelectorAll('#memo-mobile-tabs .memo-tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.dataset.sectionIdx) === idx);
+    });
+    panels.forEach((panel) => {
+      panel.classList.toggle('hidden', Number(panel.dataset.sectionIdx) !== idx);
+    });
+  }
+
   function renderMemoPage() {
     const page = document.getElementById('memoPage');
     if (!page) return;
@@ -1192,6 +1207,7 @@
 
     // 3패널 컨테이너
     const panels = document.createElement('div');
+    panels.className = 'memo-panels-wrapper';
     panels.style.cssText = 'display:flex;flex:1;overflow:visible;';
 
     if (_sections.length === 0) {
@@ -1203,8 +1219,29 @@
       return;
     }
 
+    if (_memoMobileTabIdx >= _sections.length) _memoMobileTabIdx = 0;
+
+    let mobileTabs = document.getElementById('memo-mobile-tabs');
+    if (!mobileTabs) {
+      mobileTabs = document.createElement('div');
+      mobileTabs.id = 'memo-mobile-tabs';
+      mobileTabs.className = 'memo-mobile-tabs';
+      _sections.forEach((sec, si) => {
+        const tabBtn = document.createElement('button');
+        tabBtn.type = 'button';
+        tabBtn.className = 'memo-tab-btn' + (si === _memoMobileTabIdx ? ' active' : '');
+        tabBtn.dataset.sectionIdx = String(si);
+        tabBtn.textContent = sectionTitle(sec);
+        tabBtn.onclick = () => switchMemoTab(si);
+        mobileTabs.appendChild(tabBtn);
+      });
+    }
+    page.appendChild(mobileTabs);
+
     _sections.forEach((sec, si) => {
       const col = document.createElement('div');
+      col.className = 'memo-panel' + (si !== _memoMobileTabIdx ? ' hidden' : '');
+      col.dataset.sectionIdx = String(si);
       col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:visible;background:#fff;`;
 
       // 섹션 헤더
