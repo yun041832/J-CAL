@@ -1127,16 +1127,27 @@
 
   // ── 렌더 ───────────────────────────────────────────
   function switchMemoTab(idx) {
+    if (window.innerWidth >= 769) return;
     const page = document.getElementById('memoPage');
     if (!page) return;
     const panels = page.querySelectorAll('.memo-panels-wrapper .memo-panel');
     if (idx < 0 || idx >= panels.length) return;
     _memoMobileTabIdx = idx;
-    page.querySelectorAll('#memo-mobile-tabs .memo-tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', Number(btn.dataset.sectionIdx) === idx);
+
+    panels.forEach((panel) => {
+      panel.classList.remove('hidden');
     });
     panels.forEach((panel) => {
-      panel.classList.toggle('hidden', Number(panel.dataset.sectionIdx) !== idx);
+      if (Number(panel.dataset.sectionIdx) !== idx) {
+        panel.classList.add('hidden');
+      }
+    });
+
+    page.querySelectorAll('#memo-mobile-tabs .memo-tab-btn').forEach((btn) => {
+      btn.classList.remove('active');
+    });
+    page.querySelectorAll(`#memo-mobile-tabs .memo-tab-btn[data-section-idx="${idx}"]`).forEach((btn) => {
+      btn.classList.add('active');
     });
   }
 
@@ -1153,13 +1164,14 @@
 
     // 헤더
     const header = document.createElement('div');
+    header.className = 'memo-page-header';
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
     const undoBtnHtml = _lastDeletedMemo
       ? '<button type="button" id="memoUndoBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12px;cursor:pointer;">↩ Undo</button>'
       : '';
     header.innerHTML = `
-      <span style="font-weight:700;font-size:16px;">Memo</span>
-      <div style="display:flex;gap:6px;align-items:center;">
+      <span class="memo-page-title" style="font-weight:700;font-size:16px;">Memo</span>
+      <div class="memo-header-tools" style="display:flex;gap:6px;align-items:center;">
         <input
           type="text"
           class="memo-search-input"
@@ -1168,11 +1180,13 @@
           style="padding:4px 10px;border-radius:6px;border:1px solid #e5e7eb;font-size:12px;width:160px;outline:none;"
         />
         ${undoBtnHtml}
+        <div class="memo-view-btns" style="display:flex;gap:6px;flex-shrink:0;">
         ${['Day', 'Month', 'All'].map((v, i) => {
           const modes = ['day', 'month', 'all'];
           const active = _viewMode === modes[i];
           return `<button data-view="${modes[i]}" style="padding:4px 10px;border-radius:6px;border:1px solid ${active ? '#5C8DFF' : '#e5e7eb'};background:${active ? '#5C8DFF' : '#fff'};color:${active ? '#fff' : '#374151'};font-size:12px;cursor:pointer;">${v}</button>`;
         }).join('')}
+        </div>
       </div>
     `;
     const searchInput = header.querySelector('.memo-search-input');
@@ -1344,6 +1358,7 @@
     });
 
     page.appendChild(panels);
+    switchMemoTab(_memoMobileTabIdx);
     document.querySelector('.memo-search-input')?.focus();
     if (_searchQuery.trim()) {
       requestAnimationFrame(() => {

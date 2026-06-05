@@ -6266,6 +6266,43 @@ aside.right:not(.hidden) .card {
     min-width: 100% !important;
     width: 100% !important;
   }
+
+  /* 메모 헤더 영역 — 검색바 + 필터 버튼 한 줄 유지 */
+  #memoPage .memo-page-header {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+  }
+  #memoPage .memo-header-tools {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    overflow: visible;
+  }
+  #memoPage .memo-view-btns {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+  }
+  #memoPage .memo-search-input {
+    min-width: 0;
+    flex: 1;
+    width: auto !important;
+  }
+
+  /* 새메모 입력 박스 full width */
+  #memoPage .memo-input-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
 }
 
 /* PC에서는 #memo-mobile-tabs 숨김 */
@@ -6277,4 +6314,13 @@ aside.right:not(.hidden) .card {
   .memo-panel.hidden {
     display: flex !important;
   }
+}
+
+/* 메모 카드 타이틀 말줄임 — 전체 적용 (모바일+PC) */
+#memoPage .memo-card-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+  max-width: 100%;
 }
