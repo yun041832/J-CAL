@@ -6375,3 +6375,17 @@ aside.right:not(.hidden) .card {
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+/* ── memo toolbar font size select ── */
+#memoPage .memo-toolbar-size-select {
+  height: 28px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  padding: 0 4px;
+  font-family: inherit;
+  outline: none;
+}

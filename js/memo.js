@@ -609,14 +609,35 @@
       return d;
     };
 
+    const sizeSelect = document.createElement('select');
+    sizeSelect.className = 'memo-toolbar-size-select';
+    sizeSelect.title = 'Font size';
+    [['–', ''], ['12px', '12px'], ['14px', '14px'], ['16px', '16px'], ['20px', '20px'], ['24px', '24px'], ['32px', '32px']].forEach(([label, val]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      sizeSelect.appendChild(opt);
+    });
+    sizeSelect.addEventListener('mousedown', (e) => e.stopPropagation());
+    sizeSelect.onchange = () => {
+      const val = sizeSelect.value;
+      if (!val) return;
+      editorEl.focus();
+      document.execCommand('fontSize', false, '7');
+      editorEl.querySelectorAll('font[size="7"]').forEach(el => {
+        el.removeAttribute('size');
+        el.style.fontSize = val;
+      });
+      sizeSelect.value = '';
+    };
+
     bar.append(
       addBtn('B', 'Bold', () => exec('bold')),
       addBtn('I', 'Italic', () => exec('italic')),
       addBtn('U', 'Underline', () => exec('underline')),
       addBtn('S', 'Strikethrough', () => exec('strikeThrough')),
       addDivider(),
-      addBtn('H1', 'Heading 1', () => wrapHeading('h1')),
-      addBtn('H2', 'Heading 2', () => wrapHeading('h2')),
+      sizeSelect,
       addDivider(),
       addBtn('A', 'Text color', (btn) => showColorPop(btn, TOOLBAR_FORE_COLORS, 'foreColor')),
       addBtn('HL', 'Highlight', (btn) => showColorPop(btn, TOOLBAR_HIGHLIGHT_COLORS, 'hiliteColor')),
