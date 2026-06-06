@@ -3247,6 +3247,8 @@ function widgetDaily(){
     getDailySupabaseClient,
     applyDailyView,
     widgetDaily,
+    widgetDailyWeek,
+    widgetDailyMonth,
     loadDailyByDate,
     renderMiniCal,
     buildDailyMiniCalendar,
@@ -3267,5 +3269,7 @@ function widgetDaily(){
   window.applyDailyView = applyDailyView;
   window.refreshDailyTaskViews = refreshDailyTaskViews;
   window.widgetDaily = widgetDaily;
+  window.widgetDailyWeek = widgetDailyWeek;
+  window.widgetDailyMonth = widgetDailyMonth;
   window.getDailyTasks = getDailyTasks;
 })();
