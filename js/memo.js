@@ -1128,26 +1128,18 @@
   // ── 렌더 ───────────────────────────────────────────
   function switchMemoTab(idx) {
     if (window.innerWidth >= 769) return;
-    const page = document.getElementById('memoPage');
-    if (!page) return;
-    const panels = page.querySelectorAll('.memo-panels-wrapper .memo-panel');
+
+    const panels = document.querySelectorAll('.memo-panels-wrapper .memo-panel');
     if (idx < 0 || idx >= panels.length) return;
     _memoMobileTabIdx = idx;
 
-    panels.forEach((panel) => {
-      panel.classList.remove('hidden');
-    });
-    panels.forEach((panel) => {
-      if (Number(panel.dataset.sectionIdx) !== idx) {
-        panel.classList.add('hidden');
-      }
+    panels.forEach((panel, i) => {
+      panel.style.display = i === idx ? 'flex' : 'none';
     });
 
-    page.querySelectorAll('#memo-mobile-tabs .memo-tab-btn').forEach((btn) => {
-      btn.classList.remove('active');
-    });
-    page.querySelectorAll(`#memo-mobile-tabs .memo-tab-btn[data-section-idx="${idx}"]`).forEach((btn) => {
-      btn.classList.add('active');
+    const tabs = document.querySelectorAll('#memo-mobile-tabs .memo-tab-btn');
+    tabs.forEach((btn, i) => {
+      btn.classList.toggle('active', i === idx);
     });
   }
 
@@ -1254,7 +1246,7 @@
 
     _sections.forEach((sec, si) => {
       const col = document.createElement('div');
-      col.className = 'memo-panel' + (si !== _memoMobileTabIdx ? ' hidden' : '');
+      col.className = 'memo-panel';
       col.dataset.sectionIdx = String(si);
       col.style.cssText = `flex:1;display:flex;flex-direction:column;border-right:${si < _sections.length - 1 ? '1px solid #e5e7eb' : 'none'};overflow:visible;background:#fff;`;
 
