@@ -5879,12 +5879,12 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-card-title-text {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #111827;
   word-break: break-word;
   line-height: 1.4;
-  cursor: text;
+  cursor: pointer;
 }
 
 #memoPage .memo-card-title-menu {

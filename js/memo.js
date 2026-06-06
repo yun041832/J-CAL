@@ -225,8 +225,8 @@
     }
     if (!textEl) return;
     textEl.style.color = memo.title_color || '#111827';
-    textEl.style.fontSize = memo.title_size || '14px';
-    textEl.style.fontWeight = memo.title_bold ? '700' : '400';
+    textEl.style.fontSize = memo.title_size || '16px';
+    textEl.style.fontWeight = memo.title_bold ? '700' : '700';
   }
 
   function logMemoTitleStyleSqlHint(err) {
