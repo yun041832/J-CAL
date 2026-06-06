@@ -6389,3 +6389,62 @@ aside.right:not(.hidden) .card {
   font-family: inherit;
   outline: none;
 }
+
+/* ── memo edit shell: footer 상단 고정 + 툴바 한줄 압축 ── */
+
+/* 툴바 버튼 간격 줄여서 한 줄에 */
+#memoPage .memo-mini-toolbar {
+  gap: 1px !important;
+  padding: 4px 6px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+}
+
+#memoPage .memo-toolbar-btn {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+}
+
+#memoPage .memo-toolbar-divider {
+  margin: 0 2px !important;
+  flex-shrink: 0 !important;
+}
+
+#memoPage .memo-toolbar-size-select {
+  height: 24px !important;
+  font-size: 11px !important;
+  padding: 0 2px !important;
+  flex-shrink: 0 !important;
+}
+
+/* 수정 shell 구조: footer를 상단으로 */
+#memoPage .memo-card-edit-shell {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#memoPage .memo-card-edit-shell .memo-card-date {
+  order: 0;
+}
+
+#memoPage .memo-card-edit-shell .memo-input-title {
+  order: 1;
+}
+
+#memoPage .memo-card-edit-shell .memo-card-edit-footer {
+  order: 2;
+  margin-top: 0 !important;
+  margin-bottom: 6px !important;
+  padding: 4px 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+#memoPage .memo-card-edit-shell .memo-mini-toolbar {
+  order: 3;
+}
+
+#memoPage .memo-card-edit-shell .memo-input-body {
+  order: 4;
+}
