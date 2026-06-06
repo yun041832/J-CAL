@@ -421,12 +421,26 @@
   function insertLineBreakWithPrefix(editorEl, atChar, prefix) {
     const map = buildCharMap(editorEl);
     const range = collapseRangeAtChar(editorEl, map, atChar);
+
+    // br 삽입 후 빈 div/br이 브라우저에 의해 추가되지 않도록
+    // 커서 위치 이후의 불필요한 빈 노드를 정리한다
     const br = document.createElement('br');
     range.insertNode(br);
+
+    // br 다음에 바로 텍스트 노드 삽입 (중간 빈 노드 방지)
     const text = document.createTextNode(prefix);
-    range.setStartAfter(br);
-    range.collapse(true);
-    range.insertNode(text);
+    br.parentNode.insertBefore(text, br.nextSibling);
+
+    // br과 text 사이에 끼어든 빈 텍스트/br 노드 제거
+    let next = br.nextSibling;
+    while (next && next !== text) {
+      const toRemove = next;
+      next = next.nextSibling;
+      if (toRemove.nodeType === Node.TEXT_NODE && toRemove.textContent === '') {
+        toRemove.remove();
+      }
+    }
+
     const caret = document.createRange();
     caret.setStart(text, prefix.length);
     caret.collapse(true);
