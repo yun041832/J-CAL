@@ -612,7 +612,7 @@
     const sizeSelect = document.createElement('select');
     sizeSelect.className = 'memo-toolbar-size-select';
     sizeSelect.title = 'Font size';
-    [['–', ''], ['12px', '12px'], ['14px', '14px'], ['16px', '16px'], ['20px', '20px'], ['24px', '24px'], ['32px', '32px']].forEach(([label, val]) => {
+    [['–', ''], ['6', '6px'], ['7', '7px'], ['8', '8px'], ['9', '9px'], ['10', '10px'], ['11', '11px'], ['12', '12px'], ['13', '13px'], ['14', '14px'], ['15', '15px'], ['16', '16px'], ['18', '18px'], ['20', '20px'], ['24', '24px'], ['32', '32px']].forEach(([label, val]) => {
       const opt = document.createElement('option');
       opt.value = val;
       opt.textContent = label;
