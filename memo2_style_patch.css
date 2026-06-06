@@ -5473,11 +5473,12 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-card-content {
   white-space: normal;
   word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.6;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  padding-right: 8px;
+  padding-right: 48px;
 }
 
 #memoPage .memo-card-content h1 {
