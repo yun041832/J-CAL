@@ -5477,7 +5477,7 @@ aside.right:not(.hidden) .card {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  padding-right: 52px;
+  padding-right: 8px;
 }
 
 #memoPage .memo-card-content h1 {
