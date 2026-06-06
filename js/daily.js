@@ -2849,7 +2849,7 @@ function widgetDaily(){
     W.append(listWrap);
 
     const render=()=>{
-      const dstr=fmtLocalDate(new Date());
+      const dstr=fmtLocalDate(dailySelectedDate||new Date());
       const list=JSON.parse(win.localStorage.getItem(kDaily(dstr))||'[]');
       listWrap.innerHTML='';
       if(!list.length){
@@ -2861,8 +2861,31 @@ function widgetDaily(){
       }
       list.forEach(item=>{
         const row=doc.createElement('div');
-        row.textContent=item.text;
-        row.style.cssText=`padding:8px 10px;border:1px solid #e9ecf2;border-radius:8px;margin-bottom:6px;font-size:13px;${item.done?'text-decoration:line-through;color:#9aa5b1;':''}`;
+        row.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid #e9ecf2;border-radius:8px;margin-bottom:6px;font-size:13px;';
+
+        const cb=doc.createElement('input');
+        cb.type='checkbox';
+        cb.checked=!!item.done;
+        cb.style.cssText='width:14px;height:14px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#5C8DFF;';
+
+        const txt=doc.createElement('span');
+        txt.textContent=item.text;
+        txt.style.cssText=item.done
+          ?'text-decoration:line-through;color:#9aa5b1;font-size:13px;'
+          :'color:#374151;font-size:13px;';
+
+        cb.addEventListener('change',()=>{
+          const list2=JSON.parse(win.localStorage.getItem(kDaily(dstr))||'[]');
+          const target=list2.find(t=>t.text===item.text);
+          if(target){
+            target.done=cb.checked;
+            win.localStorage.setItem(kDaily(dstr),JSON.stringify(list2));
+            txt.style.textDecoration=cb.checked?'line-through':'';
+            txt.style.color=cb.checked?'#9aa5b1':'#374151';
+          }
+        });
+
+        row.append(cb,txt);
         listWrap.append(row);
       });
     };
