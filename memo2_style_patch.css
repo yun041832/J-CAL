@@ -6250,8 +6250,8 @@ aside.right:not(.hidden) .card {
     font-weight: 600;
   }
 
-  /* 모바일에서 패널 숨김 처리 */
-  .memo-panel.hidden {
+  /* 모바일에서 패널 숨김 처리 — scroll-fix display:flex!important 보다 우선 */
+  #memoPage:not(.hidden) > .memo-panels-wrapper > .memo-panel.is-tab-inactive {
     display: none !important;
   }
 
@@ -6309,10 +6309,6 @@ aside.right:not(.hidden) .card {
 @media (min-width: 769px) {
   #memo-mobile-tabs {
     display: none !important;
-  }
-  /* PC에서 패널 hidden 클래스 무효화 — 3패널 항상 표시 */
-  .memo-panel.hidden {
-    display: flex !important;
   }
 }
 

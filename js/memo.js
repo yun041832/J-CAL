@@ -1142,7 +1142,13 @@
     _memoMobileTabIdx = idx;
 
     panels.forEach((panel, i) => {
-      panel.style.display = i === idx ? 'flex' : 'none';
+      const active = i === idx;
+      panel.classList.toggle('is-tab-inactive', !active);
+      if (active) {
+        panel.style.removeProperty('display');
+      } else {
+        panel.style.setProperty('display', 'none', 'important');
+      }
     });
 
     const mobileTabs = page.querySelector('#memo-mobile-tabs');
