@@ -487,13 +487,7 @@
     const numDot = lineBeforeCaret.match(/^(\d+)\.$/);
     if (numDot) {
       e.preventDefault();
-      const replacedText = `${numDot[1]}. \u00a0`;
-      replaceLineText(editorEl, lineStart, lineEnd, replacedText);
-      // 커서를 공백 바로 앞으로 — 실제 입력은 공백 1개 소비한 것처럼
-      const newMap = buildCharMap(editorEl);
-      const newPlain = plainFromCharMap(newMap);
-      const targetPos = newPlain.indexOf(replacedText.trimEnd()) + replacedText.trimEnd().length;
-      placeCaretAtChar(editorEl, newMap, targetPos);
+      replaceLineText(editorEl, lineStart, lineEnd, `${numDot[1]}. `);
       growMemoEditor(editorEl);
       return true;
     }
