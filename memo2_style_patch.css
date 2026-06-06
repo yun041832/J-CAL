@@ -6453,7 +6453,7 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-card-edit-shell {
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 #memoPage .memo-card-edit-shell .memo-card-edit-footer {

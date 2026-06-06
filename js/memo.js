@@ -487,7 +487,13 @@
     const numDot = lineBeforeCaret.match(/^(\d+)\.$/);
     if (numDot) {
       e.preventDefault();
-      replaceLineText(editorEl, lineStart, lineEnd, `${numDot[1]}. `);
+      const replacedText = `${numDot[1]}. \u00a0`;
+      replaceLineText(editorEl, lineStart, lineEnd, replacedText);
+      // 커서를 공백 바로 앞으로 — 실제 입력은 공백 1개 소비한 것처럼
+      const newMap = buildCharMap(editorEl);
+      const newPlain = plainFromCharMap(newMap);
+      const targetPos = newPlain.indexOf(replacedText.trimEnd()) + replacedText.trimEnd().length;
+      placeCaretAtChar(editorEl, newMap, targetPos);
       growMemoEditor(editorEl);
       return true;
     }
@@ -516,7 +522,8 @@
     }
 
     if (numberedFull) {
-      const nextPrefix = `${parseInt(numberedFull[1], 10) + 1}. `;
+      const nextNum = parseInt(numberedFull[1], 10) + 1;
+      const nextPrefix = `${nextNum}. `;
       insertLineBreakWithPrefix(editorEl, lineEnd, nextPrefix);
       growMemoEditor(editorEl);
       return true;
