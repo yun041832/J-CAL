@@ -1129,15 +1129,25 @@
   function switchMemoTab(idx) {
     if (window.innerWidth >= 769) return;
 
-    const panels = document.querySelectorAll('.memo-panels-wrapper .memo-panel');
+    const page = document.getElementById('memoPage');
+    if (!page) return;
+
+    const wrapper = page.querySelector('.memo-panels-wrapper');
+    if (!wrapper) return;
+
+    const panels = wrapper.querySelectorAll('.memo-panel');
+    if (!panels.length) return;
     if (idx < 0 || idx >= panels.length) return;
+
     _memoMobileTabIdx = idx;
 
     panels.forEach((panel, i) => {
       panel.style.display = i === idx ? 'flex' : 'none';
     });
 
-    const tabs = document.querySelectorAll('#memo-mobile-tabs .memo-tab-btn');
+    const mobileTabs = page.querySelector('#memo-mobile-tabs');
+    if (!mobileTabs) return;
+    const tabs = mobileTabs.querySelectorAll('.memo-tab-btn');
     tabs.forEach((btn, i) => {
       btn.classList.toggle('active', i === idx);
     });
