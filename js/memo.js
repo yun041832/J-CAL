@@ -250,7 +250,12 @@
   }
 
   const TOOLBAR_FORE_COLORS = ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#2563eb', '#7c3aed'];
-  const TOOLBAR_HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#f5d0fe'];
+  const TOOLBAR_HIGHLIGHT_COLORS = [
+    'remove',
+    '#fef08a', '#fde68a', '#fca5a5', '#fdba74',
+    '#bbf7d0', '#6ee7b7', '#bfdbfe', '#93c5fd',
+    '#f5d0fe', '#d8b4fe', '#e5e7eb', '#ffffff',
+  ];
 
   function htmlToPlainText(html) {
     const div = document.createElement('div');
@@ -570,24 +575,58 @@
     };
 
     const showColorPop = (anchorBtn, colors, command) => {
-      anchorBtn.querySelector('.memo-toolbar-color-pop')?.remove();
+      const existing = anchorBtn.querySelector('.memo-toolbar-color-pop');
+      if (existing) {
+        existing.remove();
+        anchorBtn.classList.remove('has-color-pop');
+        return;
+      }
       const pop = document.createElement('div');
       pop.className = 'memo-toolbar-color-pop';
       colors.forEach(color => {
         const dot = document.createElement('button');
         dot.type = 'button';
-        dot.title = color;
-        dot.style.background = color;
-        dot.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          exec(command, color);
-          pop.remove();
-        };
+        if (color === 'remove') {
+          dot.textContent = '×';
+          dot.title = '색상 제거';
+          dot.style.cssText = 'width:18px;height:18px;border-radius:50%;border:1.5px solid #e5e7eb;background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;';
+          dot.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (command === 'hiliteColor') {
+              exec('hiliteColor', 'transparent');
+              exec('removeFormat');
+            } else {
+              exec('removeFormat');
+            }
+            pop.remove();
+            anchorBtn.classList.remove('has-color-pop');
+          };
+        } else {
+          dot.title = color;
+          dot.style.cssText = `width:18px;height:18px;border-radius:50%;border:1.5px solid transparent;background:${color};cursor:pointer;padding:0;flex-shrink:0;`;
+          dot.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            exec(command, color);
+            pop.remove();
+            anchorBtn.classList.remove('has-color-pop');
+          };
+        }
         pop.appendChild(dot);
       });
       anchorBtn.classList.add('has-color-pop');
       anchorBtn.appendChild(pop);
+      setTimeout(() => {
+        const close = (e) => {
+          if (!anchorBtn.contains(e.target)) {
+            pop.remove();
+            anchorBtn.classList.remove('has-color-pop');
+            document.removeEventListener('mousedown', close);
+          }
+        };
+        document.addEventListener('mousedown', close);
+      }, 10);
     };
 
     const addBtn = (label, title, onClick) => {
