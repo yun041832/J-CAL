@@ -6362,3 +6362,24 @@ aside.right:not(.hidden) .card {
 .memo-pc-toggle-btn:not(.active) {
   opacity: 0.4;
 }
+
+/* ── memo card title menu btn hover 표시 ── */
+.memo-card-title-menu {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.memo-card:hover .memo-card-title-menu,
+.memo-card.is-actions-visible .memo-card-title-menu {
+  opacity: 1;
+  pointer-events: auto;
+}

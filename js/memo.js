@@ -2125,7 +2125,7 @@
         titleMenuBtn.className = 'memo-card-title-menu';
         titleMenuBtn.textContent = '···';
         titleMenuBtn.title = 'Title options';
-        titleMenuBtn.style.display = 'none';
+        // CSS hover로 opacity 제어하므로 display 속성 지정하지 않음
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
@@ -2204,9 +2204,11 @@
 
     const handleEditIntent = (e) => {
       if (e.target.closest('.memo-card-actions') || e.target.closest('.memo-pin-btn')) return;
-      if (e.target.closest('.memo-card-title-row')) return;
-      if (e.target.closest('.memo-card-title-text')) return;
       if (e.target.closest('.memo-card-title-menu')) return;
+      if (e.target.closest('.memo-card-title-text')) return;
+      if (e.target.closest('.memo-card-title-row') &&
+        !e.target.closest('.memo-card-title-text') &&
+        !e.target.closest('.memo-card-title-menu')) return;
       if (e.target.closest('.memo-card-title-input')) return;
       if (e.target.closest('.memo-title-popup')) return;
       if (e.target.closest('.memo-mini-toolbar') || e.target.closest('.memo-card-edit-shell')) return;
