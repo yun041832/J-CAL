@@ -798,6 +798,7 @@
   let _lastDeletedMemo = null;
   let _viewMode = localStorage.getItem('memo_view_mode') || 'day'; // day | month | all
   let _memoMobileTabIdx = 0;
+  let _memoPanelVisibility = [true, true, true];
   let _searchQuery = '';
   let _initPromise = null;
 
@@ -1160,6 +1161,22 @@
     });
   }
 
+  function applyPcPanelVisibility() {
+    if (window.innerWidth < 769) return;
+    const page = document.getElementById('memoPage');
+    if (!page) return;
+    const panels = page.querySelectorAll('.memo-panels-wrapper .memo-panel');
+    panels.forEach((panel, i) => {
+      const visible = _memoPanelVisibility[i] !== false;
+      panel.classList.toggle('is-tab-inactive', !visible);
+      if (visible) {
+        panel.style.removeProperty('display');
+      } else {
+        panel.style.setProperty('display', 'none', 'important');
+      }
+    });
+  }
+
   function renderMemoPage() {
     const page = document.getElementById('memoPage');
     if (!page) return;
@@ -1225,6 +1242,36 @@
         renderMemoPage();
       };
     });
+
+    while (_memoPanelVisibility.length < _sections.length) {
+      _memoPanelVisibility.push(true);
+    }
+    if (_memoPanelVisibility.length > _sections.length) {
+      _memoPanelVisibility.length = _sections.length;
+    }
+
+    if (_sections.length > 0) {
+      const pcToggleBar = document.createElement('div');
+      pcToggleBar.id = 'memo-pc-toggle-bar';
+      pcToggleBar.className = 'memo-pc-toggle-bar';
+
+      _sections.forEach((sec, si) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'memo-pc-toggle-btn' + (_memoPanelVisibility[si] !== false ? ' active' : '');
+        btn.textContent = String(si + 1);
+        btn.title = sectionTitle(sec);
+        btn.onclick = () => {
+          _memoPanelVisibility[si] = !(_memoPanelVisibility[si] !== false);
+          applyPcPanelVisibility();
+          btn.classList.toggle('active', _memoPanelVisibility[si] !== false);
+        };
+        pcToggleBar.appendChild(btn);
+      });
+
+      header.querySelector('.memo-header-tools')?.appendChild(pcToggleBar);
+    }
+
     page.appendChild(header);
     syncMemoLoginNudge(page, !_userId);
 
@@ -1367,7 +1414,11 @@
     });
 
     page.appendChild(panels);
-    switchMemoTab(_memoMobileTabIdx);
+    if (window.innerWidth >= 769) {
+      applyPcPanelVisibility();
+    } else {
+      switchMemoTab(_memoMobileTabIdx);
+    }
     document.querySelector('.memo-search-input')?.focus();
     if (_searchQuery.trim()) {
       requestAnimationFrame(() => {

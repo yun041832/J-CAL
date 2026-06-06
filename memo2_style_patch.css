@@ -6320,3 +6320,44 @@ aside.right:not(.hidden) .card {
   word-break: normal;
   max-width: 100%;
 }
+
+/* PC 섹션 토글 버튼 바 — 모바일에서 숨김 */
+.memo-pc-toggle-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .memo-pc-toggle-bar {
+    display: none !important;
+  }
+}
+
+/* 토글 버튼 스타일 */
+.memo-pc-toggle-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.memo-pc-toggle-btn.active {
+  background: #5C8DFF;
+  border-color: #5C8DFF;
+  color: #fff;
+}
+
+.memo-pc-toggle-btn:not(.active) {
+  opacity: 0.4;
+}
