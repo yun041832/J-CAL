@@ -6448,3 +6448,30 @@ aside.right:not(.hidden) .card {
 #memoPage .memo-card-edit-shell .memo-input-body {
   order: 4;
 }
+
+/* ── memo edit shell: toolbar sticky 고정 ── */
+#memoPage .memo-card-edit-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+#memoPage .memo-card-edit-shell .memo-card-edit-footer {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
+  background: inherit !important;
+}
+
+#memoPage .memo-card-edit-shell .memo-mini-toolbar {
+  position: sticky !important;
+  top: 42px !important;
+  z-index: 4 !important;
+  background: #f8fafc !important;
+}
+
+#memoPage .memo-card-edit-shell .memo-input-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 80px !important;
+}
