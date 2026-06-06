@@ -1127,7 +1127,10 @@
 
   // ── 렌더 ───────────────────────────────────────────
   function switchMemoTab(idx) {
-    if (window.innerWidth >= 769) return;
+    const mobileTabs = document.getElementById('memo-mobile-tabs');
+    if (!mobileTabs) return;
+    const tabsVisible = window.getComputedStyle(mobileTabs).display !== 'none';
+    if (!tabsVisible) return;
 
     const page = document.getElementById('memoPage');
     if (!page) return;
@@ -1151,8 +1154,6 @@
       }
     });
 
-    const mobileTabs = page.querySelector('#memo-mobile-tabs');
-    if (!mobileTabs) return;
     const tabs = mobileTabs.querySelectorAll('.memo-tab-btn');
     tabs.forEach((btn, i) => {
       btn.classList.toggle('active', i === idx);
