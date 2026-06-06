@@ -2168,6 +2168,49 @@ function miniCalToday(){
   loadDailyByDate(new Date());
 }
 
+function initDailyDaySectionSortable(listEl,dstr){
+  if(typeof Sortable==='undefined'||!listEl) return;
+  if(listEl._dailySortable){
+    listEl._dailySortable.destroy();
+    listEl._dailySortable=null;
+  }
+  listEl._dailySortable=new Sortable(listEl,{
+    animation:150,
+    handle:'.daily-day-section-head',
+    draggable:'.daily-day-section-card',
+    onEnd(){
+      persistDailySectionSortOrderFromDom(dstr,listEl);
+    },
+  });
+}
+
+async function persistDailySectionSortOrderFromDom(dstr,listEl){
+  const userId=await resolveDailyUserId();
+  if(!userId) return;
+  const cards=listEl.querySelectorAll('.daily-day-section-card');
+  const sb=getDailySupabaseClient();
+  const orderUpdates=[];
+  cards.forEach((card,index)=>{
+    const sectionId=card.dataset.sectionId;
+    if(!sectionId||sectionId==='__none__'||isVirtualSectionId(sectionId)) return;
+    orderUpdates.push({id:sectionId,sort_order:index});
+  });
+  for(const {id,sort_order} of orderUpdates){
+    const {error}=await sb.from('daily_sections')
+      .update({sort_order})
+      .eq('id',id)
+      .eq('user_id',userId);
+    if(error) console.error('persistDailySectionSortOrderFromDom',error);
+  }
+  const cached=_dailySectionsCache.get(dstr);
+  if(cached&&orderUpdates.length){
+    const orderMap=new Map(orderUpdates.map((u)=>[u.id,u.sort_order]));
+    cached.forEach((s)=>{ if(orderMap.has(s.id)) s.order=orderMap.get(s.id); });
+    cached.sort((a,b)=>(a.order||0)-(b.order||0));
+    _dailySectionsCache.set(dstr,cached);
+  }
+}
+
 async function renderDailyDayWorkspace(){
   const renderId=++_dailyDayWorkspaceRenderId;
   const host=document.getElementById('dailyDayWorkspace');
@@ -2256,6 +2299,7 @@ async function renderDailyDayWorkspace(){
   mergedSections.forEach((section)=>{
     const theme=getDailySectionTheme(section);
     const sec=el('section','daily-day-section-card daily-section-card');
+    sec.dataset.sectionId=section.id;
     const secHead=el('div','daily-day-section-head daily-section-header');
     const isColoredHeader=section.id!=='__none__';
     if(isColoredHeader){
@@ -2425,6 +2469,7 @@ async function renderDailyDayWorkspace(){
   host.innerHTML='';
   host.appendChild(wrap);
   renderMiniCal();
+  initDailyDaySectionSortable(listWrap,dstr);
 }
 
 function renderDailyWeekCalendar(){
