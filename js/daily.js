@@ -2058,9 +2058,7 @@ function initDailyPage(){
   openWidgetBtn?.addEventListener('click', ()=>{
     const periodWrap=document.getElementById('dailyPeriodNavWrap');
     if(periodWrap) periodWrap.style.display='none';
-    if(dailyViewMode==='week') widgetDailyWeek?.();
-    else if(dailyViewMode==='month') widgetDailyMonth?.();
-    else widgetDaily?.();
+    widgetDaily?.();
   });
 }
 
@@ -3247,8 +3245,6 @@ function widgetDaily(){
     getDailySupabaseClient,
     applyDailyView,
     widgetDaily,
-    widgetDailyWeek,
-    widgetDailyMonth,
     loadDailyByDate,
     renderMiniCal,
     buildDailyMiniCalendar,
@@ -3269,7 +3265,5 @@ function widgetDaily(){
   window.applyDailyView = applyDailyView;
   window.refreshDailyTaskViews = refreshDailyTaskViews;
   window.widgetDaily = widgetDaily;
-  window.widgetDailyWeek = widgetDailyWeek;
-  window.widgetDailyMonth = widgetDailyMonth;
   window.getDailyTasks = getDailyTasks;
 })();
