@@ -575,36 +575,39 @@
     };
 
     const showColorPop = (anchorBtn, colors, command) => {
-      const existing = anchorBtn.querySelector('.memo-toolbar-color-pop');
+      const existing = document.querySelector('.memo-toolbar-color-pop');
       if (existing) {
         existing.remove();
-        anchorBtn.classList.remove('has-color-pop');
+        document.querySelectorAll('.memo-toolbar-btn.has-color-pop').forEach(b => b.classList.remove('has-color-pop'));
         return;
       }
       const pop = document.createElement('div');
       pop.className = 'memo-toolbar-color-pop';
+      pop.style.cssText = 'position:fixed;display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:99999;max-width:200px;';
       colors.forEach(color => {
         const dot = document.createElement('button');
         dot.type = 'button';
         if (color === 'remove') {
           dot.textContent = '×';
           dot.title = '색상 제거';
-          dot.style.cssText = 'width:18px;height:18px;border-radius:50%;border:1.5px solid #e5e7eb;background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;';
+          dot.style.cssText = 'width:20px;height:20px;border-radius:50%;border:1.5px solid #e5e7eb;background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;';
+          dot.onmousedown = (e) => e.preventDefault();
           dot.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            editorEl.focus();
             if (command === 'hiliteColor') {
-              exec('hiliteColor', 'transparent');
-              exec('removeFormat');
+              document.execCommand('hiliteColor', false, 'transparent');
             } else {
-              exec('removeFormat');
+              document.execCommand('removeFormat', false, null);
             }
             pop.remove();
             anchorBtn.classList.remove('has-color-pop');
           };
         } else {
           dot.title = color;
-          dot.style.cssText = `width:18px;height:18px;border-radius:50%;border:1.5px solid transparent;background:${color};cursor:pointer;padding:0;flex-shrink:0;`;
+          dot.style.cssText = `width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;background:${color};cursor:pointer;padding:0;flex-shrink:0;`;
+          dot.onmousedown = (e) => e.preventDefault();
           dot.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -615,11 +618,18 @@
         }
         pop.appendChild(dot);
       });
+      document.body.appendChild(pop);
       anchorBtn.classList.add('has-color-pop');
-      anchorBtn.appendChild(pop);
+
+      const rect = anchorBtn.getBoundingClientRect();
+      const popW = 200;
+      const left = Math.min(rect.left, window.innerWidth - popW - 8);
+      pop.style.left = left + 'px';
+      pop.style.top = (rect.bottom + 4) + 'px';
+
       setTimeout(() => {
         const close = (e) => {
-          if (!anchorBtn.contains(e.target)) {
+          if (!pop.contains(e.target) && e.target !== anchorBtn) {
             pop.remove();
             anchorBtn.classList.remove('has-color-pop');
             document.removeEventListener('mousedown', close);
