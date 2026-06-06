@@ -2129,7 +2129,12 @@
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
-        const stopTitleRowBubble = (e) => e.stopPropagation();
+        // 타이틀 행 버블링 차단 — 단, 버튼 클릭은 허용
+        const stopTitleRowBubble = (e) => {
+          if (e.target.closest('.memo-card-title-menu')) return;
+          if (e.target.closest('.memo-card-title-text')) return;
+          e.stopPropagation();
+        };
         titleRow.addEventListener('mousedown', stopTitleRowBubble, true);
         titleRow.addEventListener('click', stopTitleRowBubble, true);
 
