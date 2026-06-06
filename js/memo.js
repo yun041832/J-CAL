@@ -2087,7 +2087,15 @@
 
     const paintTitleRow = () => {
       const t = (memo.title || '').trim();
-      if (!t || !titleRow || !titleTextEl) return;
+      if (!titleRow || !titleTextEl) return;
+      if (!t) {
+        titleTextEl.textContent = '';
+        titleTextEl.style.color = '#9ca3af';
+        titleTextEl.style.fontWeight = '400';
+        titleTextEl.style.fontSize = '13px';
+        if (titleEmojiEl) titleEmojiEl.textContent = '';
+        return;
+      }
       if (_searchQuery.trim()) {
         titleTextEl.innerHTML = highlightText(
           t.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
@@ -2100,15 +2108,6 @@
     };
 
     const mountTitleRow = () => {
-      const t = (memo.title || '').trim();
-      if (!t) {
-        titleRow?.remove();
-        titleRow = null;
-        titleEmojiEl = null;
-        titleTextEl = null;
-        titleMenuBtn = null;
-        return;
-      }
       if (!titleRow || !titleRow.isConnected) {
         titleRow = null;
         titleEmojiEl = null;
@@ -2125,11 +2124,9 @@
         titleMenuBtn.className = 'memo-card-title-menu';
         titleMenuBtn.textContent = '···';
         titleMenuBtn.title = 'Title options';
-        // CSS hover로 opacity 제어하므로 display 속성 지정하지 않음
         titleRow.append(titleEmojiEl, titleTextEl, titleMenuBtn);
         dateEl.insertAdjacentElement('afterend', titleRow);
 
-        // 타이틀 행 버블링 차단 — 단, 버튼 클릭은 허용
         const stopTitleRowBubble = (e) => {
           if (e.target.closest('.memo-card-title-menu')) return;
           if (e.target.closest('.memo-card-title-text')) return;
@@ -2144,13 +2141,10 @@
           showMemoTitleStylePopup(card, titleMenuBtn, memo, paintTitleRow);
         };
 
-        const bindTitleTextClick = () => {
-          titleTextEl.onclick = (e) => {
-            e.stopPropagation();
-            showMemoTitleStylePopup(card, titleTextEl, memo, paintTitleRow);
-          };
+        titleTextEl.onclick = (e) => {
+          e.stopPropagation();
+          showMemoTitleStylePopup(card, titleTextEl, memo, paintTitleRow);
         };
-        bindTitleTextClick();
       }
       paintTitleRow();
     };
