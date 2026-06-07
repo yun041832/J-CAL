@@ -23,6 +23,8 @@ import TextStyle from 'https://esm.sh/@tiptap/extension-text-style@2.4.0';
 import Color from 'https://esm.sh/@tiptap/extension-color@2.4.0';
 import Highlight from 'https://esm.sh/@tiptap/extension-highlight@2.4.0';
 import Link from 'https://esm.sh/@tiptap/extension-link@2.4.0';
+import TaskList from 'https://esm.sh/@tiptap/extension-task-list@2.4.0';
+import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@2.4.0';
 
 const SECTION_COLORS = [
   { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' },
@@ -131,6 +133,8 @@ function createEditor({ element, content, placeholder, onUpdate }) {
     extensions: [
       StarterKit.configure({ bulletList: false, orderedList: false, listItem: false }),
       ListItem, BulletList, OrderedList,
+      TaskList.configure({ HTMLAttributes: { class: 'note-task-list' } }),
+      TaskItem.configure({ nested: true }),
       Table.configure({ resizable: false }), TableRow, TableHeader, TableCell,
       Image, Underline,
       TextStyle.extend({
@@ -177,7 +181,6 @@ function buildToolbar(editor) {
   const tb = document.createElement('div');
   tb.style.cssText = 'display:flex;align-items:center;gap:0px;padding:4px 8px;border-bottom:1px solid #e5e7eb;background:#f8fafc;flex-wrap:wrap;min-height:32px;';
 
-  // 기본 버튼 스타일 생성기
   const mkBtn = ({ label, title, action, mark, style }) => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.title = title;
@@ -188,7 +191,9 @@ function buildToolbar(editor) {
     btn.onmousedown = (e) => { e.preventDefault(); action(); };
     if (mark) {
       const upd = () => {
-        const a = editor.isActive(mark);
+        const a = mark === 'heading1' ? editor.isActive('heading', { level: 1 })
+                : mark === 'heading2' ? editor.isActive('heading', { level: 2 })
+                : editor.isActive(mark);
         btn._active = a;
         btn.style.background = a ? '#e0e7ff' : 'none';
         btn.style.color = a ? '#4f46e5' : '#374151';
@@ -198,14 +203,31 @@ function buildToolbar(editor) {
     return btn;
   };
 
-  // 구분선
   const sep = () => {
     const d = document.createElement('div');
     d.style.cssText = 'width:1px;height:14px;background:#d1d5db;margin:0 3px;flex-shrink:0;';
     return d;
   };
 
-  // B I U S
+  // 1. 체크박스
+  tb.append(
+    mkBtn({
+      label: '☑',
+      title: '체크박스',
+      action: () => editor.chain().focus().toggleTaskList().run(),
+      style: 'font-size:15px;',
+    }),
+    sep(),
+  );
+
+  // 2. H1 H2
+  tb.append(
+    mkBtn({ label: 'H1', title: '제목1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), mark: 'heading1', style: 'font-weight:700;font-size:12px;' }),
+    mkBtn({ label: 'H2', title: '제목2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), mark: 'heading2', style: 'font-weight:600;font-size:12px;' }),
+    sep(),
+  );
+
+  // 3. B I U S
   tb.append(
     mkBtn({ label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold', style: 'font-weight:700;' }),
     mkBtn({ label: '<i>I</i>', title: '기울임', action: () => editor.chain().focus().toggleItalic().run(), mark: 'italic' }),
@@ -214,80 +236,7 @@ function buildToolbar(editor) {
     sep(),
   );
 
-  // 글자 크기 스플릿 버튼 ( — | ∨ )
-  const sizeWrap = document.createElement('div');
-  sizeWrap.style.cssText = 'display:flex;align-items:center;';
-
-  const hrBtn = document.createElement('button');
-  hrBtn.type = 'button'; hrBtn.title = '구분선'; hrBtn.textContent = '—';
-  hrBtn.style.cssText = 'padding:5px 8px;border:none;border-right:1px solid #d1d5db;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;';
-  hrBtn.onmouseover = () => hrBtn.style.background = '#f3f4f6';
-  hrBtn.onmouseout = () => hrBtn.style.background = 'none';
-  hrBtn.onmousedown = (e) => { e.preventDefault(); editor.chain().focus().setHorizontalRule().run(); };
-
-  const sizeToggle = document.createElement('button');
-  sizeToggle.type = 'button'; sizeToggle.title = '글자 크기';
-  sizeToggle.style.cssText = 'padding:5px 6px;border:none;background:none;cursor:pointer;font-size:12px;color:#9ca3af;line-height:1;';
-  sizeToggle.textContent = '∨';
-  sizeToggle.onmouseover = () => sizeToggle.style.background = '#f3f4f6';
-  sizeToggle.onmouseout = () => sizeToggle.style.background = 'none';
-
-  sizeWrap.append(hrBtn, sizeToggle);
-
-  // 글자 크기 드롭다운
-  const fontSizes = [8,9,10,11,12,14,18,24,36];
-  const sizeDrop = document.createElement('div');
-  sizeDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:64px;';
-  fontSizes.forEach(sz => {
-    const item = document.createElement('button');
-    item.type = 'button'; item.textContent = sz + 'px';
-    item.style.cssText = 'display:block;width:100%;padding:5px 14px;border:none;background:none;cursor:pointer;font-size:12px;text-align:left;color:#374151;';
-    item.onmouseover = () => item.style.background = '#f3f4f6';
-    item.onmouseout = () => item.style.background = 'none';
-    item.onmousedown = (e) => {
-      e.preventDefault(); e.stopPropagation();
-      editor.chain().focus().setMark('textStyle', { fontSize: sz + 'px' }).run();
-      sizeDrop.style.display = 'none';
-    };
-    sizeDrop.appendChild(item);
-  });
-  document.body.appendChild(sizeDrop);
-  sizeToggle.onmousedown = (e) => {
-    e.preventDefault();
-    const rect = sizeToggle.getBoundingClientRect();
-    sizeDrop.style.left = rect.left + 'px';
-    sizeDrop.style.top = (rect.bottom + 4) + 'px';
-    sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none';
-  };
-
-  tb.append(
-    mkBtn({ label: 'H1', title: '제목1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), style: 'font-weight:700;font-size:12px;' }),
-    mkBtn({ label: 'H2', title: '제목2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), style: 'font-weight:600;font-size:12px;' }),
-    sep(),
-  );
-
-  const h1Btn = tb.querySelector('[title="제목1"]');
-  if (h1Btn) {
-    const h1Upd = () => {
-      const a = editor.isActive('heading', { level: 1 });
-      h1Btn.style.background = a ? '#e0e7ff' : 'none';
-      h1Btn.style.color = a ? '#4f46e5' : '#374151';
-    };
-    editor.on('selectionUpdate', h1Upd); editor.on('update', h1Upd);
-  }
-  const h2Btn = tb.querySelector('[title="제목2"]');
-  if (h2Btn) {
-    const h2Upd = () => {
-      const a = editor.isActive('heading', { level: 2 });
-      h2Btn.style.background = a ? '#e0e7ff' : 'none';
-      h2Btn.style.color = a ? '#4f46e5' : '#374151';
-    };
-    editor.on('selectionUpdate', h2Upd); editor.on('update', h2Upd);
-  }
-
-  tb.append(sizeWrap, sep());
-
-  // fixed 드롭다운 헬퍼
+  // 4. A HL
   const makeFixedDropdown = (colors, onSelect, onReset) => {
     const drop = document.createElement('div');
     drop.classList.add('__fixed-toolbar-drop');
@@ -321,7 +270,6 @@ function buildToolbar(editor) {
     drop.style.display = 'flex';
   };
 
-  // A 글자색
   const colorPalette = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#111827'];
   const colorDrop = makeFixedDropdown(colorPalette, (c) => editor.chain().focus().setColor(c).run(), () => editor.chain().focus().unsetColor().run());
   const colorBtn = document.createElement('button');
@@ -332,7 +280,6 @@ function buildToolbar(editor) {
   colorBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(colorDrop, colorBtn); };
   tb.appendChild(colorBtn);
 
-  // HL 하이라이트
   const hlPalette = ['#fef08a','#bbf7d0','#bae6fd','#fecaca','#e9d5ff','#fed7aa'];
   const hlDrop = makeFixedDropdown(hlPalette, (c) => editor.chain().focus().toggleHighlight({ color: c }).run(), () => editor.chain().focus().unsetHighlight().run());
   const hlBtn = document.createElement('button');
@@ -349,10 +296,55 @@ function buildToolbar(editor) {
   editor.on('selectionUpdate', hlUpd); editor.on('update', hlUpd);
   hlBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(hlDrop, hlBtn); };
   tb.appendChild(hlBtn);
-
   tb.appendChild(sep());
 
-  // 링크
+  // 5. — (구분선) + ∨ (글자크기)
+  const sizeWrap = document.createElement('div');
+  sizeWrap.style.cssText = 'display:flex;align-items:center;';
+
+  const hrBtn = document.createElement('button');
+  hrBtn.type = 'button'; hrBtn.title = '구분선'; hrBtn.textContent = '—';
+  hrBtn.style.cssText = 'padding:5px 8px;border:none;border-right:1px solid #d1d5db;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;';
+  hrBtn.onmouseover = () => hrBtn.style.background = '#f3f4f6';
+  hrBtn.onmouseout = () => hrBtn.style.background = 'none';
+  hrBtn.onmousedown = (e) => { e.preventDefault(); editor.chain().focus().setHorizontalRule().run(); };
+
+  const sizeToggle = document.createElement('button');
+  sizeToggle.type = 'button'; sizeToggle.title = '글자 크기';
+  sizeToggle.style.cssText = 'padding:5px 6px;border:none;background:none;cursor:pointer;font-size:12px;color:#9ca3af;line-height:1;';
+  sizeToggle.textContent = '∨';
+  sizeToggle.onmouseover = () => sizeToggle.style.background = '#f3f4f6';
+  sizeToggle.onmouseout = () => sizeToggle.style.background = 'none';
+
+  const fontSizes = [8,9,10,11,12,14,18,24,36];
+  const sizeDrop = document.createElement('div');
+  sizeDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:64px;';
+  fontSizes.forEach(sz => {
+    const item = document.createElement('button');
+    item.type = 'button'; item.textContent = sz + 'px';
+    item.style.cssText = 'display:block;width:100%;padding:5px 14px;border:none;background:none;cursor:pointer;font-size:12px;text-align:left;color:#374151;';
+    item.onmouseover = () => item.style.background = '#f3f4f6';
+    item.onmouseout = () => item.style.background = 'none';
+    item.onmousedown = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      editor.chain().focus().setMark('textStyle', { fontSize: sz + 'px' }).run();
+      sizeDrop.style.display = 'none';
+    };
+    sizeDrop.appendChild(item);
+  });
+  document.body.appendChild(sizeDrop);
+  sizeToggle.onmousedown = (e) => {
+    e.preventDefault();
+    const rect = sizeToggle.getBoundingClientRect();
+    sizeDrop.style.left = rect.left + 'px';
+    sizeDrop.style.top = (rect.bottom + 4) + 'px';
+    sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none';
+  };
+
+  sizeWrap.append(hrBtn, sizeToggle);
+  tb.append(sizeWrap, sep());
+
+  // 6. 링크
   tb.appendChild(mkBtn({
     label: '🔗', title: '링크',
     action: () => {
@@ -365,7 +357,7 @@ function buildToolbar(editor) {
     mark: 'link'
   }));
 
-  // 이모지
+  // 7. 이모지
   const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐'];
   const emojiDrop = document.createElement('div');
   emojiDrop.classList.add('__fixed-toolbar-drop');
