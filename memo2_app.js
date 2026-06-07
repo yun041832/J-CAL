@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       trackMenuPV(`menu:${t||'unknown'}`);
       showUsage(t);
       if(t==='calendar'){ showCalendarPage(); }
-      if(t==='memo') window.JCal?.showMemoPage?.();
+      if(t==='memo') { setTimeout(()=>window.JCal?.showMemoPage?.(), 100); }
       if(t==='routine') window.JCal?.showRoutinePage?.();
       if(t==='daily') window.JCal?.showDailyPage?.();
       if(t==='todo') widgetTodo?.();
