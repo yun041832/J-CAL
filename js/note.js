@@ -175,14 +175,14 @@ function createEditor({ element, content, placeholder, onUpdate }) {
 
 function buildToolbar(editor) {
   const tb = document.createElement('div');
-  tb.style.cssText = 'display:flex;align-items:center;gap:1px;padding:4px 8px;border-bottom:1px solid #f0f0f0;background:#fff;flex-wrap:wrap;';
+  tb.style.cssText = 'display:flex;align-items:center;gap:0px;padding:6px 10px;border-bottom:1px solid #f0f0f0;background:#fff;flex-wrap:wrap;min-height:36px;';
 
   // 기본 버튼 스타일 생성기
   const mkBtn = ({ label, title, action, mark, style }) => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.title = title;
     btn.innerHTML = label;
-    btn.style.cssText = `padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;color:#374151;line-height:1;transition:background 0.1s;${style||''}`;
+    btn.style.cssText = `padding:5px 9px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;transition:background 0.1s;font-family:inherit;${style||''}`;
     btn.onmouseover = () => { if (!btn._active) btn.style.background = '#f3f4f6'; };
     btn.onmouseout = () => { if (!btn._active) btn.style.background = 'none'; };
     btn.onmousedown = (e) => { e.preventDefault(); action(); };
@@ -201,7 +201,7 @@ function buildToolbar(editor) {
   // 구분선
   const sep = () => {
     const d = document.createElement('div');
-    d.style.cssText = 'width:1px;height:16px;background:#e5e7eb;margin:0 4px;flex-shrink:0;';
+    d.style.cssText = 'width:1px;height:18px;background:#d1d5db;margin:0 6px;flex-shrink:0;';
     return d;
   };
 
@@ -216,18 +216,18 @@ function buildToolbar(editor) {
 
   // 글자 크기 스플릿 버튼 ( — | ∨ )
   const sizeWrap = document.createElement('div');
-  sizeWrap.style.cssText = 'display:flex;align-items:center;border:1px solid #e5e7eb;border-radius:5px;overflow:hidden;';
+  sizeWrap.style.cssText = 'display:flex;align-items:center;';
 
   const hrBtn = document.createElement('button');
   hrBtn.type = 'button'; hrBtn.title = '구분선'; hrBtn.textContent = '—';
-  hrBtn.style.cssText = 'padding:4px 7px;border:none;background:none;cursor:pointer;font-size:13px;color:#374151;border-right:1px solid #e5e7eb;line-height:1;';
+  hrBtn.style.cssText = 'padding:5px 8px;border:none;border-right:1px solid #d1d5db;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;';
   hrBtn.onmouseover = () => hrBtn.style.background = '#f3f4f6';
   hrBtn.onmouseout = () => hrBtn.style.background = 'none';
   hrBtn.onmousedown = (e) => { e.preventDefault(); editor.chain().focus().setHorizontalRule().run(); };
 
   const sizeToggle = document.createElement('button');
   sizeToggle.type = 'button'; sizeToggle.title = '글자 크기';
-  sizeToggle.style.cssText = 'padding:4px 5px;border:none;background:none;cursor:pointer;font-size:11px;color:#6b7280;line-height:1;';
+  sizeToggle.style.cssText = 'padding:5px 6px;border:none;background:none;cursor:pointer;font-size:12px;color:#9ca3af;line-height:1;';
   sizeToggle.textContent = '∨';
   sizeToggle.onmouseover = () => sizeToggle.style.background = '#f3f4f6';
   sizeToggle.onmouseout = () => sizeToggle.style.background = 'none';
@@ -308,7 +308,7 @@ function buildToolbar(editor) {
   const colorDrop = makeFixedDropdown(colorPalette, (c) => editor.chain().focus().setColor(c).run(), () => editor.chain().focus().unsetColor().run());
   const colorBtn = document.createElement('button');
   colorBtn.type = 'button'; colorBtn.title = '글자색'; colorBtn.textContent = 'A';
-  colorBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;font-weight:700;color:#374151;line-height:1;';
+  colorBtn.style.cssText = 'padding:5px 9px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:14px;font-weight:700;color:#374151;line-height:1;';
   colorBtn.onmouseover = () => colorBtn.style.background = '#f3f4f6';
   colorBtn.onmouseout = () => colorBtn.style.background = 'none';
   colorBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(colorDrop, colorBtn); };
@@ -319,7 +319,7 @@ function buildToolbar(editor) {
   const hlDrop = makeFixedDropdown(hlPalette, (c) => editor.chain().focus().toggleHighlight({ color: c }).run(), () => editor.chain().focus().unsetHighlight().run());
   const hlBtn = document.createElement('button');
   hlBtn.type = 'button'; hlBtn.title = '하이라이트'; hlBtn.textContent = 'HL';
-  hlBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;color:#374151;line-height:1;';
+  hlBtn.style.cssText = 'padding:5px 9px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;';
   hlBtn.onmouseover = () => { if (!hlBtn._active) hlBtn.style.background = '#f3f4f6'; };
   hlBtn.onmouseout = () => { if (!hlBtn._active) hlBtn.style.background = 'none'; };
   const hlUpd = () => {
@@ -364,7 +364,7 @@ function buildToolbar(editor) {
   document.body.appendChild(emojiDrop);
   const emojiBtn = document.createElement('button');
   emojiBtn.type = 'button'; emojiBtn.title = '이모지'; emojiBtn.textContent = '🙂';
-  emojiBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:15px;line-height:1;';
+  emojiBtn.style.cssText = 'padding:5px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:17px;line-height:1;';
   emojiBtn.onmouseover = () => emojiBtn.style.background = '#f3f4f6';
   emojiBtn.onmouseout = () => emojiBtn.style.background = 'none';
   emojiBtn.onmousedown = (e) => {
