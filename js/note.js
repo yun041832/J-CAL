@@ -1,10 +1,10 @@
 /**
  * js/note.js — 제이캘 노트탭 (TipTap 기반)
  * - notes + note_sections 테이블 연동
+ * - 3패널 레이아웃 (패널 토글 1/2/3)
+ * - 검색, Day/Month/All 뷰, Undo
  * - 카드 클릭 즉시 인라인 편집
  * - 300ms debounce 자동저장
- * - 표/불렛/번호/줄바꿈 복붙 지원
- * - focus 시 툴바 표시
  */
 
 import { Editor } from 'https://esm.sh/@tiptap/core@2.4.0';
@@ -20,16 +20,14 @@ import Image from 'https://esm.sh/@tiptap/extension-image@2.4.0';
 import Placeholder from 'https://esm.sh/@tiptap/extension-placeholder@2.4.0';
 import Underline from 'https://esm.sh/@tiptap/extension-underline@2.4.0';
 
-// ─── 상수 ────────────────────────────────────────────────────────────────────
-
 const SECTION_COLORS = [
-  { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' }, // 인디고
-  { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' }, // 그린
-  { bg: '#FFF7ED', border: '#FED7AA', text: '#9A3412' }, // 오렌지
-  { bg: '#FDF4FF', border: '#E9D5FF', text: '#6B21A8' }, // 퍼플
-  { bg: '#FFF1F2', border: '#FFE4E6', text: '#9F1239' }, // 로즈
-  { bg: '#F0F9FF', border: '#BAE6FD', text: '#0C4A6E' }, // 스카이
-  { bg: '#FEFCE8', border: '#FEF08A', text: '#854D0E' }, // 옐로우
+  { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' },
+  { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' },
+  { bg: '#FFF7ED', border: '#FED7AA', text: '#9A3412' },
+  { bg: '#FDF4FF', border: '#E9D5FF', text: '#6B21A8' },
+  { bg: '#FFF1F2', border: '#FFE4E6', text: '#9F1239' },
+  { bg: '#F0F9FF', border: '#BAE6FD', text: '#0C4A6E' },
+  { bg: '#FEFCE8', border: '#FEF08A', text: '#854D0E' },
 ];
 
 const DEFAULT_SECTIONS = [
@@ -38,28 +36,20 @@ const DEFAULT_SECTIONS = [
   { name: 'Journal', emoji: '📖', color: '#FFF7ED' },
 ];
 
-// ─── 상태 ────────────────────────────────────────────────────────────────────
+let _sb = null, _userId = null, _sections = [], _notes = [];
+let _editors = new Map();
+let _hiddenPanels = new Set();
+let _searchQuery = '';
+let _viewMode = 'all';
+let _undoStack = [];
 
-let _sb = null;
-let _userId = null;
-let _sections = [];
-let _notes = [];
-let _editors = new Map(); // noteId → Editor 인스턴스
-
-// ─── Supabase 클라이언트 ──────────────────────────────────────────────────────
-
-function getSb() {
-  if (!_sb && window.supabase?.auth) _sb = window.supabase;
-  return _sb;
-}
+function getSb() { if (!_sb && window.supabase?.auth) _sb = window.supabase; return _sb; }
 
 async function getUserId() {
   if (_userId) return _userId;
-  const sb = getSb();
-  if (!sb) return null;
+  const sb = getSb(); if (!sb) return null;
   const { data } = await sb.auth.getUser();
-  _userId = data?.user?.id || null;
-  return _userId;
+  _userId = data?.user?.id || null; return _userId;
 }
 
 function todayStr() {
@@ -67,120 +57,85 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ─── 데이터 CRUD ──────────────────────────────────────────────────────────────
+function thisMonthPrefix() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
 
 async function loadSections() {
-  const sb = getSb();
-  const userId = await getUserId();
+  const sb = getSb(), userId = await getUserId();
   if (!sb || !userId) return [];
-
-  const { data, error } = await sb
-    .from('note_sections')
-    .select('*')
-    .eq('user_id', userId)
-    .order('sort_order');
-
+  const { data, error } = await sb.from('note_sections').select('*').eq('user_id', userId).order('sort_order');
   if (error) { console.error('[note] loadSections', error); return []; }
-
-  // 기본 섹션이 없으면 자동 생성
   if (!data || data.length === 0) {
-    const rows = DEFAULT_SECTIONS.map((s, i) => ({
-      user_id: userId,
-      name: s.name,
-      emoji: s.emoji,
-      color: s.color,
-      sort_order: i,
-    }));
+    const rows = DEFAULT_SECTIONS.map((s, i) => ({ user_id: userId, name: s.name, emoji: s.emoji, color: s.color, sort_order: i }));
     const { data: created } = await sb.from('note_sections').insert(rows).select('*');
     return created || [];
   }
-
   return data;
 }
 
 async function loadNotes() {
-  const sb = getSb();
-  const userId = await getUserId();
+  const sb = getSb(), userId = await getUserId();
   if (!sb || !userId) return [];
-
-  const { data, error } = await sb
-    .from('notes')
-    .select('*')
-    .eq('user_id', userId)
-    .order('note_date', { ascending: false });
-
+  let query = sb.from('notes').select('*').eq('user_id', userId);
+  if (_viewMode === 'day') query = query.eq('note_date', todayStr());
+  else if (_viewMode === 'month') query = query.like('note_date', `${thisMonthPrefix()}%`);
+  const { data, error } = await query.order('note_date', { ascending: false });
   if (error) { console.error('[note] loadNotes', error); return []; }
   return data || [];
 }
 
-async function saveNote({ sectionId, title, content, noteDate, emoji, color }) {
-  const sb = getSb();
-  const userId = await getUserId();
+async function saveNoteDB({ sectionId, title, content, noteDate }) {
+  const sb = getSb(), userId = await getUserId();
   if (!sb || !userId) return null;
-
-  const row = {
-    user_id: userId,
-    section_id: sectionId || null,
-    title: title || '',
-    content: content || '',
-    note_date: noteDate || todayStr(),
-    emoji: emoji || '',
-    color: color || '',
-  };
-
-  const { data, error } = await sb.from('notes').insert(row).select('*').single();
+  const { data, error } = await sb.from('notes').insert({
+    user_id: userId, section_id: sectionId || null,
+    title: title || '', content: content || '', note_date: noteDate || todayStr(),
+  }).select('*').single();
   if (error) { console.error('[note] saveNote', error); return null; }
   return data;
 }
 
 async function updateNoteContent(noteId, html) {
-  const sb = getSb();
-  if (!sb || !noteId) return;
+  const sb = getSb(); if (!sb || !noteId) return;
   await sb.from('notes').update({ content: html, updated_at: new Date().toISOString() }).eq('id', noteId);
 }
 
-async function deleteNote(noteId) {
-  const sb = getSb();
-  if (!sb || !noteId) return;
+async function deleteNoteDB(noteId) {
+  const sb = getSb(); if (!sb || !noteId) return;
   await sb.from('notes').delete().eq('id', noteId);
 }
 
-async function togglePin(noteId, current) {
-  const sb = getSb();
-  if (!sb || !noteId) return;
+async function togglePinDB(noteId, current) {
+  const sb = getSb(); if (!sb || !noteId) return;
   await sb.from('notes').update({ is_pinned: !current }).eq('id', noteId);
 }
 
-// ─── TipTap 에디터 생성 ───────────────────────────────────────────────────────
+function sanitizePasteHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('script,style,meta,link').forEach(el => el.remove());
+  return div.innerHTML;
+}
 
 function createEditor({ element, content, placeholder, onUpdate }) {
-  const debounceTimer = { current: null };
-
+  const timer = { t: null };
+  let isComposing = false;
   const editor = new Editor({
     element,
     extensions: [
       StarterKit.configure({ bulletList: false, orderedList: false, listItem: false }),
-      ListItem,
-      BulletList,
-      OrderedList,
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Image,
-      Underline,
+      ListItem, BulletList, OrderedList,
+      Table.configure({ resizable: false }), TableRow, TableHeader, TableCell,
+      Image, Underline,
       Placeholder.configure({ placeholder: placeholder || '내용을 입력하세요...' }),
     ],
     content: content || '',
     editorProps: {
-      attributes: {
-        class: 'note-tiptap-editor',
-        style: 'outline:none; min-height:80px; padding:8px; font-size:14px; line-height:1.6; color:#1a1a1a;',
-      },
+      attributes: { class: 'note-tiptap-editor', style: 'outline:none;min-height:80px;padding:8px;font-size:14px;line-height:1.6;color:#1a1a1a;' },
       handlePaste(_, event) {
-        const clipboard = event.clipboardData;
-        if (!clipboard) return false;
-        const html = clipboard.getData('text/html');
+        const html = event.clipboardData?.getData('text/html');
         if (html && html.trim().length > 20) {
           event.preventDefault();
           editor.commands.insertContent(sanitizePasteHtml(html));
@@ -190,333 +145,184 @@ function createEditor({ element, content, placeholder, onUpdate }) {
       },
     },
     onUpdate({ editor }) {
+      if (isComposing) return;
       const html = editor.getHTML();
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        onUpdate(html);
-      }, 300);
+      if (timer.t) clearTimeout(timer.t);
+      timer.t = setTimeout(() => onUpdate(html), 300);
     },
   });
-
-  // IME 처리 (한글)
-  let isComposing = false;
   element.addEventListener('compositionstart', () => { isComposing = true; });
-  element.addEventListener('compositionend', () => {
-    isComposing = false;
-    setTimeout(() => onUpdate(editor.getHTML()), 50);
-  });
-
+  element.addEventListener('compositionend', () => { isComposing = false; setTimeout(() => onUpdate(editor.getHTML()), 50); });
   return editor;
 }
 
-function sanitizePasteHtml(html) {
-  // 기본 클리닝 - 위험한 태그 제거, 줄바꿈/표/리스트 보존
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  div.querySelectorAll('script, style, meta, link').forEach(el => el.remove());
-  return div.innerHTML;
-}
-
-// ─── 툴바 ──────────────────────────────────────────────────────────────────────
-
 function buildToolbar(editor) {
-  const toolbar = document.createElement('div');
-  toolbar.className = 'note-toolbar';
-  toolbar.style.cssText = `
-    display:flex; gap:2px; padding:4px 6px;
-    border-bottom:1px solid #e5e7eb;
-    flex-wrap:wrap; align-items:center;
-    background:#fafafa; border-radius:8px 8px 0 0;
-  `;
-
-  const buttons = [
-    { label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold' },
-    { label: 'I', title: '기울임', action: () => editor.chain().focus().toggleItalic().run(), mark: 'italic' },
-    { label: 'U', title: '밑줄', action: () => editor.chain().focus().toggleUnderline().run(), mark: 'underline' },
+  const tb = document.createElement('div');
+  tb.style.cssText = 'display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;align-items:center;background:#fafafa;';
+  const btns = [
+    { label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold', style: 'font-weight:700;' },
+    { label: 'I', title: '기울임', action: () => editor.chain().focus().toggleItalic().run(), mark: 'italic', style: 'font-style:italic;' },
+    { label: 'U', title: '밑줄', action: () => editor.chain().focus().toggleUnderline().run(), mark: 'underline', style: 'text-decoration:underline;' },
     { label: '—', title: '구분선', action: () => editor.chain().focus().setHorizontalRule().run() },
-    { label: '•', title: '불렛리스트', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' },
-    { label: '1.', title: '번호리스트', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' },
-    { label: '⊞', title: '표 삽입', action: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+    { label: '•', title: '불렛', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' },
+    { label: '1.', title: '번호', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' },
+    { label: '⊞', title: '표', action: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
   ];
-
-  buttons.forEach(({ label, title, action, mark }) => {
+  btns.forEach(({ label, title, action, mark, style }) => {
     const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.title = title;
-    btn.textContent = label;
-    btn.style.cssText = `
-      padding:3px 7px; border:1px solid #e5e7eb; border-radius:4px;
-      background:#fff; cursor:pointer; font-size:12px; font-weight:${label==='B'?'700':'400'};
-      color:#374151; line-height:1.4;
-      transition: background 0.1s;
-    `;
+    btn.type = 'button'; btn.title = title; btn.textContent = label;
+    btn.style.cssText = `padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;${style||''}`;
     btn.onmousedown = (e) => { e.preventDefault(); action(); };
-    btn.onmouseover = () => { btn.style.background = '#f3f4f6'; };
-    btn.onmouseout = () => { btn.style.background = '#fff'; };
-
     if (mark) {
-      editor.on('selectionUpdate', () => {
-        const isActive = editor.isActive(mark);
-        btn.style.background = isActive ? '#e0e7ff' : '#fff';
-        btn.style.borderColor = isActive ? '#6366f1' : '#e5e7eb';
-      });
+      const upd = () => { const a = editor.isActive(mark); btn.style.background = a ? '#e0e7ff' : '#fff'; btn.style.borderColor = a ? '#6366f1' : '#e5e7eb'; };
+      editor.on('selectionUpdate', upd); editor.on('update', upd);
     }
-
-    toolbar.appendChild(btn);
+    tb.appendChild(btn);
   });
-
-  return toolbar;
+  return tb;
 }
 
-// ─── 노트카드 렌더 ────────────────────────────────────────────────────────────
+function matchesSearch(note) {
+  if (!_searchQuery) return true;
+  const q = _searchQuery.toLowerCase();
+  const title = (note.title || '').toLowerCase();
+  const div = document.createElement('div'); div.innerHTML = note.content || '';
+  return title.includes(q) || (div.textContent || '').toLowerCase().includes(q);
+}
 
-function buildNoteCard(note, sectionColor) {
+function updateUndoBtn() {
+  const btn = document.getElementById('note-undo-btn');
+  if (btn) btn.style.opacity = _undoStack.length > 0 ? '1' : '0.3';
+}
+
+function buildNoteCard(note, colorEntry) {
   const card = document.createElement('div');
   card.className = 'note-card';
-  card.dataset.noteId = note.id;
-  card.style.cssText = `
-    background:#fff; border:1px solid #e5e7eb; border-radius:10px;
-    margin-bottom:10px; overflow:hidden;
-    box-shadow:0 1px 3px rgba(0,0,0,0.06);
-    transition: box-shadow 0.15s;
-  `;
+  card.dataset.noteId = note.id || '';
+  card.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:box-shadow 0.15s;';
 
-  // 카드 헤더
   const header = document.createElement('div');
-  header.style.cssText = `
-    display:flex; align-items:center; justify-content:space-between;
-    padding:8px 12px; border-bottom:1px solid #f3f4f6;
-    background:${sectionColor || '#f9fafb'};
-  `;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${colorEntry.bg};border-bottom:1px solid ${colorEntry.border};`;
 
   const dateEl = document.createElement('span');
-  dateEl.style.cssText = 'font-size:11px; color:#9ca3af;';
+  dateEl.style.cssText = 'font-size:11px;color:#9ca3af;';
   dateEl.textContent = note.note_date || todayStr();
 
   const actions = document.createElement('div');
-  actions.style.cssText = 'display:flex; gap:4px; align-items:center;';
+  actions.style.cssText = 'display:flex;gap:4px;align-items:center;opacity:0;transition:opacity 0.15s;';
 
-  // 핀 버튼
   const pinBtn = document.createElement('button');
-  pinBtn.type = 'button';
-  pinBtn.title = note.is_pinned ? '핀 해제' : '핀';
-  pinBtn.textContent = '📌';
-  pinBtn.style.cssText = `
-    border:none; background:none; cursor:pointer; font-size:12px;
-    opacity:${note.is_pinned ? '1' : '0.3'}; padding:2px;
-  `;
+  pinBtn.type = 'button'; pinBtn.textContent = '📌';
+  pinBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:12px;opacity:${note.is_pinned?'1':'0.3'};padding:2px;`;
   pinBtn.onclick = async (e) => {
     e.stopPropagation();
-    await togglePin(note.id, note.is_pinned);
+    await togglePinDB(note.id, note.is_pinned);
     note.is_pinned = !note.is_pinned;
     pinBtn.style.opacity = note.is_pinned ? '1' : '0.3';
   };
 
-  // 삭제 버튼
   const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.title = '삭제';
-  delBtn.textContent = '×';
-  delBtn.style.cssText = `
-    border:none; background:none; cursor:pointer; font-size:16px;
-    color:#9ca3af; padding:2px 4px; line-height:1;
-    opacity:0; transition:opacity 0.15s;
-  `;
+  delBtn.type = 'button'; delBtn.textContent = '×';
+  delBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:16px;color:#9ca3af;padding:2px 4px;line-height:1;';
   delBtn.onclick = async (e) => {
     e.stopPropagation();
     if (!confirm('노트를 삭제할까요?')) return;
-    const editor = _editors.get(note.id);
-    if (editor) { editor.destroy(); _editors.delete(note.id); }
-    await deleteNote(note.id);
+    if (note.id) { _undoStack.push({ noteId: note.id, prevContent: note.content, prevTitle: note.title }); updateUndoBtn(); }
+    const ed = _editors.get(note.id); if (ed) { ed.destroy(); _editors.delete(note.id); }
+    await deleteNoteDB(note.id);
     card.remove();
   };
 
-  card.onmouseenter = () => { delBtn.style.opacity = '1'; };
-  card.onmouseleave = () => { delBtn.style.opacity = '0'; };
-
+  card.onmouseenter = () => { actions.style.opacity = '1'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)'; };
+  card.onmouseleave = () => { actions.style.opacity = '0'; card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'; };
   actions.append(pinBtn, delBtn);
   header.append(dateEl, actions);
 
-  // 타이틀
   const titleInput = document.createElement('input');
-  titleInput.type = 'text';
-  titleInput.placeholder = 'Title (optional)';
-  titleInput.value = note.title || '';
-  titleInput.style.cssText = `
-    width:100%; box-sizing:border-box;
-    border:none; border-bottom:1px solid #f3f4f6;
-    padding:8px 12px; font-size:15px; font-weight:600;
-    font-family:inherit; outline:none; background:#fff;
-    color:#111827;
-  `;
-  titleInput.onchange = async () => {
-    const sb = getSb();
-    if (sb && note.id) {
-      await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id);
-    }
-  };
+  titleInput.type = 'text'; titleInput.placeholder = 'Title (optional)'; titleInput.value = note.title || '';
+  titleInput.style.cssText = 'width:100%;box-sizing:border-box;border:none;border-bottom:1px solid #f3f4f6;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;outline:none;background:#fff;color:#111827;';
+  titleInput.onchange = async () => { const sb = getSb(); if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id); };
 
-  // 툴바 (포커스 시 표시)
-  let toolbar = null;
-  let editorEl = null;
-  let editorInstance = null;
-
-  // 에디터 영역
-  editorEl = document.createElement('div');
-  editorEl.style.cssText = 'padding:0;';
-
-  // 에디터 초기화 (지연 - 처음엔 미리보기)
   const preview = document.createElement('div');
   preview.className = 'note-card-preview';
-  preview.style.cssText = `
-    padding:8px 12px; font-size:14px; line-height:1.6;
-    color:#374151; min-height:60px; cursor:text;
-  `;
+  preview.style.cssText = 'padding:8px 10px;font-size:13px;line-height:1.6;color:#374151;min-height:56px;cursor:text;';
+  preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
 
-  // 미리보기 내용
-  if (note.content) {
-    preview.innerHTML = note.content;
-  } else {
-    preview.innerHTML = '<span style="color:#9ca3af;font-size:13px;">클릭해서 내용 입력...</span>';
-  }
+  const editorEl = document.createElement('div');
 
-  // 클릭 시 에디터 활성화
-  let isEditing = false;
+  let isEditing = false, editorInstance = null, toolbar = null;
+
   const activateEditor = () => {
     if (isEditing) return;
     isEditing = true;
     preview.style.display = 'none';
-
-    // 툴바 생성 및 삽입
     editorInstance = createEditor({
-      element: editorEl,
-      content: note.content || '',
-      placeholder: '내용을 입력하세요...',
+      element: editorEl, content: note.content || '', placeholder: '내용을 입력하세요...',
       onUpdate: async (html) => {
         note.content = html;
-        const sb = getSb();
-        if (sb && note.id) {
-          await updateNoteContent(note.id, html);
-        } else if (!note.id) {
-          // 신규 노트 — DB 저장
-          const saved = await saveNote({
-            sectionId: note.section_id,
-            title: titleInput.value,
-            content: html,
-            noteDate: note.note_date,
-          });
-          if (saved) {
-            note.id = saved.id;
-            card.dataset.noteId = saved.id;
-            _editors.set(saved.id, editorInstance);
-          }
+        if (note.id) { await updateNoteContent(note.id, html); }
+        else {
+          const saved = await saveNoteDB({ sectionId: note.section_id, title: titleInput.value, content: html, noteDate: note.note_date });
+          if (saved) { note.id = saved.id; card.dataset.noteId = saved.id; _editors.set(saved.id, editorInstance); }
         }
       },
     });
-
     toolbar = buildToolbar(editorInstance);
     editorEl.parentNode.insertBefore(toolbar, editorEl);
-    _editors.set(note.id || 'new', editorInstance);
-
+    if (note.id) _editors.set(note.id, editorInstance);
     setTimeout(() => editorInstance.commands.focus('end'), 50);
   };
 
-  preview.onclick = activateEditor;
-  titleInput.onfocus = activateEditor;
-
-  // 바깥 클릭 시 미리보기로 복귀
-  document.addEventListener('mousedown', (e) => {
+  const deactivateEditor = () => {
     if (!isEditing) return;
-    if (card.contains(e.target)) return;
     isEditing = false;
     if (toolbar) { toolbar.remove(); toolbar = null; }
     if (editorInstance) {
       note.content = editorInstance.getHTML();
-      editorInstance.destroy();
-      editorInstance = null;
-      _editors.delete(note.id);
+      editorInstance.destroy(); editorInstance = null;
+      if (note.id) _editors.delete(note.id);
     }
-    // 미리보기 업데이트
-    preview.innerHTML = note.content || '<span style="color:#9ca3af;font-size:13px;">클릭해서 내용 입력...</span>';
+    preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
     preview.style.display = '';
     editorEl.innerHTML = '';
-  });
+  };
+
+  preview.onclick = activateEditor;
+  titleInput.onfocus = activateEditor;
+  document.addEventListener('mousedown', (e) => { if (!isEditing || card.contains(e.target)) return; deactivateEditor(); });
 
   card.append(header, titleInput, preview, editorEl);
   return card;
 }
 
-// ─── 섹션 렌더 ────────────────────────────────────────────────────────────────
-
-function buildSection(section, notes) {
-  const colorEntry = SECTION_COLORS.find(c => c.bg === section.color) || SECTION_COLORS[0];
-
+function buildSection(section, notes, colorEntry) {
   const wrap = document.createElement('div');
-  wrap.className = 'note-section';
   wrap.dataset.sectionId = section.id;
-  wrap.style.cssText = 'margin-bottom:20px;';
 
-  // 섹션 헤더
   const header = document.createElement('div');
-  header.style.cssText = `
-    display:flex; align-items:center; justify-content:space-between;
-    padding:8px 12px; border-radius:8px; margin-bottom:8px;
-    background:${colorEntry.bg}; border:1px solid ${colorEntry.border};
-  `;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:${colorEntry.bg};border:1px solid ${colorEntry.border};`;
 
   const left = document.createElement('div');
-  left.style.cssText = 'display:flex; align-items:center; gap:6px;';
-
-  const emoji = document.createElement('span');
-  emoji.textContent = section.emoji || '📁';
-  emoji.style.fontSize = '16px';
-
-  const nameEl = document.createElement('span');
-  nameEl.textContent = section.name;
-  nameEl.style.cssText = `font-size:13px; font-weight:700; color:${colorEntry.text};`;
-
-  // 노트 추가 버튼
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.title = '노트 추가';
-  addBtn.textContent = '+';
-  addBtn.style.cssText = `
-    border:none; background:none; cursor:pointer;
-    font-size:18px; color:${colorEntry.text}; padding:0 4px;
-    font-weight:300; line-height:1;
-  `;
-
+  left.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  const emoji = document.createElement('span'); emoji.textContent = section.emoji || '📁'; emoji.style.fontSize = '14px';
+  const nameEl = document.createElement('span'); nameEl.textContent = section.name; nameEl.style.cssText = `font-size:13px;font-weight:700;color:${colorEntry.text};`;
   left.append(emoji, nameEl);
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.textContent = '+';
+  addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;`;
   header.append(left, addBtn);
 
-  // 노트 목록
   const list = document.createElement('div');
-  list.className = 'note-list';
-
   const sectionNotes = notes
-    .filter(n => n.section_id === section.id)
-    .sort((a, b) => {
-      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-      return b.note_date.localeCompare(a.note_date);
-    });
+    .filter(n => n.section_id === section.id && matchesSearch(n))
+    .sort((a, b) => { if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1; return (b.note_date||'').localeCompare(a.note_date||''); });
+  sectionNotes.forEach(note => list.appendChild(buildNoteCard(note, colorEntry)));
 
-  sectionNotes.forEach(note => {
-    list.appendChild(buildNoteCard(note, colorEntry.bg));
-  });
-
-  // 노트 추가
   addBtn.onclick = () => {
-    const newNote = {
-      id: null,
-      section_id: section.id,
-      title: '',
-      content: '',
-      note_date: todayStr(),
-      is_pinned: false,
-    };
-    const card = buildNoteCard(newNote, colorEntry.bg);
+    const newNote = { id: null, section_id: section.id, title: '', content: '', note_date: todayStr(), is_pinned: false };
+    const card = buildNoteCard(newNote, colorEntry);
     list.insertBefore(card, list.firstChild);
-    // 즉시 에디터 활성화
     setTimeout(() => card.querySelector('.note-card-preview')?.click(), 50);
   };
 
@@ -524,110 +330,138 @@ function buildSection(section, notes) {
   return wrap;
 }
 
-// ─── 페이지 렌더 ─────────────────────────────────────────────────────────────
+function buildNoteHeader(page) {
+  const cardHeader = page.previousElementSibling;
+  if (!cardHeader || !cardHeader.classList.contains('card__header')) return;
+  cardHeader.innerHTML = '';
+  cardHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;flex-shrink:0;gap:8px;border-bottom:1px solid #f3f4f6;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:14px;font-weight:700;color:#111827;white-space:nowrap;';
+  title.textContent = '📝 Note';
+
+  const searchWrap = document.createElement('div');
+  searchWrap.style.cssText = 'flex:1;min-width:100px;max-width:200px;';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text'; searchInput.placeholder = 'Search memos...';
+  searchInput.style.cssText = 'width:100%;box-sizing:border-box;padding:4px 10px;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;outline:none;background:#f9fafb;';
+  searchInput.oninput = () => { _searchQuery = searchInput.value.trim(); renderNotePage(); };
+  searchWrap.appendChild(searchInput);
+
+  const right = document.createElement('div');
+  right.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
+
+  // Undo
+  const undoBtn = document.createElement('button');
+  undoBtn.id = 'note-undo-btn'; undoBtn.type = 'button'; undoBtn.textContent = '↩ Undo';
+  undoBtn.style.cssText = 'padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:11px;cursor:pointer;color:#374151;opacity:0.3;';
+  undoBtn.onclick = async () => {
+    if (!_undoStack.length) return;
+    const { noteId, prevContent, prevTitle } = _undoStack.pop();
+    const sb = getSb();
+    if (sb && noteId) await sb.from('notes').update({ content: prevContent, title: prevTitle, updated_at: new Date().toISOString() }).eq('id', noteId);
+    updateUndoBtn(); renderNotePage();
+  };
+
+  // Day/Month/All
+  const mkViewBtn = (label, mode) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = label;
+    const active = () => _viewMode === mode;
+    const upd = () => { btn.style.cssText = `padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;cursor:pointer;${active()?'background:#1a56db;color:#fff;border-color:#1a56db;':'background:#fff;color:#374151;'}`; };
+    upd();
+    btn.onclick = () => { _viewMode = mode; document.querySelectorAll('.note-view-btn').forEach(b => b._upd()); renderNotePage(); };
+    btn.className = 'note-view-btn'; btn._upd = upd;
+    return btn;
+  };
+
+  // 패널 토글 1/2/3
+  const panelBtns = [0, 1, 2].map(idx => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = String(idx + 1);
+    const upd = () => {
+      const hidden = _hiddenPanels.has(idx);
+      btn.style.cssText = `width:24px;height:24px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;cursor:pointer;${hidden?'background:#e5e7eb;color:#9ca3af;':'background:#fff;color:#374151;'}`;
+    };
+    upd();
+    btn.onclick = () => {
+      if (_hiddenPanels.has(idx)) _hiddenPanels.delete(idx); else _hiddenPanels.add(idx);
+      upd();
+      const panels = document.querySelectorAll('#memoPageContent > div > div');
+      if (panels[idx]) panels[idx].style.display = _hiddenPanels.has(idx) ? 'none' : '';
+    };
+    return btn;
+  });
+
+  right.append(undoBtn, mkViewBtn('Day','day'), mkViewBtn('Month','month'), mkViewBtn('All','all'), ...panelBtns);
+  cardHeader.append(title, searchWrap, right);
+}
 
 async function renderNotePage() {
   const page = document.getElementById('memoPageContent');
   if (!page) return;
 
+  if (!document.getElementById('note-tiptap-styles')) {
+    const style = document.createElement('style');
+    style.id = 'note-tiptap-styles';
+    style.textContent = `
+      .note-tiptap-editor{outline:none;}
+      .note-tiptap-editor p{margin:0 0 4px;}
+      .note-tiptap-editor ul,.note-tiptap-editor ol{padding-left:20px;margin:4px 0;}
+      .note-tiptap-editor table{border-collapse:collapse;width:100%;margin:8px 0;}
+      .note-tiptap-editor td,.note-tiptap-editor th{border:1px solid #e5e7eb;padding:4px 8px;min-width:40px;}
+      .note-tiptap-editor th{background:#f9fafb;font-weight:600;}
+      .note-tiptap-editor img{max-width:100%;border-radius:6px;}
+      .note-tiptap-editor p.is-editor-empty:first-child::before{content:attr(data-placeholder);float:left;color:#9ca3af;pointer-events:none;height:0;}
+      .note-card-preview table{border-collapse:collapse;width:100%;margin:4px 0;font-size:13px;}
+      .note-card-preview td,.note-card-preview th{border:1px solid #e5e7eb;padding:3px 6px;min-width:30px;}
+      .note-card-preview th{background:#f9fafb;font-weight:600;}
+      .note-card-preview ul,.note-card-preview ol{padding-left:18px;margin:2px 0;}
+      .note-card-preview img{max-width:100%;border-radius:4px;}
+      .note-card-preview p{margin:0 0 2px;}
+    `;
+    document.head.appendChild(style);
+  }
+
   page.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:13px;">불러오는 중...</div>';
 
   const userId = await getUserId();
-  if (!userId) {
-    page.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:13px;">로그인 후 노트를 사용할 수 있습니다.</div>';
-    return;
-  }
+  if (!userId) { page.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:13px;">로그인 후 노트를 사용할 수 있습니다.</div>'; return; }
 
   _sections = await loadSections();
   _notes = await loadNotes();
 
   page.innerHTML = '';
-
-  // CSS 주입 (한 번만)
-  if (!document.getElementById('note-tiptap-styles')) {
-    const style = document.createElement('style');
-    style.id = 'note-tiptap-styles';
-    style.textContent = `
-      .note-tiptap-editor { outline: none; }
-      .note-tiptap-editor p { margin: 0 0 4px; }
-      .note-tiptap-editor ul, .note-tiptap-editor ol { padding-left: 20px; margin: 4px 0; }
-      .note-tiptap-editor table { border-collapse: collapse; width: 100%; margin: 8px 0; }
-      .note-tiptap-editor td, .note-tiptap-editor th { border: 1px solid #e5e7eb; padding: 4px 8px; min-width: 40px; }
-      .note-tiptap-editor th { background: #f9fafb; font-weight: 600; }
-      .note-tiptap-editor img { max-width: 100%; border-radius: 6px; }
-      .note-tiptap-editor p.is-editor-empty:first-child::before {
-        content: attr(data-placeholder);
-        float: left; color: #9ca3af; pointer-events: none; height: 0;
-      }
-      .note-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important; }
-    `;
-    document.head.appendChild(style);
-  }
+  page.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;';
 
   const container = document.createElement('div');
-  container.style.cssText = `
-    display:flex;
-    gap:12px;
-    padding:12px;
-    height:100%;
-    box-sizing:border-box;
-    overflow:hidden;
-  `;
+  container.style.cssText = 'display:flex;gap:10px;padding:10px;flex:1;overflow:hidden;box-sizing:border-box;';
 
-  _sections.forEach(section => {
+  _sections.forEach((section, idx) => {
+    const colorEntry = SECTION_COLORS.find(c => c.bg === section.color) || SECTION_COLORS[idx % SECTION_COLORS.length];
     const panel = document.createElement('div');
-    panel.style.cssText = `
-      flex:1;
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      overflow-y:auto;
-      height:100%;
-    `;
-    panel.appendChild(buildSection(section, _notes));
+    panel.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;height:100%;';
+    if (_hiddenPanels.has(idx)) panel.style.display = 'none';
+    panel.appendChild(buildSection(section, _notes, colorEntry));
     container.appendChild(panel);
   });
 
   page.appendChild(container);
+  buildNoteHeader(page);
+  updateUndoBtn();
 }
 
-// ─── 진입점 ───────────────────────────────────────────────────────────────────
-
 async function showNotePage() {
-  // 기존 에디터 정리
-  _editors.forEach(editor => editor.destroy());
-  _editors.clear();
-
-  // 페이지 전환
+  _editors.forEach(ed => ed.destroy()); _editors.clear();
   localStorage.setItem('memo2.lastPage', 'memo');
-  const pages = [
-    'calendarPage','memoPage','routinePage','dailyPage',
-    'timerPage','logsPage','insightPage','insightWritePage',
-    'memoWritePage','homeIntroSection'
-  ];
-  pages.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
-  });
+  ['calendarPage','memoPage','routinePage','dailyPage','timerPage','logsPage','insightPage','insightWritePage','memoWritePage','homeIntroSection']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
   const memoPage = document.getElementById('memoPage');
   if (memoPage) memoPage.classList.remove('hidden');
-
   await renderNotePage();
 }
 
-// window에 노출 (기존 memo.js의 showMemoPage 대체)
 window.showNotePage = showNotePage;
 window.JCal = window.JCal || {};
-window.JCal.showNotePage = showNotePage;
-
-// 기존 showMemoPage 덮어쓰기 — memo.js보다 늦게 실행되므로 DOMContentLoaded 후 등록
-window.addEventListener('DOMContentLoaded', () => {
-  window.showMemoPage = showNotePage;
-  window.JCal = window.JCal || {};
-  window.JCal.showMemoPage = showNotePage;
-});
-
-// 즉시도 등록 (혹시 이미 로드된 경우 대비)
-window.showMemoPage = showNotePage;
-window.JCal = window.JCal || {};
 window.JCal.showMemoPage = showNotePage;
+window.showMemoPage = showNotePage;
