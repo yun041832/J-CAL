@@ -263,7 +263,7 @@ function buildToolbar(editor) {
 
   const openFixedDropdown = (drop, triggerEl) => {
     document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
-    sizeDrop.style.display = 'none';
+    document.querySelectorAll('[data-size-drop]').forEach(d => d.style.display = 'none');
     const rect = triggerEl.getBoundingClientRect();
     drop.style.left = rect.left + 'px';
     drop.style.top = (rect.bottom + 4) + 'px';
@@ -318,6 +318,7 @@ function buildToolbar(editor) {
 
   const fontSizes = [8,9,10,11,12,14,18,24,36];
   const sizeDrop = document.createElement('div');
+  sizeDrop.dataset.sizeDrop = '1';
   sizeDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:64px;';
   fontSizes.forEach(sz => {
     const item = document.createElement('button');
@@ -638,6 +639,10 @@ async function renderNotePage() {
       .note-card-preview img{max-width:100%;border-radius:4px;}
       .note-card-preview p{margin:0 0 2px;}
       .note-tiptap-editor span[style*="font-size"]{line-height:1.4;}
+      .note-tiptap-editor ul[data-type="taskList"]{list-style:none;padding-left:4px;}
+      .note-tiptap-editor ul[data-type="taskList"] li{display:flex;align-items:flex-start;gap:6px;padding:2px 0;}
+      .note-tiptap-editor ul[data-type="taskList"] li > label{margin-top:2px;flex-shrink:0;}
+      .note-tiptap-editor ul[data-type="taskList"] li > div{flex:1;}
     `;
     document.head.appendChild(style);
   }
