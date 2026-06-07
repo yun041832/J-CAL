@@ -662,10 +662,16 @@ async function renderNotePage() {
 async function showNotePage() {
   _editors.forEach(ed => ed.destroy()); _editors.clear();
   localStorage.setItem('memo2.lastPage', 'memo');
-  ['calendarPage','memoPage','routinePage','dailyPage','timerPage','logsPage','insightPage','insightWritePage','memoWritePage','homeIntroSection']
+
+  // 다른 페이지 숨김 — memoPage 계열만 건드림
+  ['calendarPage','routinePage','dailyPage','timerPage',
+   'logsPage','insightPage','insightWritePage','memoWritePage','homeIntroSection']
     .forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+
+  // memoPage show
   const memoPage = document.getElementById('memoPage');
   if (memoPage) memoPage.classList.remove('hidden');
+
   await renderNotePage();
 }
 
