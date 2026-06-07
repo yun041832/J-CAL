@@ -565,10 +565,27 @@ async function renderNotePage() {
   }
 
   const container = document.createElement('div');
-  container.style.cssText = 'padding:16px;';
+  container.style.cssText = `
+    display:flex;
+    gap:12px;
+    padding:12px;
+    height:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+  `;
 
   _sections.forEach(section => {
-    container.appendChild(buildSection(section, _notes));
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+      flex:1;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      overflow-y:auto;
+      height:100%;
+    `;
+    panel.appendChild(buildSection(section, _notes));
+    container.appendChild(panel);
   });
 
   page.appendChild(container);
