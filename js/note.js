@@ -436,12 +436,28 @@ function buildNoteCard(note, colorEntry) {
   titleInput.placeholder = 'Title (optional)';
   titleInput.value = note.title || '';
   titleInput.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;outline:none;color:#111827;padding:0;';
-  titleInput.addEventListener('focus', () => { titleInput.style.outline = 'none'; });
-  titleInput.addEventListener('blur', () => { titleInput.style.outline = 'none'; });
+  const updateTitleVisibility = () => {
+    titleInput.style.display = titleInput.value.trim() === '' && document.activeElement !== titleInput ? 'none' : '';
+  };
+
   titleInput.onchange = async () => {
     const sb = getSb();
     if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id);
+    updateTitleVisibility();
   };
+
+  titleInput.addEventListener('focus', () => {
+    titleInput.style.display = '';
+    titleInput.style.outline = 'none';
+  });
+
+  titleInput.addEventListener('blur', () => {
+    titleInput.style.outline = 'none';
+    updateTitleVisibility();
+  });
+
+  // 초기 상태 적용
+  updateTitleVisibility();
 
   // 우측 액션 버튼들
   const actions = document.createElement('div');
