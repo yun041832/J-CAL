@@ -459,8 +459,8 @@ function buildNoteCard(note, colorEntry) {
   const titleInput = document.createElement('input');
   titleInput.type = 'text'; titleInput.placeholder = 'Title (optional)'; titleInput.value = note.title || '';
   titleInput.style.cssText = 'width:100%;box-sizing:border-box;border:none;border-bottom:1px solid #f3f4f6;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;outline:none;background:#fff;color:#111827;';
-  titleInput.addEventListener('focus', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; });
-  titleInput.addEventListener('blur', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; });
+  titleInput.addEventListener('focus', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; titleInput.style.outline = 'none'; });
+  titleInput.addEventListener('blur', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; titleInput.style.outline = 'none'; });
   titleInput.onchange = async () => { const sb = getSb(); if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id); };
 
   const preview = document.createElement('div');
