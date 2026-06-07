@@ -155,6 +155,28 @@ function createEditor({ element, content, placeholder, onUpdate }) {
     content: content || '',
     editorProps: {
       attributes: { class: 'note-tiptap-editor', style: 'outline:none;min-height:80px;padding:8px 10px;font-size:14px;line-height:1.6;color:#1a1a1a;' },
+      handleKeyDown(view, event) {
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+          const { state } = view;
+          const { selection } = state;
+          const { $anchor } = selection;
+          // 커서 앞 노드가 HR이면 삭제
+          const nodeBefore = $anchor.nodeBefore;
+          if (nodeBefore && nodeBefore.type.name === 'horizontalRule') {
+            const tr = state.tr.delete($anchor.pos - nodeBefore.nodeSize, $anchor.pos);
+            view.dispatch(tr);
+            return true;
+          }
+          // 커서 뒤 노드가 HR이면 삭제 (Delete키)
+          const nodeAfter = $anchor.nodeAfter;
+          if (event.key === 'Delete' && nodeAfter && nodeAfter.type.name === 'horizontalRule') {
+            const tr = state.tr.delete($anchor.pos, $anchor.pos + nodeAfter.nodeSize);
+            view.dispatch(tr);
+            return true;
+          }
+        }
+        return false;
+      },
       handlePaste(_, event) {
         const html = event.clipboardData?.getData('text/html');
         if (html && html.trim().length > 20) {
