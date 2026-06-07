@@ -645,6 +645,7 @@ async function renderNotePage() {
       .note-tiptap-editor ul[data-type="taskList"] li{display:flex;align-items:flex-start;gap:6px;padding:2px 0;}
       .note-tiptap-editor ul[data-type="taskList"] li > label{margin-top:2px;flex-shrink:0;}
       .note-tiptap-editor ul[data-type="taskList"] li > div{flex:1;}
+      .note-tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div p{text-decoration:line-through;color:#9ca3af;}
     `;
     document.head.appendChild(style);
   }
