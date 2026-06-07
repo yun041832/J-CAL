@@ -419,15 +419,40 @@ function buildNoteCard(note, colorEntry) {
   card.dataset.noteId = note.id || '';
   card.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:box-shadow 0.15s;';
 
-  const header = document.createElement('div');
-  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${colorEntry.bg};border-bottom:1px solid ${colorEntry.border};`;
+  let isCollapsed = false;
 
+  // ── header ──────────────────────────────────────────
+  const header = document.createElement('div');
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${colorEntry.bg};border-bottom:1px solid ${colorEntry.border};gap:6px;`;
+
+  // 날짜
   const dateEl = document.createElement('span');
-  dateEl.style.cssText = 'font-size:11px;color:#9ca3af;';
+  dateEl.style.cssText = 'font-size:11px;color:#9ca3af;flex-shrink:0;cursor:pointer;';
   dateEl.textContent = note.note_date || todayStr();
 
+  // 타이틀 (header 안으로 이동)
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.placeholder = 'Title (optional)';
+  titleInput.value = note.title || '';
+  titleInput.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;outline:none;color:#111827;padding:0;';
+  titleInput.addEventListener('focus', () => { titleInput.style.outline = 'none'; });
+  titleInput.addEventListener('blur', () => { titleInput.style.outline = 'none'; });
+  titleInput.onchange = async () => {
+    const sb = getSb();
+    if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id);
+  };
+
+  // 우측 액션 버튼들
   const actions = document.createElement('div');
-  actions.style.cssText = 'display:flex;gap:4px;align-items:center;opacity:0;transition:opacity 0.15s;';
+  actions.style.cssText = 'display:flex;gap:4px;align-items:center;flex-shrink:0;';
+
+  // 접고펴기 버튼
+  const collapseBtn = document.createElement('button');
+  collapseBtn.type = 'button';
+  collapseBtn.textContent = '▲';
+  collapseBtn.title = '접기';
+  collapseBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:10px;color:#9ca3af;padding:2px 4px;line-height:1;';
 
   const pinBtn = document.createElement('button');
   pinBtn.type = 'button'; pinBtn.textContent = '📌';
@@ -451,32 +476,65 @@ function buildNoteCard(note, colorEntry) {
     card.remove();
   };
 
-  card.onmouseenter = () => { actions.style.opacity = '1'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)'; };
-  card.onmouseleave = () => { actions.style.opacity = '0'; card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'; };
-  actions.append(pinBtn, delBtn);
-  header.append(dateEl, actions);
+  actions.append(collapseBtn, pinBtn, delBtn);
+  header.append(dateEl, titleInput, actions);
 
-  const titleInput = document.createElement('input');
-  titleInput.type = 'text'; titleInput.placeholder = 'Title (optional)'; titleInput.value = note.title || '';
-  titleInput.style.cssText = 'width:100%;box-sizing:border-box;border:none;border-bottom:1px solid #f3f4f6;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;outline:none;background:#fff;color:#111827;';
-  titleInput.addEventListener('focus', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; titleInput.style.outline = 'none'; });
-  titleInput.addEventListener('blur', () => { titleInput.style.borderBottom = '1px solid #f3f4f6'; titleInput.style.outline = 'none'; });
-  titleInput.onchange = async () => { const sb = getSb(); if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id); };
+  card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
+  card.onmouseleave = () => card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+
+  // ── body ────────────────────────────────────────────
+  const body = document.createElement('div');
+  body.style.cssText = 'transition:none;';
 
   const preview = document.createElement('div');
   preview.className = 'note-card-preview';
   preview.style.cssText = 'padding:8px 10px;font-size:13px;line-height:1.6;color:#374151;min-height:56px;cursor:text;';
   preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
 
+  // 접힌 상태 미리보기 (3줄)
+  const collapsedPreview = document.createElement('div');
+  collapsedPreview.className = 'note-card-preview';
+  collapsedPreview.style.cssText = 'padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;display:none;overflow:hidden;display:none;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
+
   const editorEl = document.createElement('div');
-  editorEl.style.cssText = 'border:1.5px solid #3b82f6;border-radius:6px;overflow:hidden;margin:4px 8px 8px;';
+  editorEl.style.cssText = 'border:1.5px solid #3b82f6;border-radius:6px;overflow:hidden;margin:4px 8px 8px;display:none;';
+
+  body.append(preview, collapsedPreview, editorEl);
+  card.append(header, body);
 
   let isEditing = false, editorInstance = null, toolbar = null;
 
+  // ── 접고펴기 토글 ────────────────────────────────────
+  const updateCollapsed = () => {
+    if (isCollapsed) {
+      collapseBtn.textContent = '▼';
+      collapseBtn.title = '펴기';
+      // 접힌 미리보기: 본문 텍스트 3줄
+      const div = document.createElement('div');
+      div.innerHTML = note.content || '';
+      const text = div.textContent || '';
+      collapsedPreview.textContent = text;
+      collapsedPreview.style.cssText = 'padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
+      preview.style.display = 'none';
+      editorEl.style.display = 'none';
+      if (toolbar) { toolbar.style.display = 'none'; }
+    } else {
+      collapseBtn.textContent = '▲';
+      collapseBtn.title = '접기';
+      collapsedPreview.style.display = 'none';
+      preview.style.display = '';
+      if (!isEditing) editorEl.style.display = 'none';
+      else editorEl.style.display = '';
+      if (toolbar) { toolbar.style.display = ''; }
+    }
+  };
+
+  // ── 편집 활성화 ──────────────────────────────────────
   const activateEditor = () => {
-    if (isEditing) return;
+    if (isEditing || isCollapsed) return;
     isEditing = true;
     preview.style.display = 'none';
+    editorEl.style.display = '';
     editorInstance = createEditor({
       element: editorEl, content: note.content || '', placeholder: '내용을 입력하세요...',
       onUpdate: async (html) => {
@@ -506,13 +564,21 @@ function buildNoteCard(note, colorEntry) {
     preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
     preview.style.display = '';
     editorEl.innerHTML = '';
+    editorEl.style.display = 'none';
+  };
+
+  collapseBtn.onmousedown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isCollapsed = !isCollapsed;
+    if (isCollapsed && isEditing) deactivateEditor();
+    updateCollapsed();
   };
 
   preview.onclick = activateEditor;
   titleInput.onfocus = activateEditor;
   document.addEventListener('mousedown', (e) => { if (!isEditing || card.contains(e.target)) return; deactivateEditor(); });
 
-  card.append(header, titleInput, preview, editorEl);
   return card;
 }
 
