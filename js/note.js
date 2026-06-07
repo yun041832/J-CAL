@@ -175,32 +175,104 @@ function createEditor({ element, content, placeholder, onUpdate }) {
 
 function buildToolbar(editor) {
   const tb = document.createElement('div');
-  tb.style.cssText = 'display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;align-items:center;background:#fafafa;';
+  tb.style.cssText = 'display:flex;align-items:center;gap:1px;padding:4px 8px;border-bottom:1px solid #f0f0f0;background:#fff;flex-wrap:wrap;';
 
+  // 기본 버튼 스타일 생성기
   const mkBtn = ({ label, title, action, mark, style }) => {
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.title = title; btn.textContent = label;
-    btn.style.cssText = `padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;${style||''}`;
+    btn.type = 'button'; btn.title = title;
+    btn.innerHTML = label;
+    btn.style.cssText = `padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;color:#374151;line-height:1;transition:background 0.1s;${style||''}`;
+    btn.onmouseover = () => { if (!btn._active) btn.style.background = '#f3f4f6'; };
+    btn.onmouseout = () => { if (!btn._active) btn.style.background = 'none'; };
     btn.onmousedown = (e) => { e.preventDefault(); action(); };
     if (mark) {
       const upd = () => {
         const a = editor.isActive(mark);
-        btn.style.background = a ? '#e0e7ff' : '#fff';
-        btn.style.borderColor = a ? '#6366f1' : '#e5e7eb';
+        btn._active = a;
+        btn.style.background = a ? '#e0e7ff' : 'none';
+        btn.style.color = a ? '#4f46e5' : '#374151';
       };
       editor.on('selectionUpdate', upd); editor.on('update', upd);
     }
     return btn;
   };
 
+  // 구분선
   const sep = () => {
     const d = document.createElement('div');
-    d.style.cssText = 'width:1px;height:16px;background:#e5e7eb;margin:0 2px;';
+    d.style.cssText = 'width:1px;height:16px;background:#e5e7eb;margin:0 4px;flex-shrink:0;';
     return d;
   };
 
+  // B I U S
+  tb.append(
+    mkBtn({ label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold', style: 'font-weight:700;' }),
+    mkBtn({ label: '<i>I</i>', title: '기울임', action: () => editor.chain().focus().toggleItalic().run(), mark: 'italic' }),
+    mkBtn({ label: 'U', title: '밑줄', action: () => editor.chain().focus().toggleUnderline().run(), mark: 'underline', style: 'text-decoration:underline;' }),
+    mkBtn({ label: 'S', title: '취소선', action: () => editor.chain().focus().toggleStrike().run(), mark: 'strike', style: 'text-decoration:line-through;' }),
+    sep(),
+  );
+
+  // 글자 크기 스플릿 버튼 ( — | ∨ )
+  const sizeWrap = document.createElement('div');
+  sizeWrap.style.cssText = 'display:flex;align-items:center;border:1px solid #e5e7eb;border-radius:5px;overflow:hidden;';
+
+  const hrBtn = document.createElement('button');
+  hrBtn.type = 'button'; hrBtn.title = '구분선'; hrBtn.textContent = '—';
+  hrBtn.style.cssText = 'padding:4px 7px;border:none;background:none;cursor:pointer;font-size:13px;color:#374151;border-right:1px solid #e5e7eb;line-height:1;';
+  hrBtn.onmouseover = () => hrBtn.style.background = '#f3f4f6';
+  hrBtn.onmouseout = () => hrBtn.style.background = 'none';
+  hrBtn.onmousedown = (e) => { e.preventDefault(); editor.chain().focus().setHorizontalRule().run(); };
+
+  const sizeToggle = document.createElement('button');
+  sizeToggle.type = 'button'; sizeToggle.title = '글자 크기';
+  sizeToggle.style.cssText = 'padding:4px 5px;border:none;background:none;cursor:pointer;font-size:11px;color:#6b7280;line-height:1;';
+  sizeToggle.textContent = '∨';
+  sizeToggle.onmouseover = () => sizeToggle.style.background = '#f3f4f6';
+  sizeToggle.onmouseout = () => sizeToggle.style.background = 'none';
+
+  sizeWrap.append(hrBtn, sizeToggle);
+
+  // 글자 크기 드롭다운
+  const fontSizes = [6,7,8,9,10,11,12,13,14,15,16,18,20,24];
+  const sizeDrop = document.createElement('div');
+  sizeDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:64px;';
+  fontSizes.forEach(sz => {
+    const item = document.createElement('button');
+    item.type = 'button'; item.textContent = sz + 'px';
+    item.style.cssText = 'display:block;width:100%;padding:5px 14px;border:none;background:none;cursor:pointer;font-size:12px;text-align:left;color:#374151;';
+    item.onmouseover = () => item.style.background = '#f3f4f6';
+    item.onmouseout = () => item.style.background = 'none';
+    item.onmousedown = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      editor.chain().focus().setMark('textStyle', { fontSize: sz + 'px' }).run();
+      sizeDrop.style.display = 'none';
+    };
+    sizeDrop.appendChild(item);
+  });
+  document.body.appendChild(sizeDrop);
+  sizeToggle.onmousedown = (e) => {
+    e.preventDefault();
+    const rect = sizeToggle.getBoundingClientRect();
+    sizeDrop.style.left = rect.left + 'px';
+    sizeDrop.style.top = (rect.bottom + 4) + 'px';
+    sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none';
+  };
+
+  tb.append(sizeWrap, sep());
+
+  // 불렛 · 번호
+  tb.append(
+    mkBtn({ label: '•', title: '불렛', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' }),
+    mkBtn({ label: '1.', title: '번호', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' }),
+    sep(),
+  );
+
+  // fixed 드롭다운 헬퍼
   const makeFixedDropdown = (colors, onSelect, onReset) => {
     const drop = document.createElement('div');
+    drop.classList.add('__fixed-toolbar-drop');
     drop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px;z-index:9999;flex-wrap:wrap;gap:4px;width:108px;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
     colors.forEach(c => {
       const dot = document.createElement('button');
@@ -224,97 +296,43 @@ function buildToolbar(editor) {
 
   const openFixedDropdown = (drop, triggerEl) => {
     document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
+    sizeDrop.style.display = 'none';
     const rect = triggerEl.getBoundingClientRect();
     drop.style.left = rect.left + 'px';
     drop.style.top = (rect.bottom + 4) + 'px';
     drop.style.display = 'flex';
   };
 
-  // B I U S
-  tb.append(
-    mkBtn({ label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold', style: 'font-weight:700;' }),
-    mkBtn({ label: 'I', title: '기울임', action: () => editor.chain().focus().toggleItalic().run(), mark: 'italic', style: 'font-style:italic;' }),
-    mkBtn({ label: 'U', title: '밑줄', action: () => editor.chain().focus().toggleUnderline().run(), mark: 'underline', style: 'text-decoration:underline;' }),
-    mkBtn({ label: 'S', title: '취소선', action: () => editor.chain().focus().toggleStrike().run(), mark: 'strike', style: 'text-decoration:line-through;' }),
-    sep(),
-  );
-
-  // 글자 크기 드롭다운
-  const fontSizes = [6,7,8,9,10,11,12,13,14,15,16,18,20,24];
-  const sizeWrap = document.createElement('div');
-  sizeWrap.style.cssText = 'position:relative;display:inline-block;';
-  const sizeBtn = document.createElement('button');
-  sizeBtn.type = 'button'; sizeBtn.title = '글자 크기';
-  sizeBtn.style.cssText = 'padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;min-width:36px;';
-  sizeBtn.textContent = '14px';
-  const sizeDrop = document.createElement('div');
-  sizeDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:60px;';
-  fontSizes.forEach(sz => {
-    const item = document.createElement('button');
-    item.type = 'button'; item.textContent = sz + 'px';
-    item.style.cssText = 'display:block;width:100%;padding:4px 12px;border:none;background:none;cursor:pointer;font-size:12px;text-align:left;white-space:nowrap;';
-    item.onmouseover = () => item.style.background = '#f3f4f6';
-    item.onmouseout = () => item.style.background = 'none';
-    item.onmousedown = (e) => {
-      e.preventDefault(); e.stopPropagation();
-      editor.chain().focus().setMark('textStyle', { fontSize: sz + 'px' }).run();
-      sizeBtn.textContent = sz + 'px';
-      sizeDrop.style.display = 'none';
-    };
-    sizeDrop.appendChild(item);
-  });
-  sizeBtn.onmousedown = (e) => { e.preventDefault(); sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!sizeWrap.contains(e.target)) sizeDrop.style.display = 'none'; });
-  sizeWrap.append(sizeBtn, sizeDrop);
-  tb.append(sizeWrap, sep());
-
-  // 구분선 · 불렛 · 번호 (표 삭제)
-  tb.append(
-    mkBtn({ label: '—', title: '구분선', action: () => editor.chain().focus().setHorizontalRule().run() }),
-    mkBtn({ label: '•', title: '불렛', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' }),
-    mkBtn({ label: '1.', title: '번호', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' }),
-    sep(),
-  );
-
-  // A (글자색) 버튼
+  // A 글자색
   const colorPalette = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#111827'];
-  const colorDrop = makeFixedDropdown(
-    colorPalette,
-    (c) => editor.chain().focus().setColor(c).run(),
-    () => editor.chain().focus().unsetColor().run()
-  );
-  colorDrop.classList.add('__fixed-toolbar-drop');
+  const colorDrop = makeFixedDropdown(colorPalette, (c) => editor.chain().focus().setColor(c).run(), () => editor.chain().focus().unsetColor().run());
   const colorBtn = document.createElement('button');
   colorBtn.type = 'button'; colorBtn.title = '글자색'; colorBtn.textContent = 'A';
-  colorBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;';
+  colorBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;font-weight:700;color:#374151;line-height:1;';
+  colorBtn.onmouseover = () => colorBtn.style.background = '#f3f4f6';
+  colorBtn.onmouseout = () => colorBtn.style.background = 'none';
   colorBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(colorDrop, colorBtn); };
   tb.appendChild(colorBtn);
 
-  // HL (하이라이트) 버튼
+  // HL 하이라이트
   const hlPalette = ['#fef08a','#bbf7d0','#bae6fd','#fecaca','#e9d5ff','#fed7aa'];
-  const hlDrop = makeFixedDropdown(
-    hlPalette,
-    (c) => editor.chain().focus().toggleHighlight({ color: c }).run(),
-    () => editor.chain().focus().unsetHighlight().run()
-  );
-  hlDrop.classList.add('__fixed-toolbar-drop');
+  const hlDrop = makeFixedDropdown(hlPalette, (c) => editor.chain().focus().toggleHighlight({ color: c }).run(), () => editor.chain().focus().unsetHighlight().run());
   const hlBtn = document.createElement('button');
   hlBtn.type = 'button'; hlBtn.title = '하이라이트'; hlBtn.textContent = 'HL';
-  hlBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;';
+  hlBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:13px;color:#374151;line-height:1;';
+  hlBtn.onmouseover = () => { if (!hlBtn._active) hlBtn.style.background = '#f3f4f6'; };
+  hlBtn.onmouseout = () => { if (!hlBtn._active) hlBtn.style.background = 'none'; };
   const hlUpd = () => {
     const a = editor.isActive('highlight');
-    hlBtn.style.background = a ? '#e0e7ff' : '#fff';
-    hlBtn.style.borderColor = a ? '#6366f1' : '#e5e7eb';
+    hlBtn._active = a;
+    hlBtn.style.background = a ? '#e0e7ff' : 'none';
+    hlBtn.style.color = a ? '#4f46e5' : '#374151';
   };
   editor.on('selectionUpdate', hlUpd); editor.on('update', hlUpd);
   hlBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(hlDrop, hlBtn); };
   tb.appendChild(hlBtn);
 
-  document.addEventListener('mousedown', (e) => {
-    if (!e.target.closest('.__fixed-toolbar-drop') && e.target !== colorBtn && e.target !== hlBtn) {
-      document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
-    }
-  });
+  tb.appendChild(sep());
 
   // 링크
   tb.appendChild(mkBtn({
@@ -329,26 +347,44 @@ function buildToolbar(editor) {
     mark: 'link'
   }));
 
-  // 이모지 드롭다운
+  // 이모지
   const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐'];
-  const emojiWrap = document.createElement('div');
-  emojiWrap.style.cssText = 'position:relative;display:inline-block;';
-  const emojiBtn = document.createElement('button');
-  emojiBtn.type = 'button'; emojiBtn.title = '이모지'; emojiBtn.textContent = '😊';
-  emojiBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;';
   const emojiDrop = document.createElement('div');
-  emojiDrop.style.cssText = 'display:none;position:absolute;top:28px;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:4px;z-index:200;flex-wrap:wrap;gap:2px;width:130px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+  emojiDrop.classList.add('__fixed-toolbar-drop');
+  emojiDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px;z-index:9999;flex-wrap:wrap;gap:3px;width:132px;box-shadow:0 4px 12px rgba(0,0,0,0.12);';
   emojiList.forEach(em => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.textContent = em;
-    btn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:16px;padding:2px;';
+    btn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:18px;padding:2px;border-radius:4px;';
+    btn.onmouseover = () => btn.style.background = '#f3f4f6';
+    btn.onmouseout = () => btn.style.background = 'none';
     btn.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().insertContent(em).run(); emojiDrop.style.display = 'none'; };
     emojiDrop.appendChild(btn);
   });
-  emojiBtn.onmousedown = (e) => { e.preventDefault(); emojiDrop.style.display = emojiDrop.style.display === 'none' ? 'flex' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!emojiWrap.contains(e.target)) emojiDrop.style.display = 'none'; });
-  emojiWrap.append(emojiBtn, emojiDrop);
-  tb.appendChild(emojiWrap);
+  document.body.appendChild(emojiDrop);
+  const emojiBtn = document.createElement('button');
+  emojiBtn.type = 'button'; emojiBtn.title = '이모지'; emojiBtn.textContent = '🙂';
+  emojiBtn.style.cssText = 'padding:4px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:15px;line-height:1;';
+  emojiBtn.onmouseover = () => emojiBtn.style.background = '#f3f4f6';
+  emojiBtn.onmouseout = () => emojiBtn.style.background = 'none';
+  emojiBtn.onmousedown = (e) => {
+    e.preventDefault();
+    const rect = emojiBtn.getBoundingClientRect();
+    emojiDrop.style.left = rect.left + 'px';
+    emojiDrop.style.top = (rect.bottom + 4) + 'px';
+    emojiDrop.style.display = emojiDrop.style.display === 'none' ? 'flex' : 'none';
+  };
+  tb.appendChild(emojiBtn);
+
+  // 전역 닫기
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.__fixed-toolbar-drop') &&
+        e.target !== colorBtn && e.target !== hlBtn &&
+        e.target !== emojiBtn && e.target !== sizeToggle) {
+      document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
+      sizeDrop.style.display = 'none';
+    }
+  });
 
   return tb;
 }
