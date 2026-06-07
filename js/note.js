@@ -641,7 +641,12 @@ function buildSection(section, notes, colorEntry) {
   const list = document.createElement('div');
   const sectionNotes = notes
     .filter(n => n.section_id === section.id && matchesSearch(n))
-    .sort((a, b) => { if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1; return (b.note_date||'').localeCompare(a.note_date||''); });
+    .sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      const dateA = (a.updated_at || a.note_date || '');
+      const dateB = (b.updated_at || b.note_date || '');
+      return dateB.localeCompare(dateA);
+    });
   sectionNotes.forEach(note => list.appendChild(buildNoteCard(note, colorEntry)));
 
   addBtn.onclick = () => {
