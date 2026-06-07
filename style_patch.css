@@ -6504,3 +6504,34 @@ aside.right:not(.hidden) .card {
   overflow-y: auto;
   height: 100%;
 }
+
+/* 노트 카드 미리보기 — 표 스타일 */
+.note-card-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.note-card-preview td,
+.note-card-preview th {
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  min-width: 40px;
+  text-align: left;
+}
+.note-card-preview th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+.note-card-preview ul,
+.note-card-preview ol {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+.note-card-preview img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+.note-card-preview p {
+  margin: 0 0 4px;
+}
