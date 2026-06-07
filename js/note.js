@@ -442,54 +442,42 @@ function buildNoteCard(note, colorEntry) {
   card.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:box-shadow 0.15s;';
 
   let isCollapsed = false;
+  let isEditing = false;
+  let editorInstance = null;
+  let toolbar = null;
+  let observer = null;
 
   // ── header ──────────────────────────────────────────
   const header = document.createElement('div');
   header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${colorEntry.bg};border-bottom:1px solid ${colorEntry.border};gap:6px;`;
 
-  // 날짜
   const dateEl = document.createElement('span');
   dateEl.style.cssText = 'font-size:11px;color:#9ca3af;flex-shrink:0;cursor:pointer;';
   dateEl.textContent = note.note_date || todayStr();
 
-  // 타이틀 (header 안으로 이동)
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
   titleInput.placeholder = 'Title (optional)';
   titleInput.value = note.title || '';
   titleInput.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;outline:none;color:#111827;padding:0;';
+
   const updateTitleVisibility = () => {
     titleInput.style.display = titleInput.value.trim() === '' && document.activeElement !== titleInput ? 'none' : '';
   };
-
+  titleInput.addEventListener('focus', () => { titleInput.style.display = ''; titleInput.style.outline = 'none'; });
+  titleInput.addEventListener('blur', () => { titleInput.style.outline = 'none'; updateTitleVisibility(); });
   titleInput.onchange = async () => {
     const sb = getSb();
     if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id);
     updateTitleVisibility();
   };
-
-  titleInput.addEventListener('focus', () => {
-    titleInput.style.display = '';
-    titleInput.style.outline = 'none';
-  });
-
-  titleInput.addEventListener('blur', () => {
-    titleInput.style.outline = 'none';
-    updateTitleVisibility();
-  });
-
-  // 초기 상태 적용
   updateTitleVisibility();
 
-  // 우측 액션 버튼들
   const actions = document.createElement('div');
   actions.style.cssText = 'display:flex;gap:4px;align-items:center;flex-shrink:0;';
 
-  // 접고펴기 버튼
   const collapseBtn = document.createElement('button');
-  collapseBtn.type = 'button';
-  collapseBtn.textContent = '▲';
-  collapseBtn.title = '접기';
+  collapseBtn.type = 'button'; collapseBtn.textContent = '▲'; collapseBtn.title = '접기';
   collapseBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:10px;color:#9ca3af;padding:2px 4px;line-height:1;';
 
   const pinBtn = document.createElement('button');
@@ -509,113 +497,112 @@ function buildNoteCard(note, colorEntry) {
     e.stopPropagation();
     if (!confirm('노트를 삭제할까요?')) return;
     if (note.id) { _undoStack.push({ noteId: note.id, prevContent: note.content, prevTitle: note.title }); updateUndoBtn(); }
-    const ed = _editors.get(note.id); if (ed) { ed.destroy(); _editors.delete(note.id); }
+    if (editorInstance) { editorInstance.destroy(); editorInstance = null; }
+    if (observer) { observer.disconnect(); observer = null; }
     await deleteNoteDB(note.id);
     card.remove();
   };
 
   actions.append(collapseBtn, pinBtn, delBtn);
   header.append(dateEl, titleInput, actions);
-
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
   card.onmouseleave = () => card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
 
   // ── body ────────────────────────────────────────────
   const body = document.createElement('div');
-  body.style.cssText = 'transition:none;';
 
-  const preview = document.createElement('div');
-  preview.className = 'note-card-preview';
-  preview.style.cssText = 'padding:8px 10px;font-size:13px;line-height:1.6;color:#374151;min-height:56px;cursor:text;';
-  preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
-
-  // 접힌 상태 미리보기 (3줄)
+  // 접힌 상태 미리보기
   const collapsedPreview = document.createElement('div');
   collapsedPreview.className = 'note-card-preview';
-  collapsedPreview.style.cssText = 'padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;display:none;overflow:hidden;display:none;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
+  collapsedPreview.style.cssText = 'display:none;padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;overflow:hidden;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
 
+  // 에디터 컨테이너
   const editorEl = document.createElement('div');
-  editorEl.style.cssText = 'border:1.5px solid #3b82f6;border-radius:6px;overflow:hidden;margin:4px 8px 8px;display:none;';
+  editorEl.style.cssText = 'min-height:80px;';
 
-  body.append(preview, collapsedPreview, editorEl);
+  // 툴바 자리
+  const toolbarSlot = document.createElement('div');
+
+  body.append(toolbarSlot, editorEl, collapsedPreview);
   card.append(header, body);
 
-  let isEditing = false, editorInstance = null, toolbar = null;
-
-  // ── 접고펴기 토글 ────────────────────────────────────
-  const updateCollapsed = () => {
-    if (isCollapsed) {
-      collapseBtn.textContent = '▼';
-      collapseBtn.title = '펴기';
-      // 접힌 미리보기: 본문 텍스트 3줄
-      const div = document.createElement('div');
-      div.innerHTML = note.content || '';
-      const text = div.textContent || '';
-      collapsedPreview.textContent = text;
-      collapsedPreview.style.cssText = 'padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
-      preview.style.display = 'none';
-      editorEl.style.display = 'none';
-      if (toolbar) { toolbar.style.display = 'none'; }
-    } else {
-      collapseBtn.textContent = '▲';
-      collapseBtn.title = '접기';
-      collapsedPreview.style.display = 'none';
-      preview.style.display = '';
-      if (!isEditing) editorEl.style.display = 'none';
-      else editorEl.style.display = '';
-      if (toolbar) { toolbar.style.display = ''; }
-    }
-  };
-
-  // ── 편집 활성화 ──────────────────────────────────────
-  const activateEditor = () => {
-    if (isEditing || isCollapsed) return;
-    isEditing = true;
-    preview.style.display = 'none';
-    editorEl.style.display = '';
+  // ── 에디터 마운트 / 언마운트 ─────────────────────────
+  const mountEditor = () => {
+    if (editorInstance || isCollapsed) return;
     editorInstance = createEditor({
-      element: editorEl, content: note.content || '', placeholder: '내용을 입력하세요...',
+      element: editorEl,
+      content: note.content || '',
+      placeholder: '내용을 입력하세요...',
       onUpdate: async (html) => {
         note.content = html;
-        if (note.id) { await updateNoteContent(note.id, html); }
-        else {
+        if (note.id) {
+          await updateNoteContent(note.id, html);
+        } else {
           const saved = await saveNoteDB({ sectionId: note.section_id, title: titleInput.value, content: html, noteDate: note.note_date });
           if (saved) { note.id = saved.id; card.dataset.noteId = saved.id; _editors.set(saved.id, editorInstance); }
         }
       },
     });
     toolbar = buildToolbar(editorInstance);
-    editorEl.parentNode.insertBefore(toolbar, editorEl);
+    toolbarSlot.appendChild(toolbar);
     if (note.id) _editors.set(note.id, editorInstance);
-    setTimeout(() => editorInstance.commands.focus('end'), 50);
+    isEditing = true;
   };
 
-  const deactivateEditor = () => {
-    if (!isEditing) return;
-    isEditing = false;
-    if (toolbar) { toolbar.remove(); toolbar = null; }
-    if (editorInstance) {
-      note.content = editorInstance.getHTML();
-      editorInstance.destroy(); editorInstance = null;
+  const unmountEditor = () => {
+    if (!editorInstance || isEditing) return; // 편집 중이면 unmount 금지
+    toolbar?.remove(); toolbar = null;
+    note.content = editorInstance.getHTML();
+    editorInstance.destroy(); editorInstance = null;
+    if (note.id) _editors.delete(note.id);
+  };
+
+  // ── Intersection Observer ────────────────────────────
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        mountEditor();
+      } else {
+        unmountEditor();
+      }
+    });
+  }, { threshold: 0.1 });
+  observer.observe(card);
+
+  // 편집 시작/종료 감지 (포커스 기반)
+  editorEl.addEventListener('focusin', () => { isEditing = true; });
+  editorEl.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (!card.contains(document.activeElement)) isEditing = false;
+    }, 200);
+  });
+
+  // ── 접고펴기 ─────────────────────────────────────────
+  const updateCollapsed = () => {
+    if (isCollapsed) {
+      collapseBtn.textContent = '▼'; collapseBtn.title = '펴기';
+      const div = document.createElement('div');
+      div.innerHTML = note.content || '';
+      collapsedPreview.textContent = div.textContent || '';
+      collapsedPreview.style.cssText = 'padding:6px 10px;font-size:12px;line-height:1.5;color:#6b7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;max-height:60px;pointer-events:none;';
+      toolbarSlot.style.display = 'none';
+      editorEl.style.display = 'none';
+      if (editorInstance) { editorInstance.destroy(); editorInstance = null; isEditing = false; }
       if (note.id) _editors.delete(note.id);
+    } else {
+      collapseBtn.textContent = '▲'; collapseBtn.title = '접기';
+      collapsedPreview.style.display = 'none';
+      toolbarSlot.style.display = '';
+      editorEl.style.display = '';
+      mountEditor();
     }
-    preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
-    preview.style.display = '';
-    editorEl.innerHTML = '';
-    editorEl.style.display = 'none';
   };
 
   collapseBtn.onmousedown = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     isCollapsed = !isCollapsed;
-    if (isCollapsed && isEditing) deactivateEditor();
     updateCollapsed();
   };
-
-  preview.onclick = activateEditor;
-  titleInput.onfocus = activateEditor;
-  document.addEventListener('mousedown', (e) => { if (!isEditing || card.contains(e.target)) return; deactivateEditor(); });
 
   return card;
 }
