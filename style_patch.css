@@ -6477,7 +6477,7 @@ aside.right:not(.hidden) .card {
 }
 
 /* 노트탭 3패널 레이아웃 */
-#memoPage {
+#memoPage:not(.hidden) {
   display: flex !important;
   flex-direction: column !important;
 }
