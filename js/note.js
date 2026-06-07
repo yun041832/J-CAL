@@ -640,6 +640,11 @@ async function renderNotePage() {
       .note-card-preview ul,.note-card-preview ol{padding-left:18px;margin:2px 0;}
       .note-card-preview img{max-width:100%;border-radius:4px;}
       .note-card-preview p{margin:0 0 2px;}
+      .note-card-preview ul[data-type="taskList"]{list-style:none;padding-left:4px;margin:2px 0;}
+      .note-card-preview ul[data-type="taskList"] li{display:flex;align-items:flex-start;gap:6px;padding:2px 0;}
+      .note-card-preview ul[data-type="taskList"] li > label{margin-top:2px;flex-shrink:0;}
+      .note-card-preview ul[data-type="taskList"] li > div{flex:1;}
+      .note-card-preview ul[data-type="taskList"] li[data-checked="true"] > div p{text-decoration:line-through;color:#9ca3af;}
       .note-tiptap-editor span[style*="font-size"]{line-height:1.4;}
       .note-tiptap-editor ul[data-type="taskList"]{list-style:none;padding-left:4px;}
       .note-tiptap-editor ul[data-type="taskList"] li{display:flex;align-items:flex-start;gap:6px;padding:2px 0;}
