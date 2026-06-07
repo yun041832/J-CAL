@@ -235,7 +235,7 @@ function buildToolbar(editor) {
   sizeWrap.append(hrBtn, sizeToggle);
 
   // 글자 크기 드롭다운
-  const fontSizes = [6,7,8,9,10,11,12,13,14,15,16,18,20,24];
+  const fontSizes = [8,9,10,11,12,14,18,24,36];
   const sizeDrop = document.createElement('div');
   sizeDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:64px;';
   fontSizes.forEach(sz => {
