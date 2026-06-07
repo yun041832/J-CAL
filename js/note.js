@@ -132,7 +132,20 @@ function createEditor({ element, content, placeholder, onUpdate }) {
       StarterKit.configure({ bulletList: false, orderedList: false, listItem: false }),
       ListItem, BulletList, OrderedList,
       Table.configure({ resizable: false }), TableRow, TableHeader, TableCell,
-      Image, Underline, TextStyle, Color, Highlight.configure({ multicolor: true }), Link.configure({ openOnClick: false }),
+      Image, Underline,
+      TextStyle.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            fontSize: {
+              default: null,
+              parseHTML: el => el.style.fontSize || null,
+              renderHTML: attrs => attrs.fontSize ? { style: `font-size:${attrs.fontSize}` } : {},
+            },
+          };
+        },
+      }),
+      Color, Highlight.configure({ multicolor: true }), Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: placeholder || '내용을 입력하세요...' }),
     ],
     content: content || '',
@@ -186,6 +199,37 @@ function buildToolbar(editor) {
     return d;
   };
 
+  const makeFixedDropdown = (colors, onSelect, onReset) => {
+    const drop = document.createElement('div');
+    drop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px;z-index:9999;flex-wrap:wrap;gap:4px;width:108px;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    colors.forEach(c => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.style.cssText = `width:22px;height:22px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;flex-shrink:0;`;
+      dot.onmouseover = () => dot.style.borderColor = '#6366f1';
+      dot.onmouseout = () => dot.style.borderColor = 'transparent';
+      dot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); onSelect(c); drop.style.display = 'none'; };
+      drop.appendChild(dot);
+    });
+    if (onReset) {
+      const rst = document.createElement('button');
+      rst.type = 'button'; rst.title = '제거'; rst.textContent = '✕';
+      rst.style.cssText = 'width:22px;height:22px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;flex-shrink:0;';
+      rst.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); onReset(); drop.style.display = 'none'; };
+      drop.appendChild(rst);
+    }
+    document.body.appendChild(drop);
+    return drop;
+  };
+
+  const openFixedDropdown = (drop, triggerEl) => {
+    document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
+    const rect = triggerEl.getBoundingClientRect();
+    drop.style.left = rect.left + 'px';
+    drop.style.top = (rect.bottom + 4) + 'px';
+    drop.style.display = 'flex';
+  };
+
   // B I U S
   tb.append(
     mkBtn({ label: 'B', title: '굵게', action: () => editor.chain().focus().toggleBold().run(), mark: 'bold', style: 'font-weight:700;' }),
@@ -232,38 +276,28 @@ function buildToolbar(editor) {
     sep(),
   );
 
-  // A (글자색) 드롭다운
+  // A (글자색) 버튼
   const colorPalette = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#111827'];
-  const colorWrap = document.createElement('div');
-  colorWrap.style.cssText = 'position:relative;display:inline-block;';
+  const colorDrop = makeFixedDropdown(
+    colorPalette,
+    (c) => editor.chain().focus().setColor(c).run(),
+    () => editor.chain().focus().unsetColor().run()
+  );
+  colorDrop.classList.add('__fixed-toolbar-drop');
   const colorBtn = document.createElement('button');
   colorBtn.type = 'button'; colorBtn.title = '글자색'; colorBtn.textContent = 'A';
   colorBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;';
-  const colorDrop = document.createElement('div');
-  colorDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px;z-index:200;flex-wrap:wrap;gap:4px;width:100px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
-  colorPalette.forEach(c => {
-    const dot = document.createElement('button');
-    dot.type = 'button';
-    dot.style.cssText = `width:20px;height:20px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;`;
-    dot.onmouseover = () => dot.style.borderColor = '#6366f1';
-    dot.onmouseout = () => dot.style.borderColor = 'transparent';
-    dot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().setColor(c).run(); colorDrop.style.display = 'none'; };
-    colorDrop.appendChild(dot);
-  });
-  const resetDot = document.createElement('button');
-  resetDot.type = 'button'; resetDot.title = '색상 제거'; resetDot.textContent = '✕';
-  resetDot.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;';
-  resetDot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().unsetColor().run(); colorDrop.style.display = 'none'; };
-  colorDrop.appendChild(resetDot);
-  colorBtn.onmousedown = (e) => { e.preventDefault(); colorDrop.style.display = colorDrop.style.display === 'none' ? 'flex' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!colorWrap.contains(e.target)) colorDrop.style.display = 'none'; });
-  colorWrap.append(colorBtn, colorDrop);
-  tb.appendChild(colorWrap);
+  colorBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(colorDrop, colorBtn); };
+  tb.appendChild(colorBtn);
 
-  // HL (하이라이트) 컬러 드롭다운
+  // HL (하이라이트) 버튼
   const hlPalette = ['#fef08a','#bbf7d0','#bae6fd','#fecaca','#e9d5ff','#fed7aa'];
-  const hlWrap = document.createElement('div');
-  hlWrap.style.cssText = 'position:relative;display:inline-block;';
+  const hlDrop = makeFixedDropdown(
+    hlPalette,
+    (c) => editor.chain().focus().toggleHighlight({ color: c }).run(),
+    () => editor.chain().focus().unsetHighlight().run()
+  );
+  hlDrop.classList.add('__fixed-toolbar-drop');
   const hlBtn = document.createElement('button');
   hlBtn.type = 'button'; hlBtn.title = '하이라이트'; hlBtn.textContent = 'HL';
   hlBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;';
@@ -273,26 +307,14 @@ function buildToolbar(editor) {
     hlBtn.style.borderColor = a ? '#6366f1' : '#e5e7eb';
   };
   editor.on('selectionUpdate', hlUpd); editor.on('update', hlUpd);
-  const hlDrop = document.createElement('div');
-  hlDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px;z-index:200;flex-wrap:wrap;gap:4px;width:100px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
-  hlPalette.forEach(c => {
-    const dot = document.createElement('button');
-    dot.type = 'button';
-    dot.style.cssText = `width:20px;height:20px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;`;
-    dot.onmouseover = () => dot.style.borderColor = '#6366f1';
-    dot.onmouseout = () => dot.style.borderColor = 'transparent';
-    dot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().toggleHighlight({ color: c }).run(); hlDrop.style.display = 'none'; };
-    hlDrop.appendChild(dot);
+  hlBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(hlDrop, hlBtn); };
+  tb.appendChild(hlBtn);
+
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.__fixed-toolbar-drop') && e.target !== colorBtn && e.target !== hlBtn) {
+      document.querySelectorAll('.__fixed-toolbar-drop').forEach(d => d.style.display = 'none');
+    }
   });
-  const hlReset = document.createElement('button');
-  hlReset.type = 'button'; hlReset.title = '하이라이트 제거'; hlReset.textContent = '✕';
-  hlReset.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;';
-  hlReset.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().unsetHighlight().run(); hlDrop.style.display = 'none'; };
-  hlDrop.appendChild(hlReset);
-  hlBtn.onmousedown = (e) => { e.preventDefault(); hlDrop.style.display = hlDrop.style.display === 'none' ? 'flex' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!hlWrap.contains(e.target)) hlDrop.style.display = 'none'; });
-  hlWrap.append(hlBtn, hlDrop);
-  tb.appendChild(hlWrap);
 
   // 링크
   tb.appendChild(mkBtn({
