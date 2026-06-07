@@ -589,5 +589,14 @@ window.showNotePage = showNotePage;
 window.JCal = window.JCal || {};
 window.JCal.showNotePage = showNotePage;
 
-// 기존 showMemoPage도 연결 (하위호환)
+// 기존 showMemoPage 덮어쓰기 — memo.js보다 늦게 실행되므로 DOMContentLoaded 후 등록
+window.addEventListener('DOMContentLoaded', () => {
+  window.showMemoPage = showNotePage;
+  window.JCal = window.JCal || {};
+  window.JCal.showMemoPage = showNotePage;
+});
+
+// 즉시도 등록 (혹시 이미 로드된 경우 대비)
 window.showMemoPage = showNotePage;
+window.JCal = window.JCal || {};
+window.JCal.showMemoPage = showNotePage;
