@@ -180,7 +180,6 @@ function buildToolbar(editor) {
     return btn;
   };
 
-  // 구분선 (divider)
   const sep = () => {
     const d = document.createElement('div');
     d.style.cssText = 'width:1px;height:16px;background:#e5e7eb;margin:0 2px;';
@@ -196,46 +195,107 @@ function buildToolbar(editor) {
     sep(),
   );
 
-  // 구분선 버튼 — 불렛 드롭다운
+  // 글자 크기 드롭다운
+  const fontSizes = [6,7,8,9,10,11,12,13,14,15,16,18,20,24];
+  const sizeWrap = document.createElement('div');
+  sizeWrap.style.cssText = 'position:relative;display:inline-block;';
+  const sizeBtn = document.createElement('button');
+  sizeBtn.type = 'button'; sizeBtn.title = '글자 크기';
+  sizeBtn.style.cssText = 'padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;min-width:36px;';
+  sizeBtn.textContent = '14px';
+  const sizeDrop = document.createElement('div');
+  sizeDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.12);max-height:200px;overflow-y:auto;min-width:60px;';
+  fontSizes.forEach(sz => {
+    const item = document.createElement('button');
+    item.type = 'button'; item.textContent = sz + 'px';
+    item.style.cssText = 'display:block;width:100%;padding:4px 12px;border:none;background:none;cursor:pointer;font-size:12px;text-align:left;white-space:nowrap;';
+    item.onmouseover = () => item.style.background = '#f3f4f6';
+    item.onmouseout = () => item.style.background = 'none';
+    item.onmousedown = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      editor.chain().focus().setMark('textStyle', { fontSize: sz + 'px' }).run();
+      sizeBtn.textContent = sz + 'px';
+      sizeDrop.style.display = 'none';
+    };
+    sizeDrop.appendChild(item);
+  });
+  sizeBtn.onmousedown = (e) => { e.preventDefault(); sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none'; };
+  document.addEventListener('mousedown', (e) => { if (!sizeWrap.contains(e.target)) sizeDrop.style.display = 'none'; });
+  sizeWrap.append(sizeBtn, sizeDrop);
+  tb.append(sizeWrap, sep());
+
+  // 구분선 · 불렛 · 번호 (표 삭제)
   tb.append(
     mkBtn({ label: '—', title: '구분선', action: () => editor.chain().focus().setHorizontalRule().run() }),
     mkBtn({ label: '•', title: '불렛', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' }),
     mkBtn({ label: '1.', title: '번호', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' }),
-    mkBtn({ label: '⊞', title: '표', action: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() }),
     sep(),
   );
 
-  // A (글자색) — 6가지 색상 드롭다운
+  // A (글자색) 드롭다운
+  const colorPalette = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#111827'];
+  const colorWrap = document.createElement('div');
+  colorWrap.style.cssText = 'position:relative;display:inline-block;';
   const colorBtn = document.createElement('button');
   colorBtn.type = 'button'; colorBtn.title = '글자색'; colorBtn.textContent = 'A';
-  colorBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;position:relative;';
-  const colorPalette = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#111827'];
+  colorBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;';
   const colorDrop = document.createElement('div');
-  colorDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:4px;z-index:100;display:none;flex-wrap:wrap;gap:3px;width:90px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+  colorDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px;z-index:200;flex-wrap:wrap;gap:4px;width:100px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
   colorPalette.forEach(c => {
     const dot = document.createElement('button');
     dot.type = 'button';
-    dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;`;
+    dot.style.cssText = `width:20px;height:20px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;`;
+    dot.onmouseover = () => dot.style.borderColor = '#6366f1';
+    dot.onmouseout = () => dot.style.borderColor = 'transparent';
     dot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().setColor(c).run(); colorDrop.style.display = 'none'; };
     colorDrop.appendChild(dot);
   });
-  // 색상 초기화
   const resetDot = document.createElement('button');
   resetDot.type = 'button'; resetDot.title = '색상 제거'; resetDot.textContent = '✕';
-  resetDot.style.cssText = 'width:18px;height:18px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;';
+  resetDot.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;';
   resetDot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().unsetColor().run(); colorDrop.style.display = 'none'; };
   colorDrop.appendChild(resetDot);
-  colorBtn.style.position = 'relative';
-  colorBtn.appendChild(colorDrop);
   colorBtn.onmousedown = (e) => { e.preventDefault(); colorDrop.style.display = colorDrop.style.display === 'none' ? 'flex' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!colorBtn.contains(e.target)) colorDrop.style.display = 'none'; });
-  tb.appendChild(colorBtn);
+  document.addEventListener('mousedown', (e) => { if (!colorWrap.contains(e.target)) colorDrop.style.display = 'none'; });
+  colorWrap.append(colorBtn, colorDrop);
+  tb.appendChild(colorWrap);
 
-  // HL (하이라이트)
-  tb.append(mkBtn({ label: 'HL', title: '하이라이트', action: () => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run(), mark: 'highlight' }));
+  // HL (하이라이트) 컬러 드롭다운
+  const hlPalette = ['#fef08a','#bbf7d0','#bae6fd','#fecaca','#e9d5ff','#fed7aa'];
+  const hlWrap = document.createElement('div');
+  hlWrap.style.cssText = 'position:relative;display:inline-block;';
+  const hlBtn = document.createElement('button');
+  hlBtn.type = 'button'; hlBtn.title = '하이라이트'; hlBtn.textContent = 'HL';
+  hlBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;';
+  const hlUpd = () => {
+    const a = editor.isActive('highlight');
+    hlBtn.style.background = a ? '#e0e7ff' : '#fff';
+    hlBtn.style.borderColor = a ? '#6366f1' : '#e5e7eb';
+  };
+  editor.on('selectionUpdate', hlUpd); editor.on('update', hlUpd);
+  const hlDrop = document.createElement('div');
+  hlDrop.style.cssText = 'display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px;z-index:200;flex-wrap:wrap;gap:4px;width:100px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+  hlPalette.forEach(c => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.style.cssText = `width:20px;height:20px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;`;
+    dot.onmouseover = () => dot.style.borderColor = '#6366f1';
+    dot.onmouseout = () => dot.style.borderColor = 'transparent';
+    dot.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().toggleHighlight({ color: c }).run(); hlDrop.style.display = 'none'; };
+    hlDrop.appendChild(dot);
+  });
+  const hlReset = document.createElement('button');
+  hlReset.type = 'button'; hlReset.title = '하이라이트 제거'; hlReset.textContent = '✕';
+  hlReset.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-size:10px;';
+  hlReset.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().unsetHighlight().run(); hlDrop.style.display = 'none'; };
+  hlDrop.appendChild(hlReset);
+  hlBtn.onmousedown = (e) => { e.preventDefault(); hlDrop.style.display = hlDrop.style.display === 'none' ? 'flex' : 'none'; };
+  document.addEventListener('mousedown', (e) => { if (!hlWrap.contains(e.target)) hlDrop.style.display = 'none'; });
+  hlWrap.append(hlBtn, hlDrop);
+  tb.appendChild(hlWrap);
 
   // 링크
-  const linkBtn = mkBtn({
+  tb.appendChild(mkBtn({
     label: '🔗', title: '링크',
     action: () => {
       const prev = editor.getAttributes('link').href;
@@ -245,16 +305,17 @@ function buildToolbar(editor) {
       editor.chain().focus().setLink({ href: url }).run();
     },
     mark: 'link'
-  });
-  tb.appendChild(linkBtn);
+  }));
 
-  // 이모지 (간단 드롭다운)
+  // 이모지 드롭다운
   const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐'];
+  const emojiWrap = document.createElement('div');
+  emojiWrap.style.cssText = 'position:relative;display:inline-block;';
   const emojiBtn = document.createElement('button');
   emojiBtn.type = 'button'; emojiBtn.title = '이모지'; emojiBtn.textContent = '😊';
-  emojiBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;position:relative;';
+  emojiBtn.style.cssText = 'padding:3px 7px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;';
   const emojiDrop = document.createElement('div');
-  emojiDrop.style.cssText = 'display:none;position:absolute;top:28px;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:4px;z-index:100;flex-wrap:wrap;gap:2px;width:130px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+  emojiDrop.style.cssText = 'display:none;position:absolute;top:28px;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:4px;z-index:200;flex-wrap:wrap;gap:2px;width:130px;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
   emojiList.forEach(em => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.textContent = em;
@@ -262,11 +323,10 @@ function buildToolbar(editor) {
     btn.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().insertContent(em).run(); emojiDrop.style.display = 'none'; };
     emojiDrop.appendChild(btn);
   });
-  emojiBtn.style.position = 'relative';
-  emojiBtn.appendChild(emojiDrop);
   emojiBtn.onmousedown = (e) => { e.preventDefault(); emojiDrop.style.display = emojiDrop.style.display === 'none' ? 'flex' : 'none'; };
-  document.addEventListener('mousedown', (e) => { if (!emojiBtn.contains(e.target)) emojiDrop.style.display = 'none'; });
-  tb.appendChild(emojiBtn);
+  document.addEventListener('mousedown', (e) => { if (!emojiWrap.contains(e.target)) emojiDrop.style.display = 'none'; });
+  emojiWrap.append(emojiBtn, emojiDrop);
+  tb.appendChild(emojiWrap);
 
   return tb;
 }
@@ -508,6 +568,7 @@ async function renderNotePage() {
       .note-card-preview ul,.note-card-preview ol{padding-left:18px;margin:2px 0;}
       .note-card-preview img{max-width:100%;border-radius:4px;}
       .note-card-preview p{margin:0 0 2px;}
+      .note-tiptap-editor span[style*="font-size"]{line-height:1.4;}
     `;
     document.head.appendChild(style);
   }
