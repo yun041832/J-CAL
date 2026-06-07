@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(noteBtn) {
     noteBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      widgetNote?.();
+      window.JCal?.showMemoPage?.();
       trackMenuPV('menu:note');
     });
   }
