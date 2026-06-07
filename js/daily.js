@@ -720,15 +720,13 @@ async function insertDailyTaskViaFirstSection(dstr,text){
 function appendDailyWeekViewTaskRow(itemList,dstr,task,idx){
   const sections=getDailySections(dstr);
   const section=task.sectionId?sections.find((s)=>s.id===task.sectionId):null;
-  const sectionColor=section?.color||'#5C8DFF';
+  const sectionColor=window.JCal.getSectionColor(section);
 
   const row=el('div');
   row.style.cssText='display:flex;align-items:flex-start;gap:4px;padding:4px 2px;border-radius:6px;';
 
-  const cb=document.createElement('input');
-  cb.type='checkbox';
+  const cb=window.JCal.createCheckbox(sectionColor);
   cb.checked=!!task.done;
-  cb.style.cssText=`width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:${sectionColor};`;
   const text=el('span',null,task.text||'');
   text.style.cssText=`font-size:11px;line-height:1.4;word-break:break-all;${task.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
 
@@ -747,22 +745,19 @@ function appendDailyWeekViewTaskRow(itemList,dstr,task,idx){
 function appendDailyMonthViewTaskRow(body,dstr,task,idx){
   const sections=getDailySections(dstr);
   const section=task.sectionId?sections.find((s)=>s.id===task.sectionId):null;
-  const sectionColor=section?.color||'#5C8DFF';
+  const sectionColor=window.JCal.getSectionColor(section);
 
   const rowItem=el('div','daily-month-task-item');
   rowItem.style.position='relative';
 
-  const cb=document.createElement('input');
-  cb.type='checkbox';
+  const cb=window.JCal.createCheckbox(sectionColor);
   cb.checked=!!task.done;
-  cb.style.accentColor=sectionColor;
   const txt=el('span','daily-month-task-text',task.text||'');
   if(task.done) txt.classList.add('is-done');
 
-  const delBtn=el('button',null,'×');
+  const delBtn=window.JCal.createDeleteBtn();
   delBtn.type='button';
   delBtn.title='Delete task';
-  delBtn.style.cssText='position:absolute;top:0;right:0;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;opacity:0;transition:opacity 0.15s;';
   rowItem.addEventListener('mouseenter',()=>{ delBtn.style.opacity='1'; });
   rowItem.addEventListener('mouseleave',()=>{ delBtn.style.opacity='0'; });
 
@@ -2524,12 +2519,10 @@ function renderDailyWeekCalendar(){
       row.style.cssText = `display:flex;align-items:flex-start;gap:4px;padding:4px 2px;border-radius:6px;`;
 
       const section=item.sectionId?sections.find((s)=>s.id===item.sectionId):null;
-      const sectionColor=section?.color||'#5C8DFF';
+      const sectionColor=window.JCal.getSectionColor(section);
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = !!item.done;
-      cb.style.cssText=`width:13px;height:13px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:${sectionColor};`;
+      const cb=window.JCal.createCheckbox(sectionColor);
+      cb.checked=!!item.done;
 
       const text = el('span', null, item.text);
       text.style.cssText = `font-size:11px;line-height:1.4;word-break:break-all;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:#374151;'}`;
@@ -2681,19 +2674,16 @@ function renderDailyMonthCalendar(){
           rowItem.style.position='relative';
 
           const section=item.sectionId?sections.find((s)=>s.id===item.sectionId):null;
-          const sectionColor=section?.color||'#5C8DFF';
+          const sectionColor=window.JCal.getSectionColor(section);
 
-          const cb=document.createElement('input');
-          cb.type='checkbox';
+          const cb=window.JCal.createCheckbox(sectionColor);
           cb.checked=!!item.done;
-          cb.style.accentColor=sectionColor;
           const txt=el('span','daily-month-task-text',item.text);
           if(item.done) txt.classList.add('is-done');
 
-          const delBtn=el('button',null,'×');
+          const delBtn=window.JCal.createDeleteBtn();
           delBtn.type='button';
           delBtn.title='Delete task';
-          delBtn.style.cssText='position:absolute;top:0;right:0;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;opacity:0;transition:opacity 0.15s;';
           rowItem.addEventListener('mouseenter',()=>{ delBtn.style.opacity='1'; });
           rowItem.addEventListener('mouseleave',()=>{ delBtn.style.opacity='0'; });
 
@@ -2767,10 +2757,8 @@ function renderDailyList(){
     row.draggable = true;
     row.dataset.idx = String(idx);
 
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = !!item.done;
-    cb.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:#5C8DFF;';
+    const cb=window.JCal.createCheckbox(window.JCal.getSectionColor(null));
+    cb.checked=!!item.done;
 
     const text = el('span', null, item.text);
     text.style.cssText = `flex:1;font-size:14px;${item.done?'text-decoration:line-through;color:#9aa5b1;':'color:var(--text);'}`;
@@ -2863,10 +2851,8 @@ function widgetDaily(){
         const row=doc.createElement('div');
         row.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid #e9ecf2;border-radius:8px;margin-bottom:6px;font-size:13px;';
 
-        const cb=doc.createElement('input');
-        cb.type='checkbox';
+        const cb=window.JCal.createCheckbox(window.JCal.getSectionColor(null));
         cb.checked=!!item.done;
-        cb.style.cssText='width:14px;height:14px;cursor:pointer;flex-shrink:0;margin-top:2px;accent-color:#5C8DFF;';
 
         const txt=doc.createElement('span');
         txt.textContent=item.text;
