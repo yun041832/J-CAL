@@ -150,7 +150,7 @@ function createEditor({ element, content, placeholder, onUpdate }) {
     ],
     content: content || '',
     editorProps: {
-      attributes: { class: 'note-tiptap-editor', style: 'outline:none;min-height:80px;padding:8px;font-size:14px;line-height:1.6;color:#1a1a1a;' },
+      attributes: { class: 'note-tiptap-editor', style: 'outline:none;min-height:80px;padding:8px 10px;font-size:14px;line-height:1.6;color:#1a1a1a;' },
       handlePaste(_, event) {
         const html = event.clipboardData?.getData('text/html');
         if (html && html.trim().length > 20) {
@@ -175,14 +175,14 @@ function createEditor({ element, content, placeholder, onUpdate }) {
 
 function buildToolbar(editor) {
   const tb = document.createElement('div');
-  tb.style.cssText = 'display:flex;align-items:center;gap:0px;padding:6px 10px;border-bottom:1px solid #f0f0f0;background:#fff;flex-wrap:wrap;min-height:36px;';
+  tb.style.cssText = 'display:flex;align-items:center;gap:0px;padding:4px 8px;border-bottom:1px solid #e5e7eb;background:#f8fafc;flex-wrap:wrap;min-height:32px;';
 
   // 기본 버튼 스타일 생성기
   const mkBtn = ({ label, title, action, mark, style }) => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.title = title;
     btn.innerHTML = label;
-    btn.style.cssText = `padding:5px 9px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:14px;color:#374151;line-height:1;transition:background 0.1s;font-family:inherit;${style||''}`;
+    btn.style.cssText = `padding:3px 7px;border:none;border-radius:4px;background:none;cursor:pointer;font-size:13px;color:#374151;line-height:1;transition:background 0.1s;font-family:inherit;${style||''}`;
     btn.onmouseover = () => { if (!btn._active) btn.style.background = '#f3f4f6'; };
     btn.onmouseout = () => { if (!btn._active) btn.style.background = 'none'; };
     btn.onmousedown = (e) => { e.preventDefault(); action(); };
@@ -201,7 +201,7 @@ function buildToolbar(editor) {
   // 구분선
   const sep = () => {
     const d = document.createElement('div');
-    d.style.cssText = 'width:1px;height:18px;background:#d1d5db;margin:0 6px;flex-shrink:0;';
+    d.style.cssText = 'width:1px;height:14px;background:#d1d5db;margin:0 3px;flex-shrink:0;';
     return d;
   };
 
@@ -260,14 +260,32 @@ function buildToolbar(editor) {
     sizeDrop.style.display = sizeDrop.style.display === 'none' ? 'block' : 'none';
   };
 
-  tb.append(sizeWrap, sep());
-
-  // 불렛 · 번호
   tb.append(
-    mkBtn({ label: '•', title: '불렛', action: () => editor.chain().focus().toggleBulletList().run(), mark: 'bulletList' }),
-    mkBtn({ label: '1.', title: '번호', action: () => editor.chain().focus().toggleOrderedList().run(), mark: 'orderedList' }),
+    mkBtn({ label: 'H1', title: '제목1', action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), style: 'font-weight:700;font-size:12px;' }),
+    mkBtn({ label: 'H2', title: '제목2', action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), style: 'font-weight:600;font-size:12px;' }),
     sep(),
   );
+
+  const h1Btn = tb.querySelector('[title="제목1"]');
+  if (h1Btn) {
+    const h1Upd = () => {
+      const a = editor.isActive('heading', { level: 1 });
+      h1Btn.style.background = a ? '#e0e7ff' : 'none';
+      h1Btn.style.color = a ? '#4f46e5' : '#374151';
+    };
+    editor.on('selectionUpdate', h1Upd); editor.on('update', h1Upd);
+  }
+  const h2Btn = tb.querySelector('[title="제목2"]');
+  if (h2Btn) {
+    const h2Upd = () => {
+      const a = editor.isActive('heading', { level: 2 });
+      h2Btn.style.background = a ? '#e0e7ff' : 'none';
+      h2Btn.style.color = a ? '#4f46e5' : '#374151';
+    };
+    editor.on('selectionUpdate', h2Upd); editor.on('update', h2Upd);
+  }
+
+  tb.append(sizeWrap, sep());
 
   // fixed 드롭다운 헬퍼
   const makeFixedDropdown = (colors, onSelect, onReset) => {
@@ -456,6 +474,7 @@ function buildNoteCard(note, colorEntry) {
   preview.innerHTML = note.content || '<span style="color:#d1d5db;font-size:12px;">클릭해서 입력...</span>';
 
   const editorEl = document.createElement('div');
+  editorEl.style.cssText = 'border:1.5px solid #3b82f6;border-radius:6px;overflow:hidden;margin:4px 8px 8px;';
 
   let isEditing = false, editorInstance = null, toolbar = null;
 
