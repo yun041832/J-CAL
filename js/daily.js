@@ -2367,7 +2367,7 @@ async function renderDailyDayWorkspace(){
 
   const noteSection=el('div','daily-note-section');
   const memoHead=el('div','daily-memo-head');
-  const memoHeadLeft=el('div','daily-memo-head-title','📝 Daily Note');
+  const memoHeadLeft=el('div','daily-memo-head-title','📝 Daily Memo');
   const memoHeadActions=el('div','daily-memo-head-actions');
   const pinBtn=el('button','daily-memo-icon-btn','📌');
   pinBtn.type='button';

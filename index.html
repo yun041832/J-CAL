@@ -316,7 +316,7 @@
       <button class="menu-btn" data-widget="calendar" title="Calendar"><span class="menu-icon">📅</span><span class="menu-label">Events</span></button>
       <button class="menu-btn" data-widget="routine" title="Routine"><span class="menu-icon">✅</span><span class="menu-label">Rout</span></button>
       <button class="menu-btn" data-widget="daily" title="Daily"><span class="menu-icon">📋</span><span class="menu-label">Daily</span></button>
-      <button class="menu-btn" data-widget="memo" title="Memo"><span class="menu-icon">💬</span><span class="menu-label">Memo</span></button>
+      <button class="menu-btn" data-widget="memo" title="Note"><span class="menu-icon">📝</span><span class="menu-label">Note</span></button>
       <button class="menu-btn" data-widget="todo" style="display:none !important;">✅ To-do</button>
       <button class="menu-btn" data-widget="timer" title="Timer"><span class="menu-icon">⏲️</span><span class="menu-label">Timer</span></button>
       <button class="menu-btn" data-widget="logs" title="Logs" style="display:none !important;"><span class="menu-icon">📓</span><span class="menu-label">Logs</span></button>
@@ -505,9 +505,9 @@
         <span style="font-size:20px;line-height:1.2;">📋</span>
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Daily</span>
       </button>
-      <button type="button" class="mobile-tab-btn" data-widget="memo" aria-label="Memo" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
+      <button type="button" class="mobile-tab-btn" data-widget="memo" aria-label="Note" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">💬</span>
-        <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Memo</span>
+        <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;">Note</span>
       </button>
       <button type="button" class="mobile-tab-btn" data-widget="todo" aria-label="To-do" style="display:none !important;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;font-size:11px;color:#666;cursor:pointer;padding:4px 0;">
         <span style="font-size:20px;line-height:1.2;">✅</span>
@@ -654,7 +654,7 @@
       <!-- 메모 페이지 (기본 숨김) -->
       <div id="memoPage" class="card hidden" style="display: flex; flex-direction: column; height: 100%;">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-          <div class="card__title">📝 Memo</div>
+          <div class="card__title">📝 Note</div>
           <div style="display:flex;align-items:center;">
             <div id="memo-view-toggle" style="display:flex;gap:4px;margin-right:8px;">
               <button type="button" id="btn-grid-view" onclick="setMemoView('grid')"
@@ -709,7 +709,7 @@
       <!-- 메모 작성 페이지 (기본 숨김) -->
       <div id="memoWritePage" class="card hidden">
         <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e9ecf2; padding-bottom: 12px;">
-          <div class="card__title" id="memoWriteTitle">New Memo</div>
+          <div class="card__title" id="memoWriteTitle">New Note</div>
           <button id="saveMemoBtn" class="btn-confirm" style="padding: 8px 16px;">Save</button>
         </div>
         <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
@@ -862,7 +862,7 @@
 
       <!-- 메모 카드 -->
       <div class="card">
-        <div class="card__header"><div class="card__title">⎙ Memo</div></div>
+        <div class="card__header"><div class="card__title">📝 Note</div></div>
         <div class="datebox">
           <div class="memo__header">
             <label class="memo__datepick">Date: <input id="memoDate" type="date"></label>
