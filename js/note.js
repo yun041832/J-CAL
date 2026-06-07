@@ -527,6 +527,17 @@ function buildNoteCard(note, colorEntry) {
   card.append(header, body);
 
   // ── 에디터 마운트 / 언마운트 ─────────────────────────
+  const showToolbar = () => {
+    if (toolbar) { toolbar.style.display = ''; return; }
+    toolbar = buildToolbar(editorInstance);
+    toolbar.style.display = '';
+    toolbarSlot.appendChild(toolbar);
+  };
+
+  const hideToolbar = () => {
+    if (toolbar) toolbar.style.display = 'none';
+  };
+
   const mountEditor = () => {
     if (editorInstance || isCollapsed) return;
     editorInstance = createEditor({
@@ -543,10 +554,12 @@ function buildNoteCard(note, colorEntry) {
         }
       },
     });
-    toolbar = buildToolbar(editorInstance);
-    toolbarSlot.appendChild(toolbar);
     if (note.id) _editors.set(note.id, editorInstance);
-    isEditing = true;
+    // 툴바는 숨긴 상태로 생성
+    toolbar = buildToolbar(editorInstance);
+    toolbar.style.display = 'none';
+    toolbarSlot.appendChild(toolbar);
+    isEditing = false;
   };
 
   const unmountEditor = () => {
@@ -569,12 +582,35 @@ function buildNoteCard(note, colorEntry) {
   }, { threshold: 0.1 });
   observer.observe(card);
 
-  // 편집 시작/종료 감지 (포커스 기반)
-  editorEl.addEventListener('focusin', () => { isEditing = true; });
-  editorEl.addEventListener('focusout', () => {
+  card.addEventListener('focusin', () => {
+    isEditing = true;
+    showToolbar();
+  });
+
+  card.addEventListener('focusout', () => {
     setTimeout(() => {
-      if (!card.contains(document.activeElement)) isEditing = false;
+      if (!card.contains(document.activeElement)) {
+        isEditing = false;
+        hideToolbar();
+      }
     }, 200);
+  });
+
+  card.addEventListener('mousedown', () => {
+    isEditing = true;
+    showToolbar();
+  });
+
+  // 카드 밖 클릭 시 툴바 숨김
+  document.addEventListener('mousedown', (e) => {
+    if (!card.contains(e.target)) {
+      setTimeout(() => {
+        if (!card.contains(document.activeElement)) {
+          isEditing = false;
+          hideToolbar();
+        }
+      }, 200);
+    }
   });
 
   // ── 접고펴기 ─────────────────────────────────────────
