@@ -581,6 +581,20 @@ async function showNotePage() {
   _editors.forEach(editor => editor.destroy());
   _editors.clear();
 
+  // 페이지 전환
+  localStorage.setItem('memo2.lastPage', 'memo');
+  const pages = [
+    'calendarPage','memoPage','routinePage','dailyPage',
+    'timerPage','logsPage','insightPage','insightWritePage',
+    'memoWritePage','homeIntroSection'
+  ];
+  pages.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  const memoPage = document.getElementById('memoPage');
+  if (memoPage) memoPage.classList.remove('hidden');
+
   await renderNotePage();
 }
 
