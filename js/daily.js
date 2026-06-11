@@ -59,41 +59,7 @@
   }
 
   function syncLoginNudgeBanner(pageEl, show) {
-    if (!pageEl) return;
-    let banner = pageEl.querySelector('#login-nudge-banner');
-    if (!show) {
-      banner?.remove();
-      return;
-    }
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'login-nudge-banner';
-      banner.className = 'login-nudge-banner';
-      const text = document.createElement('span');
-      text.className = 'login-nudge-banner__text';
-      text.textContent = '📌 로그인하면 모든 기기에서 데이터가 안전하게 저장됩니다.';
-      const loginBtn = document.createElement('button');
-      loginBtn.type = 'button';
-      loginBtn.className = 'login-nudge-banner__btn';
-      loginBtn.textContent = 'Google로 로그인';
-      loginBtn.onclick = () => openAppLoginModal();
-      banner.append(text, loginBtn);
-    }
-    const anchor = pageEl.querySelector('.daily-page-header')
-      || pageEl.querySelector('.card__header')
-      || pageEl.firstElementChild;
-    if (anchor) {
-      if (banner.previousElementSibling !== anchor) {
-        anchor.insertAdjacentElement('afterend', banner);
-      }
-    } else if (!banner.parentNode) {
-      pageEl.prepend(banner);
-    }
-    const textEl = banner.querySelector('.login-nudge-banner__text');
-    if (textEl) {
-      textEl.textContent = '📌 로그인하면 모든 기기에서 데이터가 안전하게 저장됩니다.';
-    }
-    banner.style.display = '';
+    // 제거됨 — 탭바로 이동
   }
 
   function setDailyMainContentVisible(visible) {
@@ -120,22 +86,7 @@
   }
 
   function renderDailyLoginGate() {
-    const page = document.getElementById('dailyPage');
-    syncLoginNudgeBanner(page, true);
-    setDailyMainContentVisible(false);
-    const gate = ensureDailyLoginGateEl();
-    if (!gate) return;
-    gate.style.display = 'flex';
-    gate.innerHTML = '';
-    const msg = document.createElement('p');
-    msg.style.cssText = 'margin:0 0 12px;font-size:14px;color:#6b7280;';
-    msg.textContent = 'Daily는 로그인 후 사용할 수 있습니다.';
-    const loginBtn = document.createElement('button');
-    loginBtn.type = 'button';
-    loginBtn.textContent = 'Google로 로그인';
-    loginBtn.style.cssText = 'padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
-    loginBtn.onclick = () => openAppLoginModal();
-    gate.append(msg, loginBtn);
+    // 제거됨
   }
 
   function hideDailyLoginGate() {

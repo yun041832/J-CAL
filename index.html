@@ -521,6 +521,16 @@
         <img src="images/j-favicon.jpg" alt="JustDoc" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
         <span class="mobile-tab-label" style="font-size:9px;margin-top:2px;color:#5C8DFF;font-weight:600;">JustDoc</span>
       </button>
+      <button type="button" id="login-btn-tab" aria-label="Sign in" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;cursor:pointer;padding:4px 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <span style="font-size:9px;margin-top:2px;color:#666;">Login</span>
+      </button>
+      <button type="button" id="user-btn-tab" aria-label="Log out" style="display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;height:52px;border:none;background:none;cursor:pointer;padding:4px 0;overflow:hidden;">
+        <img id="user-avatar-tab" src="" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+      </button>
     </nav>
 
     <main class="main">
@@ -1000,6 +1010,20 @@
           mobileUser.style.display = 'none'
         }
       }
+
+      const tabLogin = document.getElementById('login-btn-tab')
+      const tabUser = document.getElementById('user-btn-tab')
+      const tabAvatar = document.getElementById('user-avatar-tab')
+      if (tabLogin && tabUser) {
+        if (session) {
+          tabLogin.style.display = 'none'
+          tabUser.style.display = 'flex'
+          if (tabAvatar) tabAvatar.src = session.user.user_metadata.avatar_url || ''
+        } else {
+          tabLogin.style.display = 'flex'
+          tabUser.style.display = 'none'
+        }
+      }
     }
 
     document.getElementById('login-btn')?.addEventListener('click', () => {
@@ -1019,6 +1043,8 @@
     document.getElementById('user-info')?.addEventListener('click', signOut)
     document.getElementById('login-btn-mobile')?.addEventListener('click', signInWithGoogle)
     document.getElementById('user-btn-mobile')?.addEventListener('click', signOut)
+    document.getElementById('login-btn-tab')?.addEventListener('click', signInWithGoogle)
+    document.getElementById('user-btn-tab')?.addEventListener('click', signOut)
 
     function setMobileTabActive(widget) {
       document.querySelectorAll('#mobile-tab-bar .mobile-tab-btn').forEach(function (btn) {
