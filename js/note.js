@@ -26,6 +26,7 @@ import Link from 'https://esm.sh/@tiptap/extension-link@2.4.0';
 import TaskList from 'https://esm.sh/@tiptap/extension-task-list@2.4.0';
 import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@2.4.0';
 import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2.4.0';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // 저스트닥 Supabase (선배님이 URL/KEY 직접 입력)
 const JUSTDOC_SUPABASE_URL = 'https://bfrukfyabrkglaeajlhl.supabase.co';
@@ -59,8 +60,8 @@ let _noteDatePickerOutsideHandler = null;
 let _justdocSb = null;
 
 function getJustdocSb() {
-  if (!_justdocSb && JUSTDOC_SUPABASE_URL !== 'YOUR_JUSTDOC_URL' && JUSTDOC_SUPABASE_ANON_KEY !== 'YOUR_JUSTDOC_ANON_KEY' && window.supabase?.createClient) {
-    _justdocSb = window.supabase.createClient(JUSTDOC_SUPABASE_URL, JUSTDOC_SUPABASE_ANON_KEY);
+  if (!_justdocSb && JUSTDOC_SUPABASE_URL !== 'YOUR_JUSTDOC_URL' && JUSTDOC_SUPABASE_ANON_KEY !== 'YOUR_JUSTDOC_ANON_KEY') {
+    _justdocSb = createClient(JUSTDOC_SUPABASE_URL, JUSTDOC_SUPABASE_ANON_KEY);
   }
   return _justdocSb;
 }
