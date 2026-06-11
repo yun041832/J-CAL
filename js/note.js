@@ -132,7 +132,7 @@ function createEditor({ element, content, placeholder, onUpdate }) {
   const editor = new Editor({
     element,
     extensions: [
-      StarterKit.configure({ bulletList: false, orderedList: false, listItem: false }),
+      StarterKit.configure({ bulletList: false, orderedList: false, listItem: false, blockquote: {} }),
       ListItem, BulletList, OrderedList,
       TaskList.configure({ HTMLAttributes: { class: 'note-task-list' } }),
       TaskItem.configure({ nested: true }),
@@ -555,7 +555,25 @@ function buildNoteCard(note, colorEntry) {
     card.remove();
   };
 
-  actions.append(collapseBtn, pinBtn, delBtn);
+  const cardCopyBtn = document.createElement('button');
+  cardCopyBtn.type = 'button';
+  cardCopyBtn.title = '노트 복사';
+  cardCopyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  cardCopyBtn.style.cssText = 'border:none;background:none;cursor:pointer;color:#9ca3af;padding:2px 4px;line-height:1;display:flex;align-items:center;';
+  cardCopyBtn.onmouseover = () => cardCopyBtn.style.color = '#374151';
+  cardCopyBtn.onmouseout = () => cardCopyBtn.style.color = '#9ca3af';
+  cardCopyBtn.onclick = (e) => {
+    e.stopPropagation();
+    const div = document.createElement('div');
+    div.innerHTML = note.content || '';
+    const text = (note.title ? note.title + '\n' : '') + (div.textContent || '');
+    navigator.clipboard.writeText(text).then(() => {
+      cardCopyBtn.style.color = '#22c55e';
+      setTimeout(() => cardCopyBtn.style.color = '#9ca3af', 1500);
+    });
+  };
+
+  actions.append(collapseBtn, cardCopyBtn, pinBtn, delBtn);
   header.append(dateEl, titleInput, actions);
 
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
@@ -677,7 +695,7 @@ function buildSection(section, notes, colorEntry) {
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button'; copyBtn.textContent = 'COPY';
   copyBtn.title = '패널 전체 복사';
-  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 6px;opacity:0.7;`;
+  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 4px 0 8px;opacity:0.7;`;
   copyBtn.onmouseover = () => copyBtn.style.opacity = '1';
   copyBtn.onmouseout = () => copyBtn.style.opacity = '0.7';
   copyBtn.onclick = () => {
@@ -696,7 +714,7 @@ function buildSection(section, notes, colorEntry) {
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
   addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;`;
-  header.append(left, copyBtn, addBtn);
+  header.append(left, addBtn, copyBtn);
 
   const list = document.createElement('div');
   const sectionNotes = notes
@@ -797,6 +815,7 @@ async function renderNotePage() {
     style.textContent = `
       .note-tiptap-editor{outline:none;}
       .note-tiptap-editor p{margin:0 0 4px;}
+      .note-tiptap-editor blockquote{border-left:3px solid #d1d5db;margin:4px 0;padding:4px 12px;color:#6b7280;background:#f9fafb;}
       .note-tiptap-editor ul,.note-tiptap-editor ol{padding-left:20px;margin:4px 0;}
       .note-tiptap-editor table{border-collapse:collapse;width:100%;margin:8px 0;}
       .note-tiptap-editor td,.note-tiptap-editor th{border:1px solid #e5e7eb;padding:4px 8px;min-width:40px;}
