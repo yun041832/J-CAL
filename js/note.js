@@ -82,20 +82,6 @@ async function getJcalUserEmail() {
   return data?.user?.email || null;
 }
 
-async function resolveJustdocUserId(email) {
-  const jd = getJustdocSb();
-  if (!jd || !email) return null;
-  let { data, error } = await jd.rpc('get_user_id_by_email', { email });
-  if (error) {
-    ({ data, error } = await jd.rpc('get_user_id_by_email', { lookup_email: email }));
-  }
-  if (error) { console.error('[note] get_user_id_by_email', error); return null; }
-  if (typeof data === 'string' && data) return data;
-  if (Array.isArray(data) && data.length) return data[0]?.id || data[0];
-  if (data && typeof data === 'object' && data.id) return data.id;
-  return data || null;
-}
-
 async function sendNoteToJustDoc(note, html) {
   if (!note.id) throw new Error('Note not saved yet');
 
@@ -109,10 +95,12 @@ async function sendNoteToJustDoc(note, html) {
 
   const jd = getJustdocSb();
   if (!jd) throw new Error('JustDoc Supabase not configured');
-  const email = await getJcalUserEmail();
-  if (!email) throw new Error('Not logged in');
-  const justdocUserId = await resolveJustdocUserId(email);
-  if (!justdocUserId) throw new Error('JustDoc user not found');
+  const currentUserEmail = await getJcalUserEmail();
+  if (!currentUserEmail) throw new Error('Not logged in');
+  const { data: userIdData, error: userIdError } = await jd
+    .rpc('get_user_id_by_email', { lookup_email: currentUserEmail });
+  if (userIdError || !userIdData) throw new Error('Failed to get JustDoc user_id');
+  const justdocUserId = userIdData;
   const { error } = await jd.from('documents').insert({
     user_id: justdocUserId,
     title: getNoteFirstLineTitle(html),
