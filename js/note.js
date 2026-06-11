@@ -785,8 +785,8 @@ async function renderNotePage() {
     style.textContent = `
       .note-tiptap-editor{outline:none;}
       .note-tiptap-editor p{margin:0 0 4px;}
-      .note-tiptap-editor > .ProseMirror > p:first-child { font-size:16px; font-weight:600; color:#111827; }
-      .note-card-preview > p:first-child { font-size:14px; font-weight:600; color:#111827; }
+      .note-tiptap-editor .ProseMirror p:first-child { font-size:17px !important; font-weight:700 !important; color:#111827; line-height:1.4; margin-bottom:6px; }
+      .note-card-preview p:first-child { font-size:15px !important; font-weight:700 !important; color:#111827; line-height:1.4; margin-bottom:4px; }
       .note-tiptap-editor blockquote{border-left:3px solid #d1d5db;margin:4px 0;padding:4px 12px;color:#6b7280;background:#f9fafb;}
       .note-tiptap-editor ul,.note-tiptap-editor ol{padding-left:20px;margin:4px 0;}
       .note-tiptap-editor table{border-collapse:collapse;width:100%;margin:8px 0;}
