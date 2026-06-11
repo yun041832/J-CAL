@@ -767,7 +767,20 @@ async function renderNotePage() {
   page.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:13px;">불러오는 중...</div>';
 
   const userId = await getUserId();
-  if (!userId) { page.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:13px;">로그인 후 노트를 사용할 수 있습니다.</div>'; return; }
+  if (!userId) {
+    page.innerHTML = '';
+    const gate = document.createElement('div');
+    gate.style.cssText = 'padding:20px;color:#9ca3af;font-size:13px;';
+    gate.textContent = '로그인 후 노트를 사용할 수 있습니다.';
+    const loginBtn = document.createElement('button');
+    loginBtn.type = 'button';
+    loginBtn.textContent = 'Google로 로그인';
+    loginBtn.style.cssText = 'margin-top:12px;padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;';
+    loginBtn.onclick = () => window.openAppLoginModal?.();
+    gate.appendChild(loginBtn);
+    page.appendChild(gate);
+    return;
+  }
 
   _sections = await loadSections();
   _notes = await loadNotes();
