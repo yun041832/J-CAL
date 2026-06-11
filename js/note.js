@@ -37,6 +37,16 @@ const SECTION_COLORS = [
   { bg: '#FEFCE8', border: '#FEF08A', text: '#854D0E' },
 ];
 
+const NOTE_COLORS = [
+  { bg: '', label: '없음' },
+  { bg: '#ffcdd2', label: 'Rose' },
+  { bg: '#ffe0b2', label: 'Orange' },
+  { bg: '#fff9c4', label: 'Yellow' },
+  { bg: '#c8e6c9', label: 'Green' },
+  { bg: '#bbdefb', label: 'Blue' },
+  { bg: '#e1bee7', label: 'Lavender' },
+];
+
 const DEFAULT_SECTIONS = [
   { name: "Today's Work", emoji: '💼', color: '#EEF2FF' },
   { name: 'Thoughts', emoji: '💭', color: '#F0FDF4' },
@@ -49,6 +59,91 @@ let _hiddenPanels = new Set();
 let _searchQuery = '';
 let _viewMode = 'all';
 let _undoStack = [];
+
+let _noteDatePickerPop = null;
+let _noteDatePickerOutsideHandler = null;
+
+function closeNoteDatePicker() {
+  if (_noteDatePickerOutsideHandler) {
+    document.removeEventListener('mousedown', _noteDatePickerOutsideHandler);
+    _noteDatePickerOutsideHandler = null;
+  }
+  _noteDatePickerPop?.remove();
+  _noteDatePickerPop = null;
+}
+
+function showNoteDatePicker(anchorEl, currentDate, onSelect) {
+  closeNoteDatePicker();
+  const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const selectedStr = currentDate || todayStr();
+  const parts = selectedStr.split('-').map(Number);
+  let viewYear = parts[0];
+  let viewMonth = parts[1] - 1;
+
+  if (getComputedStyle(anchorEl).position === 'static') anchorEl.style.position = 'relative';
+
+  const pop = document.createElement('div');
+  pop.style.cssText = 'position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:20;padding:8px;min-width:220px;box-sizing:border-box;';
+  pop.onmousedown = (ev) => ev.stopPropagation();
+  pop.onclick = (ev) => ev.stopPropagation();
+
+  const paint = () => {
+    pop.innerHTML = '';
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button'; prevBtn.textContent = '‹';
+    prevBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:16px;padding:4px 8px;color:#374151;line-height:1;';
+    const monthLabel = document.createElement('span');
+    monthLabel.style.cssText = 'font-size:13px;font-weight:600;color:#111827;';
+    monthLabel.textContent = viewYear + '-' + String(viewMonth + 1).padStart(2, '0');
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button'; nextBtn.textContent = '›';
+    nextBtn.style.cssText = prevBtn.style.cssText;
+    prevBtn.onclick = (e) => { e.stopPropagation(); viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } paint(); };
+    nextBtn.onclick = (e) => { e.stopPropagation(); viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } paint(); };
+    header.append(prevBtn, monthLabel, nextBtn);
+    pop.appendChild(header);
+
+    const weekRow = document.createElement('div');
+    weekRow.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;';
+    WEEKDAYS.forEach(d => {
+      const cell = document.createElement('div');
+      cell.textContent = d;
+      cell.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;padding:2px 0;';
+      weekRow.appendChild(cell);
+    });
+    pop.appendChild(weekRow);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;';
+    const today = todayStr();
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.textContent = String(day);
+      btn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:12px;width:28px;height:28px;border-radius:50%;padding:0;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#374151;font-family:inherit;';
+      if (dateStr === today) { btn.style.border = '1.5px solid #5C8DFF'; btn.style.color = '#5C8DFF'; }
+      if (dateStr === selectedStr) { btn.style.background = '#5C8DFF'; btn.style.color = '#fff'; btn.style.border = 'none'; }
+      btn.onclick = (e) => { e.stopPropagation(); onSelect(dateStr); closeNoteDatePicker(); };
+      grid.appendChild(btn);
+    }
+    pop.appendChild(grid);
+  };
+
+  paint();
+  anchorEl.appendChild(pop);
+  _noteDatePickerPop = pop;
+
+  _noteDatePickerOutsideHandler = (ev) => {
+    if (anchorEl.contains(ev.target)) return;
+    closeNoteDatePicker();
+  };
+  setTimeout(() => document.addEventListener('mousedown', _noteDatePickerOutsideHandler), 10);
+}
 
 function getSb() { if (!_sb && window.supabase?.auth) _sb = window.supabase; return _sb; }
 
@@ -490,8 +585,19 @@ function buildNoteCard(note, colorEntry) {
 
   // 날짜
   const dateEl = document.createElement('span');
-  dateEl.style.cssText = 'font-size:11px;color:#9ca3af;flex-shrink:0;cursor:pointer;';
+  dateEl.style.cssText = 'font-size:11px;color:#9ca3af;flex-shrink:0;cursor:pointer;position:relative;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#9ca3af;';
   dateEl.textContent = note.note_date || todayStr();
+  dateEl.onclick = (e) => {
+    e.stopPropagation();
+    showNoteDatePicker(dateEl, note.note_date || todayStr(), async (selectedDate) => {
+      dateEl.textContent = selectedDate;
+      note.note_date = selectedDate;
+      if (note.id) {
+        const sb = getSb();
+        if (sb) await sb.from('notes').update({ note_date: selectedDate }).eq('id', note.id);
+      }
+    });
+  };
 
   // 우측 액션 버튼들
   const actions = document.createElement('div');
@@ -544,7 +650,53 @@ function buildNoteCard(note, colorEntry) {
     });
   };
 
-  actions.append(collapseBtn, cardCopyBtn, pinBtn, delBtn);
+  const colorBtn = document.createElement('button');
+  colorBtn.type = 'button'; colorBtn.title = '카드 색상';
+  colorBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>';
+  colorBtn.style.cssText = 'border:none;background:none;cursor:pointer;color:#9ca3af;padding:2px 4px;line-height:1;display:flex;align-items:center;';
+  colorBtn.onmouseover = () => colorBtn.style.color = '#374151';
+  colorBtn.onmouseout = () => colorBtn.style.color = '#9ca3af';
+
+  let colorPopEl = null;
+  colorBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (colorPopEl) { colorPopEl.remove(); colorPopEl = null; return; }
+    colorPopEl = document.createElement('div');
+    colorPopEl.style.cssText = 'position:fixed;display:flex;gap:4px;padding:6px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:9999;';
+    NOTE_COLORS.forEach(c => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c.bg||'#fff'};border:2px solid ${c.bg?c.bg:'#e5e7eb'};cursor:pointer;padding:0;flex-shrink:0;`;
+      if (!c.bg) dot.textContent = '×';
+      dot.onmousedown = (ev) => ev.preventDefault();
+      dot.onclick = async (ev) => {
+        ev.stopPropagation();
+        card.style.background = c.bg || '#fff';
+        card.style.border = `1px solid ${c.bg ? c.bg : '#e5e7eb'}`;
+        note.color_bg = c.bg || '';
+        if (note.id) {
+          const sb = getSb();
+          if (sb) await sb.from('notes').update({ color_bg: c.bg || '' }).eq('id', note.id);
+        }
+        colorPopEl?.remove(); colorPopEl = null;
+      };
+      colorPopEl.appendChild(dot);
+    });
+    document.body.appendChild(colorPopEl);
+    const rect = colorBtn.getBoundingClientRect();
+    colorPopEl.style.left = rect.left + 'px';
+    colorPopEl.style.top = (rect.bottom + 4) + 'px';
+    setTimeout(() => {
+      document.addEventListener('mousedown', function close(ev) {
+        if (!colorPopEl?.contains(ev.target) && ev.target !== colorBtn) {
+          colorPopEl?.remove(); colorPopEl = null;
+          document.removeEventListener('mousedown', close);
+        }
+      });
+    }, 10);
+  };
+
+  actions.append(collapseBtn, pinBtn, colorBtn, cardCopyBtn, delBtn);
   header.append(dateEl, actions);
 
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
