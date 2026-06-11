@@ -806,18 +806,18 @@ function buildSection(section, notes, colorEntry) {
   wrap.dataset.sectionId = section.id;
 
   const header = document.createElement('div');
-  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:${colorEntry.bg};border:1px solid ${colorEntry.border};position:sticky;top:0;z-index:10;`;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:#f8fafc;border:1px solid #e5e7eb;position:sticky;top:0;z-index:10;`;
 
   const left = document.createElement('div');
   left.style.cssText = 'display:flex;align-items:center;gap:6px;';
   const emoji = document.createElement('span'); emoji.textContent = section.emoji || '📁'; emoji.style.fontSize = '14px';
-  const nameEl = document.createElement('span'); nameEl.textContent = section.name; nameEl.style.cssText = `font-size:13px;font-weight:700;color:${colorEntry.text};`;
+  const nameEl = document.createElement('span'); nameEl.textContent = section.name; nameEl.style.cssText = `font-size:13px;font-weight:700;color:#374151;`;
   left.append(emoji, nameEl);
 
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button'; copyBtn.textContent = 'COPY';
   copyBtn.title = '패널 전체 복사';
-  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 2px 0 0;opacity:0.7;`;
+  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:#374151;padding:0 2px 0 0;opacity:0.7;`;
   copyBtn.onmouseover = () => copyBtn.style.opacity = '1';
   copyBtn.onmouseout = () => copyBtn.style.opacity = '0.7';
   copyBtn.onclick = () => {
@@ -835,7 +835,7 @@ function buildSection(section, notes, colorEntry) {
 
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
-  addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;margin-left:auto;`;
+  addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:#374151;padding:0 4px;font-weight:300;line-height:1;margin-left:auto;`;
   header.append(left, addBtn, copyBtn);
 
   const list = document.createElement('div');
