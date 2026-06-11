@@ -1,0 +1,15 @@
+/* Mobile top tab bar — even button distribution */
+@media (max-width: 768px) {
+  #mobile-tab-bar {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: space-evenly !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+  }
+
+  #mobile-tab-bar > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+}
