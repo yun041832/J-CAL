@@ -37,16 +37,6 @@ const SECTION_COLORS = [
   { bg: '#FEFCE8', border: '#FEF08A', text: '#854D0E' },
 ];
 
-const NOTE_COLORS = [
-  { bg: '', label: '없음' },
-  { bg: '#ffcdd2', label: 'Rose' },
-  { bg: '#ffe0b2', label: 'Orange' },
-  { bg: '#fff9c4', label: 'Yellow' },
-  { bg: '#c8e6c9', label: 'Green' },
-  { bg: '#bbdefb', label: 'Blue' },
-  { bg: '#e1bee7', label: 'Lavender' },
-];
-
 const DEFAULT_SECTIONS = [
   { name: "Today's Work", emoji: '💼', color: '#EEF2FF' },
   { name: 'Thoughts', emoji: '💭', color: '#F0FDF4' },
@@ -650,53 +640,7 @@ function buildNoteCard(note, colorEntry) {
     });
   };
 
-  const colorBtn = document.createElement('button');
-  colorBtn.type = 'button'; colorBtn.title = '카드 색상';
-  colorBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>';
-  colorBtn.style.cssText = 'border:none;background:none;cursor:pointer;color:#9ca3af;padding:2px 4px;line-height:1;display:flex;align-items:center;';
-  colorBtn.onmouseover = () => colorBtn.style.color = '#374151';
-  colorBtn.onmouseout = () => colorBtn.style.color = '#9ca3af';
-
-  let colorPopEl = null;
-  colorBtn.onclick = (e) => {
-    e.stopPropagation();
-    if (colorPopEl) { colorPopEl.remove(); colorPopEl = null; return; }
-    colorPopEl = document.createElement('div');
-    colorPopEl.style.cssText = 'position:fixed;display:flex;gap:4px;padding:6px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:9999;';
-    NOTE_COLORS.forEach(c => {
-      const dot = document.createElement('button');
-      dot.type = 'button';
-      dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c.bg||'#fff'};border:2px solid ${c.bg?c.bg:'#e5e7eb'};cursor:pointer;padding:0;flex-shrink:0;`;
-      if (!c.bg) dot.textContent = '×';
-      dot.onmousedown = (ev) => ev.preventDefault();
-      dot.onclick = async (ev) => {
-        ev.stopPropagation();
-        card.style.background = c.bg || '#fff';
-        card.style.border = `1px solid ${c.bg ? c.bg : '#e5e7eb'}`;
-        note.color_bg = c.bg || '';
-        if (note.id) {
-          const sb = getSb();
-          if (sb) await sb.from('notes').update({ color_bg: c.bg || '' }).eq('id', note.id);
-        }
-        colorPopEl?.remove(); colorPopEl = null;
-      };
-      colorPopEl.appendChild(dot);
-    });
-    document.body.appendChild(colorPopEl);
-    const rect = colorBtn.getBoundingClientRect();
-    colorPopEl.style.left = rect.left + 'px';
-    colorPopEl.style.top = (rect.bottom + 4) + 'px';
-    setTimeout(() => {
-      document.addEventListener('mousedown', function close(ev) {
-        if (!colorPopEl?.contains(ev.target) && ev.target !== colorBtn) {
-          colorPopEl?.remove(); colorPopEl = null;
-          document.removeEventListener('mousedown', close);
-        }
-      });
-    }, 10);
-  };
-
-  actions.append(collapseBtn, pinBtn, colorBtn, cardCopyBtn, delBtn);
+  actions.append(collapseBtn, pinBtn, cardCopyBtn, delBtn);
   header.append(dateEl, actions);
 
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
@@ -806,7 +750,7 @@ function buildSection(section, notes, colorEntry) {
   wrap.dataset.sectionId = section.id;
 
   const header = document.createElement('div');
-  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:#f8fafc;border:1px solid #e5e7eb;position:sticky;top:0;z-index:10;`;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:${section.color || '#f8fafc'};border:1px solid #e5e7eb;position:sticky;top:0;z-index:10;`;
 
   const left = document.createElement('div');
   left.style.cssText = 'display:flex;align-items:center;gap:6px;';
@@ -833,10 +777,64 @@ function buildSection(section, notes, colorEntry) {
     });
   };
 
+  const sectionColorBtn = document.createElement('button');
+  sectionColorBtn.type = 'button';
+  sectionColorBtn.title = '섹션 색상';
+  sectionColorBtn.textContent = '●';
+  sectionColorBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:14px;color:#9ca3af;padding:0 4px;line-height:1;';
+
+  let sectionColorPop = null;
+  sectionColorBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (sectionColorPop) { sectionColorPop.remove(); sectionColorPop = null; return; }
+    sectionColorPop = document.createElement('div');
+    sectionColorPop.style.cssText = 'position:fixed;display:flex;gap:4px;padding:6px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:9999;';
+    const colors = [
+      { bg: '#f8fafc', label: '기본' },
+      { bg: '#ffcdd2', label: 'Rose' },
+      { bg: '#ffe0b2', label: 'Orange' },
+      { bg: '#fff9c4', label: 'Yellow' },
+      { bg: '#c8e6c9', label: 'Green' },
+      { bg: '#bbdefb', label: 'Blue' },
+      { bg: '#e1bee7', label: 'Lavender' },
+    ];
+    colors.forEach(c => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.title = c.label;
+      dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c.bg};border:2px solid ${c.bg === '#f8fafc' ? '#e5e7eb' : c.bg};cursor:pointer;padding:0;flex-shrink:0;`;
+      dot.onmousedown = (ev) => ev.preventDefault();
+      dot.onclick = async (ev) => {
+        ev.stopPropagation();
+        header.style.background = c.bg;
+        section.color = c.bg;
+        const sb = getSb();
+        const userId = await getUserId();
+        if (sb && userId && section.id) {
+          await sb.from('note_sections').update({ color: c.bg }).eq('id', section.id);
+        }
+        sectionColorPop?.remove(); sectionColorPop = null;
+      };
+      sectionColorPop.appendChild(dot);
+    });
+    document.body.appendChild(sectionColorPop);
+    const rect = sectionColorBtn.getBoundingClientRect();
+    sectionColorPop.style.left = rect.left + 'px';
+    sectionColorPop.style.top = (rect.bottom + 4) + 'px';
+    setTimeout(() => {
+      document.addEventListener('mousedown', function close(ev) {
+        if (!sectionColorPop?.contains(ev.target) && ev.target !== sectionColorBtn) {
+          sectionColorPop?.remove(); sectionColorPop = null;
+          document.removeEventListener('mousedown', close);
+        }
+      });
+    }, 10);
+  };
+
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
   addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:#374151;padding:0 4px;font-weight:300;line-height:1;margin-left:auto;`;
-  header.append(left, addBtn, copyBtn);
+  header.append(left, sectionColorBtn, addBtn, copyBtn);
 
   const list = document.createElement('div');
   const sectionNotes = notes
