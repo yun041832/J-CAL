@@ -770,14 +770,11 @@ async function renderNotePage() {
   if (!userId) {
     page.innerHTML = '';
     const gate = document.createElement('div');
-    gate.style.cssText = 'padding:20px;color:#9ca3af;font-size:13px;';
+    gate.style.cssText = 'padding:20px;font-size:13px;';
     gate.textContent = '로그인 후 노트를 사용할 수 있습니다.';
-    const loginBtn = document.createElement('button');
-    loginBtn.type = 'button';
-    loginBtn.textContent = 'Google로 로그인';
-    loginBtn.style.cssText = 'margin-top:12px;padding:8px 16px;border:none;border-radius:8px;background:#5C8DFF;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;';
-    loginBtn.onclick = () => window.openAppLoginModal?.();
-    gate.appendChild(loginBtn);
+    gate.style.cursor = 'pointer';
+    gate.style.color = '#5C8DFF';
+    gate.onclick = () => window.openAppLoginModal?.();
     page.appendChild(gate);
     return;
   }
