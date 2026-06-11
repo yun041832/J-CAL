@@ -774,7 +774,7 @@ async function renderNotePage() {
     gate.textContent = '로그인 후 노트를 사용할 수 있습니다.';
     gate.style.cursor = 'pointer';
     gate.style.color = '#5C8DFF';
-    gate.onclick = () => window.openAppLoginModal?.();
+    gate.addEventListener('click', () => window.openAppLoginModal?.());
     page.appendChild(gate);
     return;
   }
