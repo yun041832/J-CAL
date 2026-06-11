@@ -25,6 +25,7 @@ import Highlight from 'https://esm.sh/@tiptap/extension-highlight@2.4.0';
 import Link from 'https://esm.sh/@tiptap/extension-link@2.4.0';
 import TaskList from 'https://esm.sh/@tiptap/extension-task-list@2.4.0';
 import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@2.4.0';
+import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2.4.0';
 
 const SECTION_COLORS = [
   { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' },
@@ -150,6 +151,7 @@ function createEditor({ element, content, placeholder, onUpdate }) {
         },
       }),
       Color, Highlight.configure({ multicolor: true }), Link.configure({ openOnClick: false }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: placeholder || '내용을 입력하세요...' }),
     ],
     content: content || '',
@@ -319,6 +321,21 @@ function buildToolbar(editor) {
   hlBtn.onmousedown = (e) => { e.preventDefault(); openFixedDropdown(hlDrop, hlBtn); };
   tb.appendChild(hlBtn);
   tb.appendChild(sep());
+
+  // 4-2. 정렬
+  tb.append(
+    mkBtn({ label: '≡', title: '왼쪽 정렬', action: () => editor.chain().focus().setTextAlign('left').run(), mark: 'left' }),
+    mkBtn({ label: '≡', title: '가운데 정렬', action: () => editor.chain().focus().setTextAlign('center').run(), style: 'letter-spacing:1px;' }),
+    mkBtn({ label: '≡', title: '오른쪽 정렬', action: () => editor.chain().focus().setTextAlign('right').run() }),
+    sep(),
+  );
+
+  // 4-3. 인용구 + 코드블록
+  tb.append(
+    mkBtn({ label: '❝', title: '인용구', action: () => editor.chain().focus().toggleBlockquote().run(), mark: 'blockquote', style: 'font-size:16px;' }),
+    mkBtn({ label: '</>', title: '코드블록', action: () => editor.chain().focus().toggleCodeBlock().run(), mark: 'codeBlock', style: 'font-size:11px;font-family:monospace;' }),
+    sep(),
+  );
 
   // 5. — (구분선) + ∨ (글자크기)
   const sizeWrap = document.createElement('div');
@@ -657,10 +674,29 @@ function buildSection(section, notes, colorEntry) {
   const nameEl = document.createElement('span'); nameEl.textContent = section.name; nameEl.style.cssText = `font-size:13px;font-weight:700;color:${colorEntry.text};`;
   left.append(emoji, nameEl);
 
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button'; copyBtn.textContent = 'COPY';
+  copyBtn.title = '패널 전체 복사';
+  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 6px;opacity:0.7;`;
+  copyBtn.onmouseover = () => copyBtn.style.opacity = '1';
+  copyBtn.onmouseout = () => copyBtn.style.opacity = '0.7';
+  copyBtn.onclick = () => {
+    const sectionNotes = notes.filter(n => n.section_id === section.id);
+    const text = sectionNotes.map(n => {
+      const div = document.createElement('div');
+      div.innerHTML = n.content || '';
+      return (n.title ? n.title + '\n' : '') + (div.textContent || '');
+    }).join('\n\n---\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = '✓';
+      setTimeout(() => copyBtn.textContent = 'COPY', 1500);
+    });
+  };
+
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
   addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;`;
-  header.append(left, addBtn);
+  header.append(left, copyBtn, addBtn);
 
   const list = document.createElement('div');
   const sectionNotes = notes
