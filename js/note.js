@@ -571,7 +571,7 @@ function buildNoteCard(note, colorEntry) {
 
   // ── header ──────────────────────────────────────────
   const header = document.createElement('div');
-  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${colorEntry.bg};border-bottom:1px solid ${colorEntry.border};gap:6px;`;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;gap:6px;`;
 
   // 날짜
   const dateEl = document.createElement('span');
