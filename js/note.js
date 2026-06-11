@@ -27,6 +27,10 @@ import TaskList from 'https://esm.sh/@tiptap/extension-task-list@2.4.0';
 import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@2.4.0';
 import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2.4.0';
 
+// 저스트닥 Supabase (선배님이 URL/KEY 직접 입력)
+const JUSTDOC_SUPABASE_URL = 'YOUR_JUSTDOC_URL';
+const JUSTDOC_SUPABASE_ANON_KEY = 'YOUR_JUSTDOC_ANON_KEY';
+
 const SECTION_COLORS = [
   { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' },
   { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' },
@@ -52,6 +56,68 @@ let _undoStack = [];
 
 let _noteDatePickerPop = null;
 let _noteDatePickerOutsideHandler = null;
+let _justdocSb = null;
+
+function getJustdocSb() {
+  if (!_justdocSb && JUSTDOC_SUPABASE_URL !== 'YOUR_JUSTDOC_URL' && JUSTDOC_SUPABASE_ANON_KEY !== 'YOUR_JUSTDOC_ANON_KEY' && window.supabase?.createClient) {
+    _justdocSb = window.supabase.createClient(JUSTDOC_SUPABASE_URL, JUSTDOC_SUPABASE_ANON_KEY);
+  }
+  return _justdocSb;
+}
+
+function getNoteFirstLineTitle(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html || '';
+  const firstP = div.querySelector('p');
+  const text = (firstP?.textContent || div.textContent || '').trim();
+  const line = text.split('\n').map(s => s.trim()).find(Boolean);
+  return line || 'Untitled';
+}
+
+async function getJcalUserEmail() {
+  const sb = getSb();
+  if (!sb) return null;
+  const { data } = await sb.auth.getUser();
+  return data?.user?.email || null;
+}
+
+async function resolveJustdocUserId(email) {
+  const jd = getJustdocSb();
+  if (!jd || !email) return null;
+  let { data, error } = await jd.rpc('get_user_id_by_email', { email });
+  if (error) {
+    ({ data, error } = await jd.rpc('get_user_id_by_email', { lookup_email: email }));
+  }
+  if (error) { console.error('[note] get_user_id_by_email', error); return null; }
+  if (typeof data === 'string' && data) return data;
+  if (Array.isArray(data) && data.length) return data[0]?.id || data[0];
+  if (data && typeof data === 'object' && data.id) return data.id;
+  return data || null;
+}
+
+async function sendNoteToJustDoc(note, html) {
+  if (!note.id) throw new Error('Note not saved yet');
+  const jd = getJustdocSb();
+  if (!jd) throw new Error('JustDoc Supabase not configured');
+  const email = await getJcalUserEmail();
+  if (!email) throw new Error('Not logged in');
+  const justdocUserId = await resolveJustdocUserId(email);
+  if (!justdocUserId) throw new Error('JustDoc user not found');
+  const { error } = await jd.from('documents').insert({
+    user_id: justdocUserId,
+    title: getNoteFirstLineTitle(html),
+    content: html || '',
+    jcal_note_id: note.id,
+  });
+  if (error) throw error;
+}
+
+function flashDocBtn(btn, label, ms = 2000) {
+  const orig = '→ Doc';
+  btn.textContent = label;
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, ms);
+}
 
 function closeNoteDatePicker() {
   if (_noteDatePickerOutsideHandler) {
@@ -640,7 +706,31 @@ function buildNoteCard(note, colorEntry) {
     });
   };
 
-  actions.append(collapseBtn, pinBtn, cardCopyBtn, delBtn);
+  const docBtn = document.createElement('button');
+  docBtn.type = 'button';
+  docBtn.title = 'Send to JustDoc';
+  docBtn.textContent = '→ Doc';
+  docBtn.style.cssText = 'border:none;background:none;cursor:pointer;color:#9ca3af;padding:2px 4px;line-height:1;font-size:11px;font-weight:600;font-family:inherit;';
+  docBtn.onmouseover = () => { if (!docBtn.disabled) docBtn.style.color = '#374151'; };
+  docBtn.onmouseout = () => { if (!docBtn.disabled) docBtn.style.color = '#9ca3af'; };
+  docBtn.onclick = async (e) => {
+    e.stopPropagation();
+    const html = editorInstance ? editorInstance.getHTML() : (note.content || '');
+    if (editorInstance) note.content = html;
+    try {
+      await sendNoteToJustDoc(note, html);
+      docBtn.style.color = '#22c55e';
+      flashDocBtn(docBtn, '✓ Sent');
+      setTimeout(() => { docBtn.style.color = '#9ca3af'; }, 2000);
+    } catch (err) {
+      console.error('[note] sendNoteToJustDoc', err);
+      docBtn.style.color = '#ef4444';
+      flashDocBtn(docBtn, '✗ Failed');
+      setTimeout(() => { docBtn.style.color = '#9ca3af'; }, 2000);
+    }
+  };
+
+  actions.append(collapseBtn, pinBtn, cardCopyBtn, docBtn, delBtn);
   header.append(dateEl, actions);
 
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
