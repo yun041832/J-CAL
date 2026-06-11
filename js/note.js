@@ -82,7 +82,7 @@ async function getJcalUserEmail() {
   return data?.user?.email || null;
 }
 
-async function sendNoteToJustDoc(note, html) {
+async function sendNoteToJustDoc(note) {
   if (!note.id) throw new Error('Note not saved yet');
 
   console.log('JUSTDOC_SUPABASE_URL:', JUSTDOC_SUPABASE_URL);
@@ -101,10 +101,13 @@ async function sendNoteToJustDoc(note, html) {
     .rpc('get_user_id_by_email', { lookup_email: currentUserEmail });
   if (userIdError || !userIdData) throw new Error('Failed to get JustDoc user_id');
   const justdocUserId = userIdData;
+  const editor = note.id ? _editors.get(note.id) : null;
+  const content = editor ? editor.getHTML() : (note.content || '');
+  if (editor) note.content = content;
   const { error } = await jd.from('documents').insert({
     user_id: justdocUserId,
-    title: getNoteFirstLineTitle(html),
-    content: html || '',
+    title: getNoteFirstLineTitle(content),
+    content,
     jcal_note_id: note.id,
   });
   if (error) throw error;
@@ -713,10 +716,8 @@ function buildNoteCard(note, colorEntry) {
   docBtn.onmouseout = () => { if (!docBtn.disabled) docBtn.style.color = '#9ca3af'; };
   docBtn.onclick = async (e) => {
     e.stopPropagation();
-    const html = editorInstance ? editorInstance.getHTML() : (note.content || '');
-    if (editorInstance) note.content = html;
     try {
-      await sendNoteToJustDoc(note, html);
+      await sendNoteToJustDoc(note);
       docBtn.style.color = '#22c55e';
       flashDocBtn(docBtn, '✓ Sent');
       setTimeout(() => { docBtn.style.color = '#9ca3af'; }, 2000);
