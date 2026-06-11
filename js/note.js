@@ -418,20 +418,6 @@ function buildToolbar(editor) {
   tb.appendChild(linkBtn);
 
   // 7. 이모지
-  const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐','🌤️','🌙','🗂️','⭐','💼','📅','📝','🎯','💡','🍀','❤️','😤','🤔','😴','🥳','👀','🙌','💪','🫡','🤩','⚡','🌈','🎉','🏆','📊','🔍','📎','✏️','🗑️','📂','💾'];
-  const emojiDrop = document.createElement('div');
-  emojiDrop.classList.add('__fixed-toolbar-drop');
-  emojiDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px;z-index:9999;flex-wrap:wrap;gap:3px;width:132px;box-shadow:0 4px 12px rgba(0,0,0,0.12);';
-  emojiList.forEach(em => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.textContent = em;
-    btn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:18px;padding:2px;border-radius:4px;';
-    btn.onmouseover = () => btn.style.background = '#f3f4f6';
-    btn.onmouseout = () => btn.style.background = 'none';
-    btn.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); editor.chain().focus().insertContent(em).run(); emojiDrop.style.display = 'none'; };
-    emojiDrop.appendChild(btn);
-  });
-  document.body.appendChild(emojiDrop);
   const emojiBtn = document.createElement('button');
   emojiBtn.type = 'button'; emojiBtn.title = '이모지'; emojiBtn.textContent = '🙂';
   emojiBtn.style.cssText = 'padding:5px 7px;border:none;border-radius:5px;background:none;cursor:pointer;font-size:17px;line-height:1;';
@@ -439,10 +425,11 @@ function buildToolbar(editor) {
   emojiBtn.onmouseout = () => emojiBtn.style.background = 'none';
   emojiBtn.onmousedown = (e) => {
     e.preventDefault();
-    const rect = emojiBtn.getBoundingClientRect();
-    emojiDrop.style.left = rect.left + 'px';
-    emojiDrop.style.top = (rect.bottom + 4) + 'px';
-    emojiDrop.style.display = emojiDrop.style.display === 'none' ? 'flex' : 'none';
+    if (typeof window.showEmojiPicker === 'function') {
+      window.showEmojiPicker(emojiBtn, (emoji) => {
+        editor.chain().focus().insertContent(emoji).run();
+      });
+    }
   };
   tb.appendChild(emojiBtn);
 
