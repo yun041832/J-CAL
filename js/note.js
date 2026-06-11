@@ -713,7 +713,7 @@ function buildSection(section, notes, colorEntry) {
 
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
-  addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;`;
+  addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:${colorEntry.text};padding:0 4px;font-weight:300;line-height:1;margin-left:auto;`;
   header.append(left, addBtn, copyBtn);
 
   const list = document.createElement('div');
