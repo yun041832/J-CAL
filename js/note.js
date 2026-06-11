@@ -334,7 +334,14 @@ function buildToolbar(editor) {
   const sizeToggle = document.createElement('button');
   sizeToggle.type = 'button'; sizeToggle.title = '글자 크기';
   sizeToggle.style.cssText = 'padding:5px 6px;border:none;background:none;cursor:pointer;font-size:12px;color:#9ca3af;line-height:1;';
-  sizeToggle.textContent = '∨';
+  const updateSizeLabel = () => {
+    const attrs = editor.getAttributes('textStyle');
+    const fs = attrs?.fontSize ? attrs.fontSize.replace('px','') : '12';
+    sizeToggle.textContent = fs + ' ∨';
+  };
+  editor.on('selectionUpdate', updateSizeLabel);
+  editor.on('update', updateSizeLabel);
+  updateSizeLabel();
   sizeToggle.onmouseover = () => sizeToggle.style.background = '#f3f4f6';
   sizeToggle.onmouseout = () => sizeToggle.style.background = 'none';
 
@@ -368,20 +375,50 @@ function buildToolbar(editor) {
   tb.append(sizeWrap, sep());
 
   // 6. 링크
-  tb.appendChild(mkBtn({
-    label: '🔗', title: '링크',
-    action: () => {
-      const prev = editor.getAttributes('link').href;
-      const url = prompt('링크 URL 입력', prev || 'https://');
-      if (url === null) return;
-      if (url === '') { editor.chain().focus().unsetLink().run(); return; }
-      editor.chain().focus().setLink({ href: url }).run();
-    },
-    mark: 'link'
-  }));
+  const linkPopup = document.createElement('div');
+  linkPopup.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:none;flex-direction:column;gap:6px;width:240px;';
+  const linkInput = document.createElement('input');
+  linkInput.type = 'text'; linkInput.placeholder = 'https://';
+  linkInput.style.cssText = 'width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;outline:none;font-family:inherit;';
+  const linkBtnRow = document.createElement('div');
+  linkBtnRow.style.cssText = 'display:flex;gap:6px;';
+  const linkConfirm = document.createElement('button');
+  linkConfirm.type = 'button'; linkConfirm.textContent = '삽입';
+  linkConfirm.style.cssText = 'flex:1;padding:4px 8px;border:none;border-radius:6px;background:#5C8DFF;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;';
+  const linkRemove = document.createElement('button');
+  linkRemove.type = 'button'; linkRemove.textContent = '제거';
+  linkRemove.style.cssText = 'padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;';
+  linkBtnRow.append(linkConfirm, linkRemove);
+  linkPopup.append(linkInput, linkBtnRow);
+  document.body.appendChild(linkPopup);
+
+  linkConfirm.onmousedown = (e) => {
+    e.preventDefault();
+    const url = linkInput.value.trim();
+    if (url) editor.chain().focus().setLink({ href: url }).run();
+    linkPopup.style.display = 'none';
+  };
+  linkRemove.onmousedown = (e) => {
+    e.preventDefault();
+    editor.chain().focus().unsetLink().run();
+    linkPopup.style.display = 'none';
+  };
+
+  const linkBtn = mkBtn({ label: '🔗', title: '링크', action: () => {}, mark: 'link' });
+  linkBtn.onmousedown = (e) => {
+    e.preventDefault();
+    const prev = editor.getAttributes('link').href || '';
+    linkInput.value = prev;
+    const rect = linkBtn.getBoundingClientRect();
+    linkPopup.style.left = rect.left + 'px';
+    linkPopup.style.top = (rect.bottom + 4) + 'px';
+    linkPopup.style.display = linkPopup.style.display === 'flex' ? 'none' : 'flex';
+    setTimeout(() => linkInput.focus(), 50);
+  };
+  tb.appendChild(linkBtn);
 
   // 7. 이모지
-  const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐'];
+  const emojiList = ['😊','😂','🔥','✅','❌','💡','📌','🎯','💬','⭐','🌤️','🌙','🗂️','⭐','💼','📅','📝','🎯','💡','🍀','❤️','😤','🤔','😴','🥳','👀','🙌','💪','🫡','🤩','⚡','🌈','🎉','🏆','📊','🔍','📎','✏️','🗑️','📂','💾'];
   const emojiDrop = document.createElement('div');
   emojiDrop.classList.add('__fixed-toolbar-drop');
   emojiDrop.style.cssText = 'display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px;z-index:9999;flex-wrap:wrap;gap:3px;width:132px;box-shadow:0 4px 12px rgba(0,0,0,0.12);';
