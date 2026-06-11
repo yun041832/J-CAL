@@ -684,7 +684,7 @@ function buildSection(section, notes, colorEntry) {
   wrap.dataset.sectionId = section.id;
 
   const header = document.createElement('div');
-  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:${colorEntry.bg};border:1px solid ${colorEntry.border};`;
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:${colorEntry.bg};border:1px solid ${colorEntry.border};position:sticky;top:0;z-index:10;`;
 
   const left = document.createElement('div');
   left.style.cssText = 'display:flex;align-items:center;gap:6px;';
@@ -695,7 +695,7 @@ function buildSection(section, notes, colorEntry) {
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button'; copyBtn.textContent = 'COPY';
   copyBtn.title = '패널 전체 복사';
-  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 4px 0 8px;opacity:0.7;`;
+  copyBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:${colorEntry.text};padding:0 2px 0 0;opacity:0.7;`;
   copyBtn.onmouseover = () => copyBtn.style.opacity = '1';
   copyBtn.onmouseout = () => copyBtn.style.opacity = '0.7';
   copyBtn.onclick = () => {
