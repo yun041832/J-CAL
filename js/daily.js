@@ -1359,7 +1359,7 @@ function showDailyRepeatActionModal(title,actionButtons){
     };
     modal.appendChild(btn);
   });
-  const cancelBtn=el('button','repeat-option','취소');
+  const cancelBtn=el('button','repeat-option','Cancel');
   cancelBtn.type='button';
   cancelBtn.onclick=()=>{
     overlay.remove();
@@ -1571,10 +1571,10 @@ function requestDeleteDailySection(dstr,sectionId){
       return;
     }
     const todayStr=fmtLocalDate(new Date());
-    showDailyRepeatActionModal('반복 섹션을 삭제합니다',[
-      {label:'오늘만 삭제',onClick:()=> deleteDailySectionTodayOnly(dstr,sectionId)},
-      {label:'오늘부터 삭제',onClick:()=> deleteDailySectionFromToday(dstr,row.repeat_group_id,todayStr),danger:true},
-      {label:'전체 삭제',onClick:()=> deleteDailySectionEntireGroup(dstr,row.repeat_group_id),danger:true},
+    showDailyRepeatActionModal('Delete repeating section',[
+      {label:'Today only',onClick:()=> deleteDailySectionTodayOnly(dstr,sectionId)},
+      {label:'From today',onClick:()=> deleteDailySectionFromToday(dstr,row.repeat_group_id,todayStr),danger:true},
+      {label:'All',onClick:()=> deleteDailySectionEntireGroup(dstr,row.repeat_group_id),danger:true},
     ]);
   })();
 }
