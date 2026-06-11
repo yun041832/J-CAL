@@ -493,35 +493,6 @@ function buildNoteCard(note, colorEntry) {
   dateEl.style.cssText = 'font-size:11px;color:#9ca3af;flex-shrink:0;cursor:pointer;';
   dateEl.textContent = note.note_date || todayStr();
 
-  // 타이틀 (header 안으로 이동)
-  const titleInput = document.createElement('input');
-  titleInput.type = 'text';
-  titleInput.placeholder = 'Title (optional)';
-  titleInput.value = note.title || '';
-  titleInput.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;outline:none;color:#111827;padding:0;';
-  const updateTitleVisibility = () => {
-    titleInput.style.display = titleInput.value.trim() === '' && document.activeElement !== titleInput ? 'none' : '';
-  };
-
-  titleInput.onchange = async () => {
-    const sb = getSb();
-    if (sb && note.id) await sb.from('notes').update({ title: titleInput.value }).eq('id', note.id);
-    updateTitleVisibility();
-  };
-
-  titleInput.addEventListener('focus', () => {
-    titleInput.style.display = '';
-    titleInput.style.outline = 'none';
-  });
-
-  titleInput.addEventListener('blur', () => {
-    titleInput.style.outline = 'none';
-    updateTitleVisibility();
-  });
-
-  // 초기 상태 적용
-  updateTitleVisibility();
-
   // 우측 액션 버튼들
   const actions = document.createElement('div');
   actions.style.cssText = 'display:flex;gap:4px;align-items:center;flex-shrink:0;';
@@ -574,7 +545,7 @@ function buildNoteCard(note, colorEntry) {
   };
 
   actions.append(collapseBtn, cardCopyBtn, pinBtn, delBtn);
-  header.append(dateEl, titleInput, actions);
+  header.append(dateEl, actions);
 
   card.onmouseenter = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
   card.onmouseleave = () => card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
@@ -633,12 +604,12 @@ function buildNoteCard(note, colorEntry) {
     preview.style.display = 'none';
     editorEl.style.display = '';
     editorInstance = createEditor({
-      element: editorEl, content: note.content || '', placeholder: '내용을 입력하세요...',
+      element: editorEl, content: note.content || '', placeholder: '제목 또는 내용을 입력하세요...',
       onUpdate: async (html) => {
         note.content = html;
         if (note.id) { await updateNoteContent(note.id, html); }
         else {
-          const saved = await saveNoteDB({ sectionId: note.section_id, title: titleInput.value, content: html, noteDate: note.note_date });
+          const saved = await saveNoteDB({ sectionId: note.section_id, title: note.title || '', content: html, noteDate: note.note_date });
           if (saved) { note.id = saved.id; card.dataset.noteId = saved.id; _editors.set(saved.id, editorInstance); }
         }
       },
@@ -673,7 +644,6 @@ function buildNoteCard(note, colorEntry) {
   };
 
   preview.onclick = activateEditor;
-  titleInput.onfocus = activateEditor;
   document.addEventListener('mousedown', (e) => { if (!isEditing || card.contains(e.target)) return; deactivateEditor(); });
 
   return card;
@@ -815,6 +785,8 @@ async function renderNotePage() {
     style.textContent = `
       .note-tiptap-editor{outline:none;}
       .note-tiptap-editor p{margin:0 0 4px;}
+      .note-tiptap-editor > .ProseMirror > p:first-child { font-size:16px; font-weight:600; color:#111827; }
+      .note-card-preview > p:first-child { font-size:14px; font-weight:600; color:#111827; }
       .note-tiptap-editor blockquote{border-left:3px solid #d1d5db;margin:4px 0;padding:4px 12px;color:#6b7280;background:#f9fafb;}
       .note-tiptap-editor ul,.note-tiptap-editor ol{padding-left:20px;margin:4px 0;}
       .note-tiptap-editor table{border-collapse:collapse;width:100%;margin:8px 0;}
