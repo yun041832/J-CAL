@@ -97,6 +97,15 @@ async function resolveJustdocUserId(email) {
 
 async function sendNoteToJustDoc(note, html) {
   if (!note.id) throw new Error('Note not saved yet');
+
+  console.log('JUSTDOC_SUPABASE_URL:', JUSTDOC_SUPABASE_URL);
+  console.log('JUSTDOC_SUPABASE_ANON_KEY:', JUSTDOC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
+
+  if (!JUSTDOC_SUPABASE_URL || JUSTDOC_SUPABASE_URL === 'YOUR_JUSTDOC_URL' ||
+      !JUSTDOC_SUPABASE_ANON_KEY || JUSTDOC_SUPABASE_ANON_KEY === 'YOUR_JUSTDOC_ANON_KEY') {
+    throw new Error('JustDoc Supabase not configured');
+  }
+
   const jd = getJustdocSb();
   if (!jd) throw new Error('JustDoc Supabase not configured');
   const email = await getJcalUserEmail();
