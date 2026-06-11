@@ -711,7 +711,24 @@ function buildNoteCard(note, colorEntry) {
       },
     });
     toolbar = buildToolbar(editorInstance);
+    toolbar.style.display = 'none';
     editorEl.parentNode.insertBefore(toolbar, editorEl);
+
+    editorInstance.on('focus', () => {
+      if (toolbar) toolbar.style.display = 'flex';
+    });
+    editorInstance.on('blur', () => {
+      setTimeout(() => {
+        if (toolbar && !toolbar.matches(':hover') && !toolbar.contains(document.activeElement)) {
+          toolbar.style.display = 'none';
+        }
+      }, 150);
+    });
+
+    toolbar.addEventListener('mouseenter', () => {
+      if (toolbar) toolbar.style.display = 'flex';
+    });
+
     if (note.id) _editors.set(note.id, editorInstance);
     setTimeout(() => editorInstance.commands.focus('end'), 50);
   };
@@ -743,6 +760,160 @@ function buildNoteCard(note, colorEntry) {
   document.addEventListener('mousedown', (e) => { if (!isEditing || card.contains(e.target)) return; deactivateEditor(); });
 
   return card;
+}
+
+const SECTION_MENU_SVG = {
+  color: '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 32.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-518q0 115-70 176.5T640-280h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80Zm0-400Zm-177 23q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120-160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm200 0q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120 160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17ZM480-160q9 0 14.5-5t5.5-13q0-14-15-33t-15-57q0-42 29-67t71-25h70q66 0 113-38.5T800-518q0-121-92.5-201.5T488-800q-136 0-232 93t-96 227q0 133 93.5 226.5T480-160Z"/></svg>',
+  emoji: '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z"/></svg>',
+  rename: '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/></svg>',
+};
+
+const NOTE_SECTION_COLORS = [
+  { bg: '#f8fafc', label: '기본' },
+  { bg: '#ffcdd2', label: 'Rose' },
+  { bg: '#ffe0b2', label: 'Orange' },
+  { bg: '#fff9c4', label: 'Yellow' },
+  { bg: '#c8e6c9', label: 'Green' },
+  { bg: '#bbdefb', label: 'Blue' },
+  { bg: '#e1bee7', label: 'Lavender' },
+];
+
+let _noteSectionMenuPop = null;
+let _noteSectionMenuOutsideHandler = null;
+
+function closeNoteSectionMenuPop() {
+  if (_noteSectionMenuOutsideHandler) {
+    document.removeEventListener('mousedown', _noteSectionMenuOutsideHandler);
+    _noteSectionMenuOutsideHandler = null;
+  }
+  _noteSectionMenuPop?.remove();
+  _noteSectionMenuPop = null;
+}
+
+function makeNoteSectionMenuItem(label, svgHtml) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'menu-item';
+  btn.style.cssText = 'display:flex;align-items:center;gap:8px;width:100%;';
+  btn.innerHTML = svgHtml + `<span>${label}</span>`;
+  return btn;
+}
+
+function positionNoteMenuPopup(pop, anchor, popupWidth = 160) {
+  const rect = anchor.getBoundingClientRect();
+  const left = (rect.right + popupWidth > window.innerWidth) ? rect.left - popupWidth : rect.right;
+  pop.style.position = 'fixed';
+  pop.style.left = left + 'px';
+  pop.style.top = (rect.bottom + 4) + 'px';
+  pop.style.zIndex = '10000';
+}
+
+function startNoteSectionRename(nameEl, section) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = section.name || '';
+  input.style.cssText = 'font-size:13px;font-weight:700;color:#374151;border:1px solid #5C8DFF;border-radius:4px;padding:2px 6px;outline:none;font-family:inherit;min-width:80px;';
+  const finish = async (save) => {
+    if (save) {
+      const v = input.value.trim();
+      if (v && v !== section.name) {
+        section.name = v;
+        nameEl.textContent = v;
+        const sb = getSb();
+        if (sb && section.id) await sb.from('note_sections').update({ name: v }).eq('id', section.id);
+      }
+    }
+    if (input.parentNode) input.replaceWith(nameEl);
+  };
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') finish(false);
+  };
+  input.onblur = () => finish(true);
+}
+
+function showNoteSectionColorPicker(anchor, section, header) {
+  closeNoteSectionMenuPop();
+  const pop = document.createElement('div');
+  pop.className = 'event-menu-popup daily-section-color-popup';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px;';
+  const currentBg = (section.color || '#f8fafc').toLowerCase();
+  NOTE_SECTION_COLORS.forEach(c => {
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.title = c.label;
+    sw.style.cssText = `width:36px;height:36px;border-radius:8px;border:2px solid ${c.bg.toLowerCase() === currentBg ? '#5C8DFF' : '#e5e7eb'};background:${c.bg};cursor:pointer;padding:0;`;
+    sw.onclick = async (e) => {
+      e.stopPropagation();
+      closeNoteSectionMenuPop();
+      header.style.background = c.bg;
+      section.color = c.bg;
+      const sb = getSb();
+      const userId = await getUserId();
+      if (sb && userId && section.id) {
+        await sb.from('note_sections').update({ color: c.bg }).eq('id', section.id);
+      }
+    };
+    grid.appendChild(sw);
+  });
+  pop.appendChild(grid);
+  document.body.appendChild(pop);
+  _noteSectionMenuPop = pop;
+  positionNoteMenuPopup(pop, anchor, 140);
+  _noteSectionMenuOutsideHandler = (ev) => {
+    if (!pop.contains(ev.target) && ev.target !== anchor) closeNoteSectionMenuPop();
+  };
+  setTimeout(() => document.addEventListener('mousedown', _noteSectionMenuOutsideHandler), 10);
+}
+
+function showNoteSectionMenu(anchor, section, header, emojiEl, nameEl) {
+  closeNoteSectionMenuPop();
+  const pop = document.createElement('div');
+  pop.className = 'event-menu-popup daily-section-menu-popup';
+
+  const colorBtn = makeNoteSectionMenuItem('Change Color', SECTION_MENU_SVG.color);
+  colorBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeNoteSectionMenuPop();
+    showNoteSectionColorPicker(anchor, section, header);
+  };
+
+  const emojiBtn = makeNoteSectionMenuItem('Change Emoji', SECTION_MENU_SVG.emoji);
+  emojiBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeNoteSectionMenuPop();
+    if (typeof window.showEmojiPicker === 'function') {
+      window.showEmojiPicker(anchor, async (emoji) => {
+        emojiEl.textContent = emoji;
+        section.emoji = emoji;
+        const sb = getSb();
+        const userId = await getUserId();
+        if (sb && userId && section.id) {
+          await sb.from('note_sections').update({ emoji }).eq('id', section.id);
+        }
+      });
+    }
+  };
+
+  const renameBtn = makeNoteSectionMenuItem('Rename', SECTION_MENU_SVG.rename);
+  renameBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeNoteSectionMenuPop();
+    startNoteSectionRename(nameEl, section);
+  };
+
+  pop.append(colorBtn, emojiBtn, renameBtn);
+  document.body.appendChild(pop);
+  _noteSectionMenuPop = pop;
+  positionNoteMenuPopup(pop, anchor);
+  _noteSectionMenuOutsideHandler = (ev) => {
+    if (!pop.contains(ev.target) && ev.target !== anchor) closeNoteSectionMenuPop();
+  };
+  setTimeout(() => document.addEventListener('mousedown', _noteSectionMenuOutsideHandler), 10);
 }
 
 function buildSection(section, notes, colorEntry) {
@@ -777,64 +948,23 @@ function buildSection(section, notes, colorEntry) {
     });
   };
 
-  const sectionColorBtn = document.createElement('button');
-  sectionColorBtn.type = 'button';
-  sectionColorBtn.title = '섹션 색상';
-  sectionColorBtn.textContent = '●';
-  sectionColorBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:14px;color:#9ca3af;padding:0 4px;line-height:1;';
-
-  let sectionColorPop = null;
-  sectionColorBtn.onclick = (e) => {
+  const menuBtn = document.createElement('button');
+  menuBtn.type = 'button';
+  menuBtn.textContent = '⋯';
+  menuBtn.title = 'Section menu';
+  menuBtn.setAttribute('aria-label', 'Section menu');
+  menuBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:16px;color:#9ca3af;padding:0 4px;line-height:1;';
+  menuBtn.onmouseover = () => menuBtn.style.color = '#374151';
+  menuBtn.onmouseout = () => menuBtn.style.color = '#9ca3af';
+  menuBtn.onclick = (e) => {
     e.stopPropagation();
-    if (sectionColorPop) { sectionColorPop.remove(); sectionColorPop = null; return; }
-    sectionColorPop = document.createElement('div');
-    sectionColorPop.style.cssText = 'position:fixed;display:flex;gap:4px;padding:6px 8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:9999;';
-    const colors = [
-      { bg: '#f8fafc', label: '기본' },
-      { bg: '#ffcdd2', label: 'Rose' },
-      { bg: '#ffe0b2', label: 'Orange' },
-      { bg: '#fff9c4', label: 'Yellow' },
-      { bg: '#c8e6c9', label: 'Green' },
-      { bg: '#bbdefb', label: 'Blue' },
-      { bg: '#e1bee7', label: 'Lavender' },
-    ];
-    colors.forEach(c => {
-      const dot = document.createElement('button');
-      dot.type = 'button';
-      dot.title = c.label;
-      dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c.bg};border:2px solid ${c.bg === '#f8fafc' ? '#e5e7eb' : c.bg};cursor:pointer;padding:0;flex-shrink:0;`;
-      dot.onmousedown = (ev) => ev.preventDefault();
-      dot.onclick = async (ev) => {
-        ev.stopPropagation();
-        header.style.background = c.bg;
-        section.color = c.bg;
-        const sb = getSb();
-        const userId = await getUserId();
-        if (sb && userId && section.id) {
-          await sb.from('note_sections').update({ color: c.bg }).eq('id', section.id);
-        }
-        sectionColorPop?.remove(); sectionColorPop = null;
-      };
-      sectionColorPop.appendChild(dot);
-    });
-    document.body.appendChild(sectionColorPop);
-    const rect = sectionColorBtn.getBoundingClientRect();
-    sectionColorPop.style.left = rect.left + 'px';
-    sectionColorPop.style.top = (rect.bottom + 4) + 'px';
-    setTimeout(() => {
-      document.addEventListener('mousedown', function close(ev) {
-        if (!sectionColorPop?.contains(ev.target) && ev.target !== sectionColorBtn) {
-          sectionColorPop?.remove(); sectionColorPop = null;
-          document.removeEventListener('mousedown', close);
-        }
-      });
-    }, 10);
+    showNoteSectionMenu(menuBtn, section, header, emoji, nameEl);
   };
 
   const addBtn = document.createElement('button');
   addBtn.type = 'button'; addBtn.textContent = '+';
   addBtn.style.cssText = `border:none;background:none;cursor:pointer;font-size:18px;color:#374151;padding:0 4px;font-weight:300;line-height:1;margin-left:auto;`;
-  header.append(left, sectionColorBtn, addBtn, copyBtn);
+  header.append(left, addBtn, copyBtn, menuBtn);
 
   const list = document.createElement('div');
   const sectionNotes = notes

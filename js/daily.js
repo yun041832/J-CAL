@@ -1844,6 +1844,18 @@ function bindDailyMenuOutsideClose(pop,anchor,close){
   setTimeout(()=>doc.addEventListener('mousedown',onDocDown),10);
   return onDocDown;
 }
+const SECTION_MENU_SVG={
+  color:'<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 32.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-518q0 115-70 176.5T640-280h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80Zm0-400Zm-177 23q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120-160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm200 0q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120 160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17ZM480-160q9 0 14.5-5t5.5-13q0-14-15-33t-15-57q0-42 29-67t71-25h70q66 0 113-38.5T800-518q0-121-92.5-201.5T488-800q-136 0-232 93t-96 227q0 133 93.5 226.5T480-160Z"/></svg>',
+  emoji:'<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M324.5-404.5Q310-419 310-440t14.5-35.5Q339-490 360-490t35.5 14.5Q410-461 410-440t-14.5 35.5Q381-390 360-390t-35.5-14.5Zm240 0Q550-419 550-440t14.5-35.5Q579-490 600-490t35.5 14.5Q650-461 650-440t-14.5 35.5Q621-390 600-390t-35.5-14.5ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z"/></svg>',
+  rename:'<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/></svg>',
+  delete:'<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#1f1f1f"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>',
+};
+function makeDailySectionMenuItem(label,svgHtml,extraClass=''){
+  const btn=el('button','menu-item'+(extraClass?' '+extraClass:''));
+  btn.style.cssText='display:flex;align-items:center;gap:8px;width:100%;';
+  btn.innerHTML=svgHtml+'<span>'+label+'</span>';
+  return btn;
+}
 function showDailySectionColorPicker(anchor,dstr,section){
   const doc=anchor.ownerDocument||document;
   if(dailyOpenPop) dailyOpenPop.remove();
@@ -1899,7 +1911,7 @@ function showDailySectionMenu(anchor,dstr,section){
   };
   onDocDown=bindDailyMenuOutsideClose(pop,anchor,close);
 
-  const colorBtn=el('button','menu-item','🎨 Change Color');
+  const colorBtn=makeDailySectionMenuItem('Change Color',SECTION_MENU_SVG.color);
   colorBtn.type='button';
   colorBtn.onclick=(e)=>{
     e.stopPropagation();
@@ -1907,7 +1919,7 @@ function showDailySectionMenu(anchor,dstr,section){
     showDailySectionColorPicker(anchor,dstr,section);
   };
 
-  const emojiBtn=el('button','menu-item','😊 Change Emoji');
+  const emojiBtn=makeDailySectionMenuItem('Change Emoji',SECTION_MENU_SVG.emoji);
   emojiBtn.type='button';
   emojiBtn.onclick=(e)=>{
     e.stopPropagation();
@@ -1915,7 +1927,7 @@ function showDailySectionMenu(anchor,dstr,section){
     showDailySectionEmojiPicker(anchor,dstr,section);
   };
 
-  const renameBtn=el('button','menu-item','✏️ Rename');
+  const renameBtn=makeDailySectionMenuItem('Rename',SECTION_MENU_SVG.rename);
   renameBtn.type='button';
   renameBtn.onclick=(e)=>{
     e.stopPropagation();
@@ -1927,7 +1939,7 @@ function showDailySectionMenu(anchor,dstr,section){
   pop.append(colorBtn,emojiBtn,renameBtn);
 
   if(isDailySectionDeletable(section)){
-    const delBtn=el('button','menu-item del','🗑️ Delete');
+    const delBtn=makeDailySectionMenuItem('Delete',SECTION_MENU_SVG.delete,'del');
     delBtn.type='button';
     delBtn.onclick=(e)=>{
       e.stopPropagation();
