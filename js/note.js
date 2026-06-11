@@ -28,8 +28,8 @@ import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@2.4.0';
 import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2.4.0';
 
 // 저스트닥 Supabase (선배님이 URL/KEY 직접 입력)
-const JUSTDOC_SUPABASE_URL = 'YOUR_JUSTDOC_URL';
-const JUSTDOC_SUPABASE_ANON_KEY = 'YOUR_JUSTDOC_ANON_KEY';
+const JUSTDOC_SUPABASE_URL = 'https://bfrukfyabrkglaeajlhl.supabase.co';
+const JUSTDOC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmcnVrZnlhYnJrZ2xhZWFqbGhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDM4NzYsImV4cCI6MjA4ODA3OTg3Nn0.Uu6LUCt1Dx-VSYsQs_A2xYDq6pa0pQ9Dwyk_CfBUIWE';
 
 const SECTION_COLORS = [
   { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' },
