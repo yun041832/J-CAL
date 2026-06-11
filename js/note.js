@@ -103,6 +103,10 @@ async function sendNoteToJustDoc(note) {
   const justdocUserId = userIdData;
   const editor = note.id ? _editors.get(note.id) : null;
   const content = editor ? editor.getHTML() : (note.content || '');
+  console.log('note.id:', note.id);
+  console.log('_editors keys:', Array.from(_editors.keys()));
+  console.log('editor found:', !!editor);
+  console.log('content:', content ? content.substring(0, 100) : 'EMPTY');
   if (editor) note.content = content;
   const { error } = await jd.from('documents').insert({
     user_id: justdocUserId,
