@@ -1626,10 +1626,12 @@ function appendDailySectionTaskInput(body,dstr,sectionId){
   let _isComposing = false;
   inp.addEventListener('compositionstart', () => { _isComposing = true; });
   inp.addEventListener('compositionend', () => { _isComposing = false; });
-  inp.addEventListener('keyup', async (e) => {
-    if (e.key !== 'Enter') return;
+  inp.addEventListener('keydown', async (e) => {
+    const isEnter = e.key === 'Enter' || e.keyCode === 13;
+    if (!isEnter) return;
     if (_isComposing) return;
     e.preventDefault();
+    e.stopPropagation();
     const value = inp.value.trim();
     if (!value) return;
 
