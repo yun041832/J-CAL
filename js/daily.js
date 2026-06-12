@@ -1623,11 +1623,15 @@ function appendDailySectionTaskInput(body,dstr,sectionId){
   inp.type='text';
   inp.className='daily-section-task-input';
   inp.placeholder='Add a task and press Enter';
-  inp.addEventListener('keydown',async (e)=>{
-    if(e.key!=='Enter') return;
+  let _isComposing = false;
+  inp.addEventListener('compositionstart', () => { _isComposing = true; });
+  inp.addEventListener('compositionend', () => { _isComposing = false; });
+  inp.addEventListener('keyup', async (e) => {
+    if (e.key !== 'Enter') return;
+    if (_isComposing) return;
     e.preventDefault();
-    const value=inp.value.trim();
-    if(!value) return;
+    const value = inp.value.trim();
+    if (!value) return;
 
     let resolvedSectionId=sectionId;
     let didVirtualMaterialize=false;
